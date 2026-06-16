@@ -11,6 +11,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="B+D Dashboard">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.7/signature_pad.umd.min.js"></script>
 <style>
 :root {
   --navy:#1B2F6E; --navy2:#0F1F4D; --navy3:#16275C;
@@ -536,6 +538,48 @@ body{
     <div id="kundenList"><p style="color:var(--hint);font-size:13px;padding:1rem 0;">Lade Kunden...</p></div>
   </div>
 </section>
+
+<!-- UNTERSCHRIFT MODAL -->
+<div class="overlay" id="signModalOverlay" style="display:none;">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:600px;max-height:95vh;overflow-y:auto;">
+    <h3>Lieferschein unterschreiben</h3>
+
+    <div id="signPdfPreview" style="width:100%;height:200px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;">
+      <p style="color:var(--hint);font-size:13px;">⏳ PDF wird geladen...</p>
+    </div>
+
+    <div style="margin-bottom:.875rem;">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Unterschrift Kunde</label>
+      <div style="position:relative;background:#fff;border-radius:10px;overflow:hidden;border:2px solid var(--border);">
+        <canvas id="signatureCanvas" style="width:100%;height:180px;display:block;touch-action:none;"></canvas>
+        <button onclick="clearSignature()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.5);border:none;color:#fff;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">✕ Löschen</button>
+      </div>
+      <p style="font-size:11px;color:var(--hint);margin-top:4px;">Mit Finger oder Maus unterschreiben</p>
+    </div>
+
+    <div style="margin-bottom:1.25rem;">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">E-Mail senden an</label>
+      <div style="display:flex;gap:8px;">
+        <input id="signEmail" type="email" placeholder="kunde@beispiel.ch"
+          style="flex:1;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;">
+        <button onclick="sendSignedPdf()" id="signSendBtn"
+          style="background:rgba(34,197,94,.2);border:1px solid rgba(34,197,94,.4);border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;color:#86efac;cursor:pointer;white-space:nowrap;font-family:var(--font);">
+          ✉ Senden
+        </button>
+      </div>
+    </div>
+
+    <div id="signStatus" style="display:none;font-size:13px;margin-bottom:1rem;text-align:center;padding:10px;background:rgba(255,255,255,.05);border-radius:8px;"></div>
+
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeSignModal()">Schliessen</button>
+      <button onclick="downloadSignedPdf()" id="signDownloadBtn"
+        style="background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-size:14px;font-weight:700;cursor:pointer;">
+        ⬇ Signiertes PDF speichern
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- OFFERTE / AUFTRAG MODAL -->
 <div class="overlay" id="orderModalOverlay" style="display:none;">
@@ -1205,10 +1249,12 @@ function renderCcList(listKey, q){
     } else if(listKey === 'auftraege'){
       actions = '<button class="cc-btn" onclick="ccContinueOrder('+o.id+',6)">→ Lieferschein</button>'
                +'<button class="cc-btn" onclick="ccContinueOrder('+o.id+',4)">→ Rechnung</button>';
-    } else if(listKey === 'lieferscheine' || listKey === 'rechnungen'){
+    } else if(listKey === 'lieferscheine'){
+      actions = '<button class="cc-btn" onclick="downloadCcPdf('+o.id+', this)">📄 PDF</button>'
+               +'<button class="cc-btn" onclick="openSignModal('+o.id+', \''+o.associateName+'\')" style="background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.4);">✍️ Unterschrift</button>';
+    } else if(listKey === 'rechnungen'){
       actions = '<button class="cc-btn" onclick="downloadCcPdf('+o.id+', this)">📄 PDF</button>';
     }
-    return '<div class="cc-order" id="cc-order-'+o.id+'">'
       +'<div class="cc-order-body">'
         +'<div class="cc-order-title">'+(o.nr||'#'+o.id)+' — '+(o.associateName||'–')+'</div>'
         +'<div class="cc-order-meta">'
@@ -1261,7 +1307,182 @@ function downloadCcPdf(orderId, btn){
     });
 }
 
-// ─── OFFERTE/AUFTRAG ERSTELLEN MODAL ──────────────────────────
+// ─── UNTERSCHRIFT / SIGNATUR ───────────────────────────────────
+var signaturePad = null;
+var currentSignOrderId = null;
+var currentSignPdfBytes = null;
+var currentSignAssociateName = '';
+
+function openSignModal(orderId, associateName){
+  currentSignOrderId = orderId;
+  currentSignPdfBytes = null;
+  currentSignAssociateName = associateName || '';
+  document.getElementById('signStatus').style.display = 'none';
+  document.getElementById('signEmail').value = '';
+
+  // Kunden-Email vorausfüllen falls vorhanden
+  var kunde = allKunden.find(function(k){ return k.name === associateName || k.company === associateName; });
+  if(kunde && kunde.email) document.getElementById('signEmail').value = kunde.email;
+
+  document.getElementById('signModalOverlay').style.display = 'flex';
+
+  // Canvas initialisieren
+  setTimeout(function(){
+    var canvas = document.getElementById('signatureCanvas');
+    canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+    canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    if(signaturePad) signaturePad.clear();
+    signaturePad = new SignaturePad(canvas, {
+      backgroundColor: 'rgb(255,255,255)',
+      penColor: 'rgb(0,0,0)',
+      minWidth: 1.5,
+      maxWidth: 3
+    });
+  }, 100);
+
+  // PDF laden und Vorschau anzeigen
+  var preview = document.getElementById('signPdfPreview');
+  preview.innerHTML = '<p style="color:var(--hint);font-size:13px;">⏳ PDF wird geladen...</p>';
+
+  fetch(CC_FN+'?action=order-pdf&id='+orderId)
+    .then(function(r){ return r.arrayBuffer(); })
+    .then(function(buffer){
+      currentSignPdfBytes = buffer;
+      // Vorschau als Object-URL
+      var blob = new Blob([buffer], { type:'application/pdf' });
+      var url = URL.createObjectURL(blob);
+      preview.innerHTML = '<iframe src="'+url+'" style="width:100%;height:200px;border:none;border-radius:8px;"></iframe>';
+    })
+    .catch(function(err){
+      preview.innerHTML = '<p style="color:var(--red);font-size:13px;">PDF konnte nicht geladen werden: '+err.message+'</p>';
+    });
+}
+
+function closeSignModal(){
+  document.getElementById('signModalOverlay').style.display = 'none';
+  if(signaturePad) signaturePad.clear();
+}
+
+function clearSignature(){
+  if(signaturePad) signaturePad.clear();
+}
+
+async function buildSignedPdf(){
+  if(!currentSignPdfBytes){ alert('PDF wurde noch nicht geladen.'); return null; }
+  if(!signaturePad || signaturePad.isEmpty()){ alert('Bitte zuerst unterschreiben.'); return null; }
+
+  // Unterschrift als PNG Base64
+  var sigDataUrl = signaturePad.toDataURL('image/png');
+  var sigBase64 = sigDataUrl.split(',')[1];
+
+  // pdf-lib: PDF laden und Unterschrift einbetten
+  var { PDFDocument } = PDFLib;
+  var pdfDoc = await PDFDocument.load(currentSignPdfBytes);
+  var pages = pdfDoc.getPages();
+  var lastPage = pages[pages.length - 1];
+  var { width, height } = lastPage.getSize();
+
+  // Unterschrift als PNG einbetten
+  var sigImage = await pdfDoc.embedPng(Uint8Array.from(atob(sigBase64), function(c){ return c.charCodeAt(0); }));
+  var sigDims = sigImage.scale(0.4);
+
+  // Unterschrift unten rechts platzieren (60x30mm Bereich)
+  var sigW = Math.min(sigDims.width, 200);
+  var sigH = sigDims.height * (sigW / sigDims.width);
+  var x = width - sigW - 40;
+  var y = 40;
+
+  // Unterschriftsrahmen zeichnen
+  var page = lastPage;
+  page.drawRectangle({
+    x: x - 5, y: y - 5,
+    width: sigW + 10, height: sigH + 30,
+    borderColor: { r:0.7, g:0.7, b:0.7 },
+    borderWidth: 0.5,
+    color: { r:1, g:1, b:1, type:'RGB' }
+  });
+
+  // Unterschrift zeichnen
+  page.drawImage(sigImage, { x, y: y+10, width: sigW, height: sigH });
+
+  // Beschriftung
+  var font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+  page.drawText('Unterschrift Kunde: '+currentSignAssociateName, {
+    x: x - 5, y: y + sigH + 14,
+    size: 7, font, color: { r:0.4, g:0.4, b:0.4, type:'RGB' }
+  });
+  page.drawText('Datum: '+new Date().toLocaleDateString('de-CH'), {
+    x: x - 5, y: y - 2,
+    size: 7, font, color: { r:0.4, g:0.4, b:0.4, type:'RGB' }
+  });
+
+  return await pdfDoc.save();
+}
+
+async function downloadSignedPdf(){
+  var btn = document.getElementById('signDownloadBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Erstelle PDF...';
+  try {
+    var pdfBytes = await buildSignedPdf();
+    if(!pdfBytes){ btn.disabled=false; btn.textContent='⬇ Signiertes PDF speichern'; return; }
+    var blob = new Blob([pdfBytes], { type:'application/pdf' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'lieferschein-signiert-'+currentSignOrderId+'.pdf';
+    a.click();
+    URL.revokeObjectURL(url);
+    btn.disabled=false;
+    btn.textContent='⬇ Signiertes PDF speichern';
+  } catch(err){
+    alert('Fehler: '+err.message);
+    btn.disabled=false;
+    btn.textContent='⬇ Signiertes PDF speichern';
+  }
+}
+
+async function sendSignedPdf(){
+  var email = document.getElementById('signEmail').value.trim();
+  if(!email){ alert('Bitte E-Mail-Adresse eingeben.'); return; }
+  var btn = document.getElementById('signSendBtn');
+  var status = document.getElementById('signStatus');
+  btn.disabled = true;
+  status.style.display = 'block';
+  status.style.color = 'var(--muted)';
+  status.textContent = '⏳ PDF wird erstellt und gesendet...';
+  try {
+    var pdfBytes = await buildSignedPdf();
+    if(!pdfBytes){ btn.disabled=false; status.style.display='none'; return; }
+    // PDF als Base64 an Edge Function
+    var b64 = btoa(String.fromCharCode.apply(null, new Uint8Array(pdfBytes)));
+    var res = await fetch(CC_FN+'?action=send-pdf', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        to: email,
+        subject: 'Lieferschein '+currentSignOrderId+' – Bärtsch + Dobal',
+        pdfBase64: b64,
+        fileName: 'lieferschein-'+currentSignOrderId+'.pdf',
+        kundenName: currentSignAssociateName
+      })
+    });
+    var data = await res.json();
+    if(data.error){
+      status.style.color='var(--red)';
+      status.textContent='Fehler: '+JSON.stringify(data.error);
+    } else {
+      status.style.color='var(--green)';
+      status.textContent='✅ Signiertes PDF wurde an '+email+' gesendet!';
+    }
+  } catch(err){
+    status.style.color='var(--red)';
+    status.textContent='Fehler: '+err.message;
+  }
+  btn.disabled=false;
+}
 function openOrderModal(type){
   currentOrderType = type;
   currentOrderCatId = CC_CAT[type];
