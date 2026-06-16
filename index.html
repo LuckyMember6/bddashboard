@@ -1400,9 +1400,9 @@ async function buildSignedPdf(){
   page.drawRectangle({
     x: x - 5, y: y - 5,
     width: sigW + 10, height: sigH + 30,
-    borderColor: { r:0.7, g:0.7, b:0.7 },
+    borderColor: PDFLib.rgb(0.7, 0.7, 0.7),
     borderWidth: 0.5,
-    color: { r:1, g:1, b:1, type:'RGB' }
+    color: PDFLib.rgb(1, 1, 1),
   });
 
   // Unterschrift zeichnen
@@ -1412,11 +1412,11 @@ async function buildSignedPdf(){
   var font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
   page.drawText('Unterschrift Kunde: '+currentSignAssociateName, {
     x: x - 5, y: y + sigH + 14,
-    size: 7, font, color: { r:0.4, g:0.4, b:0.4, type:'RGB' }
+    size: 7, font, color: PDFLib.rgb(0.4, 0.4, 0.4),
   });
   page.drawText('Datum: '+new Date().toLocaleDateString('de-CH'), {
     x: x - 5, y: y - 2,
-    size: 7, font, color: { r:0.4, g:0.4, b:0.4, type:'RGB' }
+    size: 7, font, color: PDFLib.rgb(0.4, 0.4, 0.4),
   });
 
   return await pdfDoc.save();
