@@ -577,6 +577,10 @@ body{
         style="background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-size:14px;font-weight:700;cursor:pointer;">
         ⬇ Signiertes PDF speichern
       </button>
+      <button onclick="attachSignedPdfToCashctrl()" id="signAttachBtn"
+        style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-size:14px;font-weight:700;cursor:pointer;">
+        📎 In CashCtrl anhängen
+      </button>
     </div>
   </div>
 </div>
@@ -1449,7 +1453,42 @@ async function downloadSignedPdf(){
   }
 }
 
-async function sendSignedPdf(){
+async function attachSignedPdfToCashctrl(){
+  var btn = document.getElementById('signAttachBtn');
+  var status = document.getElementById('signStatus');
+  btn.disabled = true;
+  btn.textContent = '⏳ Wird hochgeladen...';
+  status.style.display = 'block';
+  status.style.color = 'var(--muted)';
+  status.textContent = '⏳ Signiertes PDF wird in CashCtrl hochgeladen...';
+  try {
+    var pdfBytes = await buildSignedPdf();
+    if(!pdfBytes){ btn.disabled=false; btn.textContent='📎 In CashCtrl anhängen'; status.style.display='none'; return; }
+    var b64 = btoa(String.fromCharCode.apply(null, new Uint8Array(pdfBytes)));
+    var res = await fetch(CC_FN+'?action=attach-pdf', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        orderId: currentSignOrderId,
+        pdfBase64: b64,
+        fileName: 'lieferschein-signiert-'+currentSignOrderId+'.pdf'
+      })
+    });
+    var data = await res.json();
+    if(data.error){
+      status.style.color='var(--red)';
+      status.textContent='Fehler: '+JSON.stringify(data.error);
+    } else {
+      status.style.color='var(--green)';
+      status.textContent='✅ Signiertes PDF wurde in CashCtrl angehängt!';
+    }
+  } catch(err){
+    status.style.color='var(--red)';
+    status.textContent='Fehler: '+err.message;
+  }
+  btn.disabled=false;
+  btn.textContent='📎 In CashCtrl anhängen';
+}
   var email = document.getElementById('signEmail').value.trim();
   if(!email){ alert('Bitte E-Mail-Adresse eingeben.'); return; }
   var btn = document.getElementById('signSendBtn');
