@@ -285,6 +285,26 @@ body{
 .pdf-item-size{color:var(--hint);font-size:11px;flex-shrink:0;}
 .pdf-download{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:var(--font);flex-shrink:0;}
 
+/* KUNDEN */
+.kunden-list{display:flex;flex-direction:column;gap:0;}
+.kunden-item{
+  display:flex;align-items:center;gap:14px;padding:12px 6px;
+  border-bottom:1px solid var(--glass-brd);cursor:pointer;
+  transition:background .15s;border-radius:8px;
+}
+.kunden-item:hover{background:rgba(255,255,255,.04);}
+.kunden-item:last-child{border-bottom:none;}
+.kunden-avatar{
+  width:42px;height:42px;border-radius:12px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:700;
+  background:linear-gradient(135deg,rgba(59,130,246,.3),rgba(99,102,241,.2));
+  border:1px solid rgba(96,165,250,.3);color:#fff;
+}
+.kunden-name{font-size:14px;font-weight:600;color:var(--text);}
+.kunden-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.kunden-contact{font-size:12px;color:var(--hint);margin-top:1px;}
+
 /* CASHCTRL ORDERS */
 .cc-order{
   display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
@@ -326,6 +346,7 @@ body{
   <button class="nav-item" onclick="showPage('lieferungen')"><span class="nav-icon">🚚</span><span>Lieferungen</span><span class="nav-badge" id="badge-lieferungen">0</span></button>
   <button class="nav-item" onclick="showPage('aufgaben')"><span class="nav-icon">✅</span><span>Aufgaben</span><span class="nav-badge" id="badge-aufgaben">0</span></button>
   <button class="nav-item" onclick="showPage('lager')"><span class="nav-icon">📦</span><span>Lagerbestand</span></button>
+  <button class="nav-item" onclick="showPage('kunden')"><span class="nav-icon">👥</span><span>Kunden</span></button>
   <button class="nav-item" onclick="showPage('mails')"><span class="nav-icon">📧</span><span>Mail-Vorlagen</span></button>
   <button class="nav-item" onclick="showPage('wixshop')"><span class="nav-icon">🛍</span><span>Wix Shop</span></button>
 </nav>
@@ -345,6 +366,14 @@ body{
 <!-- DASHBOARD -->
 <section id="page-overview" class="page-section active">
   <div class="metrics" id="metricCards"></div>
+
+  <!-- Kunden-Kachel -->
+  <div class="metric" onclick="showPage('kunden')" style="cursor:pointer;background:linear-gradient(135deg,rgba(99,102,241,.25),rgba(59,130,246,.15));border:1px solid rgba(99,102,241,.4);">
+    <div class="metric-icon">👥</div>
+    <div class="metric-val" id="kundenCount">–</div>
+    <div class="metric-label">Kunden</div>
+    <div class="metric-list" id="kundenPreview"></div>
+  </div>
   <div class="card">
     <div class="card-header"><div class="card-title">Lagerbestand</div><button class="card-action" onclick="showPage('lager')">Zum Lager</button></div>
     <div id="lagerCircles" class="lager-circles"></div>
@@ -445,6 +474,88 @@ body{
 </section>
 
 </main>
+
+<!-- KUNDEN -->
+<section id="page-kunden" class="page-section">
+  <div class="page-header">
+    <div><div class="page-title">Kunden</div><div class="page-sub">Kundenstamm aus CashCtrl</div></div>
+    <button class="btn-add" onclick="openPersonModal()">+ Neuer Kunde</button>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <input id="kundenSearch" type="text" placeholder="🔍 Name, Firma, Ort suchen..." onInput="filterKunden(this.value)"
+        style="flex:1;padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-size:14px;outline:none;font-family:var(--font);">
+      <button class="card-action" onclick="loadKunden()">↻</button>
+    </div>
+    <div id="kundenList"><p style="color:var(--hint);font-size:13px;padding:1rem 0;">Lade Kunden...</p></div>
+  </div>
+</section>
+
+<!-- KUNDEN DETAIL / EDIT MODAL -->
+<div class="overlay" id="personModalOverlay" style="display:none;" onclick="closePersonModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:560px;max-height:90vh;overflow-y:auto;">
+    <h3 id="personModalTitle">Neuer Kunde</h3>
+
+    <div style="display:flex;gap:10px;margin-bottom:1.25rem;">
+      <button id="personTypeCompany" onclick="setPersonType(true)" style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--blue);background:rgba(59,130,246,.2);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">🏢 Firma</button>
+      <button id="personTypePerson" onclick="setPersonType(false)" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);">👤 Privatperson</button>
+    </div>
+
+    <div id="personCompanyRow" style="margin-bottom:.875rem;">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Firmenname</label>
+      <input id="pCompany" type="text" placeholder="z.B. Muster AG" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:.875rem;">
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Vorname</label>
+        <input id="pFirstName" type="text" placeholder="Max" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Nachname</label>
+        <input id="pLastName" type="text" placeholder="Muster" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+      </div>
+    </div>
+
+    <div style="margin-bottom:.875rem;">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Adresse</label>
+      <input id="pAddress" type="text" placeholder="Musterstrasse 1" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+    </div>
+
+    <div style="display:grid;grid-template-columns:120px 1fr;gap:12px;margin-bottom:.875rem;">
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">PLZ</label>
+        <input id="pZip" type="text" placeholder="7000" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Ort</label>
+        <input id="pCity" type="text" placeholder="Chur" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:.875rem;">
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Telefon</label>
+        <input id="pPhone" type="tel" placeholder="+41 81 000 00 00" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Mobile</label>
+        <input id="pMobile" type="tel" placeholder="+41 79 000 00 00" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+      </div>
+    </div>
+
+    <div style="margin-bottom:1.5rem;">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">E-Mail</label>
+      <input id="pEmail" type="email" placeholder="max@muster.ch" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+    </div>
+
+    <div id="personSaveStatus" style="display:none;font-size:13px;color:var(--muted);margin-bottom:1rem;text-align:center;"></div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closePersonModal()">Abbrechen</button>
+      <button id="personSaveBtn" onclick="savePerson()" style="background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-size:14px;font-weight:700;cursor:pointer;">Speichern</button>
+    </div>
+  </div>
+</div>
 
 <!-- WIX SHOP SEITE -->
 <section id="page-wixshop" class="page-section">
@@ -633,6 +744,7 @@ function showPage(id){
   });
   renderAll();
   if(id==='auftraege') loadCashctrlOrders();
+  if(id==='kunden') loadKunden();
 }
 
 // ─── WIX SHOP ──────────────────────────────────────────────
@@ -741,13 +853,167 @@ function uploadWixProduct(){
   });
 }
 
-// ─── CASHCTRL INTEGRATION ──────────────────────────────
-var CASHCTRL_FN_URL = 'https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/cashctrl';
+// ─── KUNDEN ────────────────────────────────────────────────
+var CC_FN = 'https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/cashctrl';
+var allKunden = [];
+var currentPersonId = null;
+var isCompanyMode = true;
+
+function loadKunden(){
+  var el = document.getElementById('kundenList'); if(!el) return;
+  el.innerHTML='<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Lade Kunden...</p>';
+  fetch(CC_FN+'?action=persons')
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(res.error){el.innerHTML='<p style="color:var(--red);font-size:13px;">Fehler: '+JSON.stringify(res.error)+'</p>';return;}
+      allKunden = res.data||[];
+      renderKunden(allKunden);
+      // Kunden-Kachel auf Übersicht updaten
+      var tile = document.getElementById('kundenCount');
+      if(tile) tile.textContent = allKunden.length;
+    })
+    .catch(function(err){ el.innerHTML='<p style="color:var(--red);font-size:13px;">Fehler: '+err.message+'</p>'; });
+}
+
+function filterKunden(q){
+  if(!q){ renderKunden(allKunden); return; }
+  var lq = q.toLowerCase();
+  var filtered = allKunden.filter(function(k){
+    return (k.name+k.company+k.city+k.email+k.phone).toLowerCase().indexOf(lq)!==-1;
+  });
+  renderKunden(filtered);
+}
+
+function renderKunden(list){
+  var el = document.getElementById('kundenList'); if(!el) return;
+  if(!list.length){ el.innerHTML='<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Keine Kunden gefunden.</p>'; return; }
+  el.innerHTML='<div class="kunden-list">'+list.map(function(k){
+    var initials = k.isCompany
+      ? (k.company||'?').substring(0,2).toUpperCase()
+      : ((k.firstName||'?').charAt(0)+(k.lastName||'').charAt(0)).toUpperCase();
+    var mainName = k.isCompany ? (k.company||(k.firstName+' '+k.lastName).trim()) : (k.firstName+' '+k.lastName).trim()||k.name;
+    var subName = k.isCompany && (k.firstName||k.lastName) ? (k.firstName+' '+k.lastName).trim() : '';
+    var contact = [k.phone||k.mobile, k.city].filter(Boolean).join(' · ');
+    return '<div class="kunden-item" onclick="openPersonModal('+JSON.stringify(k)+')">'
+      +'<div class="kunden-avatar">'+initials+'</div>'
+      +'<div style="flex:1;min-width:0;">'
+        +'<div class="kunden-name">'+mainName+'</div>'
+        +(subName?'<div class="kunden-sub">'+subName+'</div>':'')
+        +(contact?'<div class="kunden-contact">'+contact+'</div>':'')
+      +'</div>'
+      +'<div style="font-size:18px;color:var(--hint);">›</div>'
+    +'</div>';
+  }).join('')+'</div>';
+}
+
+function setPersonType(isCompany){
+  isCompanyMode = isCompany;
+  var compBtn = document.getElementById('personTypeCompany');
+  var persBtn = document.getElementById('personTypePerson');
+  var compRow = document.getElementById('personCompanyRow');
+  if(isCompany){
+    compBtn.style.cssText='flex:1;padding:10px;border-radius:10px;border:2px solid var(--blue);background:rgba(59,130,246,.2);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);';
+    persBtn.style.cssText='flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);';
+    compRow.style.display='block';
+  } else {
+    persBtn.style.cssText='flex:1;padding:10px;border-radius:10px;border:2px solid var(--blue);background:rgba(59,130,246,.2);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);';
+    compBtn.style.cssText='flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);';
+    compRow.style.display='none';
+  }
+}
+
+function openPersonModal(person){
+  currentPersonId = null;
+  document.getElementById('personModalTitle').textContent = 'Neuer Kunde';
+  document.getElementById('pCompany').value='';
+  document.getElementById('pFirstName').value='';
+  document.getElementById('pLastName').value='';
+  document.getElementById('pAddress').value='';
+  document.getElementById('pZip').value='';
+  document.getElementById('pCity').value='';
+  document.getElementById('pPhone').value='';
+  document.getElementById('pMobile').value='';
+  document.getElementById('pEmail').value='';
+  document.getElementById('personSaveStatus').style.display='none';
+  document.getElementById('personSaveBtn').disabled=false;
+  setPersonType(true);
+
+  if(person && person.id){
+    currentPersonId = person.id;
+    document.getElementById('personModalTitle').textContent = 'Kunde bearbeiten';
+    setPersonType(!!person.isCompany);
+    document.getElementById('pCompany').value=person.company||'';
+    document.getElementById('pFirstName').value=person.firstName||'';
+    document.getElementById('pLastName').value=person.lastName||'';
+    document.getElementById('pAddress').value=person.address||'';
+    document.getElementById('pZip').value=person.zip||'';
+    document.getElementById('pCity').value=person.city||'';
+    document.getElementById('pPhone').value=person.phone||'';
+    document.getElementById('pMobile').value=person.mobile||'';
+    document.getElementById('pEmail').value=person.email||'';
+  }
+  document.getElementById('personModalOverlay').style.display='flex';
+}
+
+function closePersonModal(){
+  document.getElementById('personModalOverlay').style.display='none';
+}
+
+function savePerson(){
+  var btn = document.getElementById('personSaveBtn');
+  var status = document.getElementById('personSaveStatus');
+  btn.disabled=true;
+  status.style.display='block';
+  status.style.color='var(--muted)';
+  status.textContent='⏳ Wird gespeichert...';
+
+  var payload = {
+    isCompany: isCompanyMode,
+    company: document.getElementById('pCompany').value.trim(),
+    firstName: document.getElementById('pFirstName').value.trim(),
+    lastName: document.getElementById('pLastName').value.trim(),
+    address: document.getElementById('pAddress').value.trim(),
+    zip: document.getElementById('pZip').value.trim(),
+    city: document.getElementById('pCity').value.trim(),
+    phone: document.getElementById('pPhone').value.trim(),
+    mobile: document.getElementById('pMobile').value.trim(),
+    email: document.getElementById('pEmail').value.trim(),
+    country: 'CH'
+  };
+
+  var action = currentPersonId ? 'person-update' : 'person-create';
+  if(currentPersonId) payload.id = currentPersonId;
+
+  fetch(CC_FN+'?action='+action, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){return r.json();})
+  .then(function(res){
+    if(res.error){
+      status.style.color='var(--red)';
+      status.textContent='Fehler: '+JSON.stringify(res.error);
+      btn.disabled=false;
+      return;
+    }
+    status.style.color='var(--green)';
+    status.textContent = currentPersonId ? '✅ Kunde aktualisiert!' : '✅ Kunde erstellt!';
+    setTimeout(function(){ closePersonModal(); loadKunden(); }, 1200);
+  })
+  .catch(function(err){
+    status.style.color='var(--red)';
+    status.textContent='Fehler: '+err.message;
+    btn.disabled=false;
+  });
+}
+
+// ─── CASHCTRL AUFTRÄGE ──────────────────────────────────────
 
 function loadCashctrlOrders(){
   var el = document.getElementById('cashctrlOrdersList'); if(!el) return;
   el.innerHTML = '<p style="color:var(--hint);font-size:13px;">Lade Aufträge...</p>';
-  fetch(CASHCTRL_FN_URL + '?action=list')
+  fetch(CC_FN + '?action=orders')
     .then(function(r){ return r.json(); })
     .then(function(res){
       if(res.error){ el.innerHTML = '<p style="color:var(--red);font-size:13px;">Fehler: '+JSON.stringify(res.error)+'</p>'; return; }
@@ -779,7 +1045,7 @@ function cashctrlContinue(orderId, target){
   var buttons = container ? container.querySelectorAll('.cc-btn') : [];
   buttons.forEach(function(b){ b.disabled = true; });
 
-  fetch(CASHCTRL_FN_URL + '?action=continue', {
+  fetch(CC_FN + '?action=continue', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orderId: orderId, target: target })
@@ -1302,6 +1568,8 @@ var h=new Date().getHours();
 document.getElementById('greetingTitle').textContent=(h<12?'Guten Morgen':h<18?'Guten Tag':'Guten Abend')+'!';
 document.getElementById('dateBadge').textContent=new Date().toLocaleDateString('de-CH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 loadState();
+// Kunden beim Start im Hintergrund laden (für Übersichtskachel)
+setTimeout(function(){ loadKunden(); }, 500);
 document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
 
 // PWA: Service Worker registrieren (ermöglicht "Zum Homescreen hinzufügen")
