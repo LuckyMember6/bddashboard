@@ -876,19 +876,8 @@ var nextKundenNr = 14401;
 var ccMeta = { kundenCategoryId: null, kundeRoleId: null, lieferantRoleId: null };
 
 function initCcMeta(){
-  // Kategorie und Rollen werden nach erstem Test hardcoded
-  // Kategorien: person/category/list.json abrufen um IDs zu sehen
-  fetch(CC_FN+'?action=person-categories')
-    .then(function(r){return r.json();})
-    .then(function(res){
-      if(!res.data) return;
-      var cats = res.data.data || [];
-      cats.forEach(function(c){
-        var name = (typeof c.name === 'string' ? c.name : (c.name&&c.name.de)||'').toLowerCase();
-        if(name.indexOf('kunden')!==-1) ccMeta.kundenCategoryId = c.id;
-      });
-      console.log('ccMeta nach Kategorien:', JSON.stringify(ccMeta), 'Alle Kategorien:', JSON.stringify(cats.map(function(c){return {id:c.id,name:c.name};})));
-    }).catch(function(e){ console.log('Kategorien Fehler:', e.message); });
+  // categoryId=1 ist hardcoded in der Edge Function
+  ccMeta.kundenCategoryId = 1;
 }
 
 function loadKunden(){
