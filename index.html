@@ -338,6 +338,8 @@ body{
   <button class="nav-item active" onclick="showPage('overview')"><span class="nav-icon">⊞</span><span>Übersicht</span></button>
   <button class="nav-item" onclick="showPage('auftraege')"><span class="nav-icon">📋</span><span>Aufträge</span><span class="nav-badge" id="badge-auftraege">0</span></button>
   <button class="nav-item" onclick="showPage('offerten')"><span class="nav-icon">📄</span><span>Offerten</span><span class="nav-badge" id="badge-offerten">0</span></button>
+  <button class="nav-item" onclick="showPage('lieferscheine')"><span class="nav-icon">🚛</span><span>Lieferscheine</span><span class="nav-badge" id="badge-lieferscheine">0</span></button>
+  <button class="nav-item" onclick="showPage('rechnungen')"><span class="nav-icon">🧾</span><span>Rechnungen</span><span class="nav-badge" id="badge-rechnungen">0</span></button>
   <button class="nav-item" onclick="showPage('lieferungen')"><span class="nav-icon">🚚</span><span>Lieferungen</span><span class="nav-badge" id="badge-lieferungen">0</span></button>
   <button class="nav-item" onclick="showPage('aufgaben')"><span class="nav-icon">✅</span><span>Aufgaben</span><span class="nav-badge" id="badge-aufgaben">0</span></button>
   <button class="nav-item" onclick="showPage('lager')"><span class="nav-icon">📦</span><span>Lagerbestand</span></button>
@@ -430,19 +432,43 @@ body{
   </div>
 </section>
 
-<!-- LIEFERUNGEN -->
-<section id="page-lieferungen" class="page-section">
+<!-- LIEFERSCHEINE (CashCtrl) -->
+<section id="page-lieferscheine" class="page-section">
   <div class="page-header">
-    <div><div class="page-title">Lieferscheine</div><div class="page-sub" id="lieferungen-sub">Lieferscheine aus CashCtrl</div></div>
+    <div><div class="page-title">Lieferscheine</div><div class="page-sub" id="lieferscheine-sub">Lieferscheine aus CashCtrl</div></div>
   </div>
   <div class="card">
     <div class="card-header">
-      <input id="lieferungenSearch" type="text" placeholder="🔍 Suchen..." oninput="filterCcList('lieferungen', this.value)"
+      <input id="lieferscheineSearch" type="text" placeholder="🔍 Suchen..." oninput="filterCcList('lieferscheine', this.value)"
         style="flex:1;padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-size:14px;outline:none;font-family:var(--font);">
-      <button class="card-action" onclick="loadCcOrders('lieferungen', 6)">↻</button>
+      <button class="card-action" onclick="loadCcOrders('lieferscheine', 6)">↻</button>
     </div>
-    <div id="lieferungenList"></div>
+    <div id="lieferscheineList"></div>
   </div>
+</section>
+
+<!-- RECHNUNGEN (CashCtrl) -->
+<section id="page-rechnungen" class="page-section">
+  <div class="page-header">
+    <div><div class="page-title">Rechnungen</div><div class="page-sub" id="rechnungen-sub">Rechnungen aus CashCtrl</div></div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <input id="rechnungenSearch" type="text" placeholder="🔍 Suchen..." oninput="filterCcList('rechnungen', this.value)"
+        style="flex:1;padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-size:14px;outline:none;font-family:var(--font);">
+      <button class="card-action" onclick="loadCcOrders('rechnungen', 4)">↻</button>
+    </div>
+    <div id="rechnungenList"></div>
+  </div>
+</section>
+
+<!-- LIEFERUNGEN (lokal) -->
+<section id="page-lieferungen" class="page-section">
+  <div class="page-header">
+    <div><div class="page-title">Lieferungen</div><div class="page-sub">Anstehende Lieferungen</div></div>
+    <button class="btn-add" onclick="openModal('lieferung')">+ Neue Lieferung</button>
+  </div>
+  <div class="auftrag-grid" id="lieferungenList"></div>
 </section>
 
 <!-- AUFGABEN -->
@@ -819,7 +845,8 @@ function showPage(id){
   renderAll();
   if(id==='auftraege') loadCcOrders('auftraege', 3);
   if(id==='offerten') loadCcOrders('offerten', 2);
-  if(id==='lieferungen') loadCcOrders('lieferungen', 6);
+  if(id==='lieferscheine') loadCcOrders('lieferscheine', 6);
+  if(id==='rechnungen') loadCcOrders('rechnungen', 4);
   if(id==='kunden') loadKunden();
 }
 
@@ -1128,7 +1155,7 @@ function savePerson(){
 }
 
 // ─── CASHCTRL ORDERS (Offerten / Aufträge / Lieferscheine) ────
-var ccLists = { auftraege: [], offerten: [], lieferungen: [] };
+var ccLists = { auftraege: [], offerten: [], lieferscheine: [], rechnungen: [] };
 var currentOrderType = 'offerte';
 var currentOrderCatId = 2;
 var selectedKundeId = null;
@@ -1176,10 +1203,10 @@ function renderCcList(listKey, q){
     if(listKey === 'offerten'){
       actions = '<button class="cc-btn" onclick="ccContinueOrder('+o.id+',3)" title="Zu Auftrag">→ Auftrag</button>';
     } else if(listKey === 'auftraege'){
-      actions = '<button class="cc-btn" onclick="ccContinueOrder('+o.id+',6)" title="Zu Lieferschein">→ Lieferschein</button>'
-               +'<button class="cc-btn" onclick="ccContinueOrder('+o.id+',4)" title="Zu Rechnung">→ Rechnung</button>';
-    } else if(listKey === 'lieferungen'){
-      actions = '<button class="cc-btn" onclick="downloadCcPdf('+o.id+')" title="PDF">📄 PDF</button>';
+      actions = '<button class="cc-btn" onclick="ccContinueOrder('+o.id+',6)">→ Lieferschein</button>'
+               +'<button class="cc-btn" onclick="ccContinueOrder('+o.id+',4)">→ Rechnung</button>';
+    } else if(listKey === 'lieferscheine' || listKey === 'rechnungen'){
+      actions = '<button class="cc-btn" onclick="downloadCcPdf('+o.id+', this)">📄 PDF</button>';
     }
     return '<div class="cc-order" id="cc-order-'+o.id+'">'
       +'<div class="cc-order-body">'
@@ -1214,8 +1241,24 @@ function ccContinueOrder(orderId, targetCatId){
   .catch(function(err){ alert('Fehler: '+err.message); btns.forEach(function(b){ b.disabled=false; }); });
 }
 
-function downloadCcPdf(orderId){
-  alert('PDF-Download via CashCtrl:\nhttps://baertschdobalag.cashctrl.com/api/v1/order/document/read.pdf?id='+orderId+'\n\n(Direktlink – öffnet in neuem Tab nach Login)');
+function downloadCcPdf(orderId, btn){
+  if(btn) btn.disabled = true;
+  if(btn) btn.textContent = '⏳ PDF...';
+  fetch(CC_FN+'?action=order-pdf&id='+orderId)
+    .then(function(r){ return r.blob(); })
+    .then(function(blob){
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'dokument-'+orderId+'.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+      if(btn){ btn.disabled=false; btn.textContent='📄 PDF'; }
+    })
+    .catch(function(err){
+      alert('PDF-Fehler: '+err.message);
+      if(btn){ btn.disabled=false; btn.textContent='📄 PDF'; }
+    });
 }
 
 // ─── OFFERTE/AUFTRAG ERSTELLEN MODAL ──────────────────────────
