@@ -896,7 +896,7 @@ function loadKunden(){
       var sub = document.getElementById('kundenSubtitle');
       if(sub) sub.textContent = (res.total||allKunden.length)+' Kunden';
       // Nächste Kundennummer: nur Nummern im Bereich 14400-19999 berücksichtigen
-      var maxNr = 14400;
+      var maxNr = 14419;
       allKunden.forEach(function(k){
         var n = parseInt(k.nr);
         if(n >= 14420 && n < 19000 && n > maxNr) maxNr = n;
