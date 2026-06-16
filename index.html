@@ -1489,6 +1489,8 @@ async function attachSignedPdfToCashctrl(){
   btn.disabled=false;
   btn.textContent='📎 In CashCtrl anhängen';
 }
+
+async function sendSignedPdf(){
   var email = document.getElementById('signEmail').value.trim();
   if(!email){ alert('Bitte E-Mail-Adresse eingeben.'); return; }
   var btn = document.getElementById('signSendBtn');
