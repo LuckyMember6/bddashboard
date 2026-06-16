@@ -876,29 +876,19 @@ var nextKundenNr = 14401;
 var ccMeta = { kundenCategoryId: null, kundeRoleId: null, lieferantRoleId: null };
 
 function initCcMeta(){
-  // Kategorie "Kunden" laden
+  // Kategorie und Rollen werden nach erstem Test hardcoded
+  // Kategorien: person/category/list.json abrufen um IDs zu sehen
   fetch(CC_FN+'?action=person-categories')
     .then(function(r){return r.json();})
     .then(function(res){
       if(!res.data) return;
-      var cats = res.data.data || res.data || [];
+      var cats = res.data.data || [];
       cats.forEach(function(c){
-        var name = (c.name||'').toLowerCase();
-        if(name.indexOf('kunden')!==-1 || name.indexOf('kunde')!==-1) ccMeta.kundenCategoryId = c.id;
+        var name = (typeof c.name === 'string' ? c.name : (c.name&&c.name.de)||'').toLowerCase();
+        if(name.indexOf('kunden')!==-1) ccMeta.kundenCategoryId = c.id;
       });
-    }).catch(function(){});
-  // Rollen "Kunde" und "Lieferant" laden
-  fetch(CC_FN+'?action=person-roles')
-    .then(function(r){return r.json();})
-    .then(function(res){
-      if(!res.data) return;
-      var roles = res.data.data || res.data || [];
-      roles.forEach(function(r){
-        var name = (r.name||'').toLowerCase();
-        if(name==='kunde' || name==='customer') ccMeta.kundeRoleId = r.id;
-        if(name==='lieferant' || name==='supplier' || name==='vendor') ccMeta.lieferantRoleId = r.id;
-      });
-    }).catch(function(){});
+      console.log('ccMeta nach Kategorien:', JSON.stringify(ccMeta), 'Alle Kategorien:', JSON.stringify(cats.map(function(c){return {id:c.id,name:c.name};})));
+    }).catch(function(e){ console.log('Kategorien Fehler:', e.message); });
 }
 
 function loadKunden(){
