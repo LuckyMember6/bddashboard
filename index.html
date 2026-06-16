@@ -174,7 +174,7 @@ body{
 .task-check.checked{background:var(--blue);border-color:var(--blue);box-shadow:0 0 12px var(--blue-glow);}
 
 /* PAGE SECTIONS */
-.page-section{display:none;flex-direction:column;gap:1.5rem;max-width:1200px;width:100%;}
+.page-section{display:none;flex-direction:column;gap:1.5rem;max-width:1200px;width:100%;margin:0 auto;}
 .page-section.active{display:flex;}
 .page-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;}
 .page-title{font-size:32px;font-weight:800;color:#fff;}
@@ -485,11 +485,11 @@ body{
 
 <!-- KUNDEN -->
 <section id="page-kunden" class="page-section">
-  <div class="page-header" style="max-width:1200px;">
+  <div class="page-header">
     <div><div class="page-title">Kunden</div><div class="page-sub" id="kundenSubtitle">Lade...</div></div>
     <button class="btn-add" onclick="openPersonModal()">+ Neuer Kunde</button>
   </div>
-  <div class="card" style="max-width:1200px;">
+  <div class="card" style="width:100%;">
     <div class="card-header">
       <input id="kundenSearch" type="text" placeholder="🔍 Name, Firma, Ort, E-Mail suchen..." onInput="filterKunden(this.value)"
         style="flex:1;padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-size:14px;outline:none;font-family:var(--font);">
@@ -573,7 +573,7 @@ body{
 
 <!-- WIX SHOP SEITE -->
 <section id="page-wixshop" class="page-section">
-  <div class="page-header" style="max-width:560px;">
+  <div class="page-header">
     <div><div class="page-title">Wix Shop</div><div class="page-sub">Neues Produkt erfassen</div></div>
   </div>
   <div class="card" style="max-width:560px;">
@@ -873,6 +873,33 @@ var allKunden = [];
 var currentPersonId = null;
 var isCompanyMode = true;
 var nextKundenNr = 14401;
+var ccMeta = { kundenCategoryId: null, kundeRoleId: null, lieferantRoleId: null };
+
+function initCcMeta(){
+  // Kategorie "Kunden" laden
+  fetch(CC_FN+'?action=person-categories')
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(!res.data) return;
+      var cats = res.data.data || res.data || [];
+      cats.forEach(function(c){
+        var name = (c.name||'').toLowerCase();
+        if(name.indexOf('kunden')!==-1 || name.indexOf('kunde')!==-1) ccMeta.kundenCategoryId = c.id;
+      });
+    }).catch(function(){});
+  // Rollen "Kunde" und "Lieferant" laden
+  fetch(CC_FN+'?action=person-roles')
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(!res.data) return;
+      var roles = res.data.data || res.data || [];
+      roles.forEach(function(r){
+        var name = (r.name||'').toLowerCase();
+        if(name==='kunde' || name==='customer') ccMeta.kundeRoleId = r.id;
+        if(name==='lieferant' || name==='supplier' || name==='vendor') ccMeta.lieferantRoleId = r.id;
+      });
+    }).catch(function(){});
+}
 
 function loadKunden(){
   var el = document.getElementById('kundenList'); if(!el) return;
@@ -889,9 +916,12 @@ function loadKunden(){
       if(cnt) cnt.textContent = res.total || allKunden.length;
       var sub = document.getElementById('kundenSubtitle');
       if(sub) sub.textContent = (res.total||allKunden.length)+' Kunden';
-      // Nächste Kundennummer berechnen
+      // Nächste Kundennummer: nur Nummern im Bereich 14400-19999 berücksichtigen
       var maxNr = 14400;
-      allKunden.forEach(function(k){ if(k.nr && parseInt(k.nr)>maxNr) maxNr=parseInt(k.nr); });
+      allKunden.forEach(function(k){
+        var n = parseInt(k.nr);
+        if(n >= 14400 && n < 20000 && n > maxNr) maxNr = n;
+      });
       nextKundenNr = maxNr + 1;
       renderKundenPreview(allKunden.slice(0,5));
     })
@@ -1024,7 +1054,9 @@ function savePerson(){
     phone: document.getElementById('pPhone').value.trim(),
     mobile: document.getElementById('pMobile').value.trim(),
     email: document.getElementById('pEmail').value.trim(),
-    country: 'CH'
+    country: 'CH',
+    categoryId: ccMeta.kundenCategoryId || null,
+    roleIds: [ccMeta.kundeRoleId, ccMeta.lieferantRoleId].filter(Boolean)
   };
 
   var action = currentPersonId ? 'person-update' : 'person-create';
@@ -1614,8 +1646,8 @@ var h=new Date().getHours();
 document.getElementById('greetingTitle').textContent=(h<12?'Guten Morgen':h<18?'Guten Tag':'Guten Abend')+'!';
 document.getElementById('dateBadge').textContent=new Date().toLocaleDateString('de-CH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 loadState();
-// Kunden beim Start im Hintergrund laden (für Übersichtskachel)
-setTimeout(function(){ loadKunden(); }, 500);
+// Kunden und CashCtrl Meta beim Start laden
+setTimeout(function(){ loadKunden(); initCcMeta(); }, 500);
 document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
 
 // PWA: Service Worker registrieren (ermöglicht "Zum Homescreen hinzufügen")
