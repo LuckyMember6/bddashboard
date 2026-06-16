@@ -286,24 +286,19 @@ body{
 .pdf-download{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:var(--font);flex-shrink:0;}
 
 /* KUNDEN */
-.kunden-list{display:flex;flex-direction:column;gap:0;}
+.kunden-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+@media(max-width:1100px){.kunden-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:750px){.kunden-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:480px){.kunden-grid{grid-template-columns:1fr;}}
 .kunden-item{
-  display:flex;align-items:center;gap:14px;padding:12px 6px;
-  border-bottom:1px solid var(--glass-brd);cursor:pointer;
-  transition:background .15s;border-radius:8px;
+  padding:14px;border-radius:14px;cursor:pointer;
+  background:var(--glass);border:1px solid var(--glass-brd);
+  transition:all .18s;
 }
-.kunden-item:hover{background:rgba(255,255,255,.04);}
-.kunden-item:last-child{border-bottom:none;}
-.kunden-avatar{
-  width:42px;height:42px;border-radius:12px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  font-size:18px;font-weight:700;
-  background:linear-gradient(135deg,rgba(59,130,246,.3),rgba(99,102,241,.2));
-  border:1px solid rgba(96,165,250,.3);color:#fff;
-}
-.kunden-name{font-size:14px;font-weight:600;color:var(--text);}
-.kunden-sub{font-size:12px;color:var(--muted);margin-top:2px;}
-.kunden-contact{font-size:12px;color:var(--hint);margin-top:1px;}
+.kunden-item:hover{background:rgba(255,255,255,.09);border-color:rgba(96,165,250,.4);transform:translateY(-2px);}
+.kunden-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.kunden-sub{font-size:12px;color:var(--muted);margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.kunden-contact{font-size:11px;color:var(--hint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
 /* CASHCTRL ORDERS */
 .cc-order{
@@ -367,12 +362,25 @@ body{
 <section id="page-overview" class="page-section active">
   <div class="metrics" id="metricCards"></div>
 
-  <!-- Kunden-Kachel -->
-  <div class="metric" onclick="showPage('kunden')" style="cursor:pointer;background:linear-gradient(135deg,rgba(99,102,241,.25),rgba(59,130,246,.15));border:1px solid rgba(99,102,241,.4);">
-    <div class="metric-icon">👥</div>
-    <div class="metric-val" id="kundenCount">–</div>
-    <div class="metric-label">Kunden</div>
-    <div class="metric-list" id="kundenPreview"></div>
+  <!-- Kunden-Widget -->
+  <div class="card" style="max-width:100%;">
+    <div class="card-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:22px;">👥</span>
+        <div>
+          <div class="card-title" style="margin:0;">Kunden</div>
+          <div style="font-size:12px;color:var(--hint);"><span id="kundenCount">–</span> Einträge</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button onclick="openPersonModal()" title="Neuer Kunde"
+          style="background:linear-gradient(135deg,#3b82f6,#6366f1);border:none;border-radius:10px;color:#fff;width:34px;height:34px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>
+        <button class="card-action" onclick="showPage('kunden')">Alle anzeigen</button>
+      </div>
+    </div>
+    <input id="kundenSearchHome" type="text" placeholder="🔍 Kunden suchen..." onInput="filterKundenHome(this.value)"
+      style="width:100%;padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-size:13px;outline:none;font-family:var(--font);margin-bottom:10px;box-sizing:border-box;">
+    <div id="kundenPreview"></div>
   </div>
   <div class="card">
     <div class="card-header"><div class="card-title">Lagerbestand</div><button class="card-action" onclick="showPage('lager')">Zum Lager</button></div>
@@ -477,13 +485,13 @@ body{
 
 <!-- KUNDEN -->
 <section id="page-kunden" class="page-section">
-  <div class="page-header">
-    <div><div class="page-title">Kunden</div><div class="page-sub">Kundenstamm aus CashCtrl</div></div>
+  <div class="page-header" style="max-width:1200px;">
+    <div><div class="page-title">Kunden</div><div class="page-sub" id="kundenSubtitle">Lade...</div></div>
     <button class="btn-add" onclick="openPersonModal()">+ Neuer Kunde</button>
   </div>
-  <div class="card">
+  <div class="card" style="max-width:1200px;">
     <div class="card-header">
-      <input id="kundenSearch" type="text" placeholder="🔍 Name, Firma, Ort suchen..." onInput="filterKunden(this.value)"
+      <input id="kundenSearch" type="text" placeholder="🔍 Name, Firma, Ort, E-Mail suchen..." onInput="filterKunden(this.value)"
         style="flex:1;padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-size:14px;outline:none;font-family:var(--font);">
       <button class="card-action" onclick="loadKunden()">↻</button>
     </div>
@@ -495,6 +503,12 @@ body{
 <div class="overlay" id="personModalOverlay" style="display:none;" onclick="closePersonModal()">
   <div class="modal" onclick="event.stopPropagation()" style="max-width:560px;max-height:90vh;overflow-y:auto;">
     <h3 id="personModalTitle">Neuer Kunde</h3>
+
+    <div style="margin-bottom:1rem;">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Kundennummer</label>
+      <input id="pNr" type="number" placeholder="wird automatisch gesetzt" readonly
+        style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--muted);font-size:14px;outline:none;box-sizing:border-box;">
+    </div>
 
     <div style="display:flex;gap:10px;margin-bottom:1.25rem;">
       <button id="personTypeCompany" onclick="setPersonType(true)" style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--blue);background:rgba(59,130,246,.2);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">🏢 Firma</button>
@@ -559,10 +573,10 @@ body{
 
 <!-- WIX SHOP SEITE -->
 <section id="page-wixshop" class="page-section">
-  <div class="page-header">
+  <div class="page-header" style="max-width:560px;">
     <div><div class="page-title">Wix Shop</div><div class="page-sub">Neues Produkt erfassen</div></div>
   </div>
-  <div class="card" style="max-width:520px;">
+  <div class="card" style="max-width:560px;">
     <div class="card-title" style="margin-bottom:1.25rem;">Produkt hochladen</div>
 
     <div style="margin-bottom:1rem;">
@@ -858,6 +872,7 @@ var CC_FN = 'https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/cashctrl';
 var allKunden = [];
 var currentPersonId = null;
 var isCompanyMode = true;
+var nextKundenNr = 14401;
 
 function loadKunden(){
   var el = document.getElementById('kundenList'); if(!el) return;
@@ -867,10 +882,18 @@ function loadKunden(){
     .then(function(res){
       if(res.error){el.innerHTML='<p style="color:var(--red);font-size:13px;">Fehler: '+JSON.stringify(res.error)+'</p>';return;}
       allKunden = res.data||[];
+      // Alphabetisch sortieren
+      allKunden.sort(function(a,b){ return (a.name||a.company||'').localeCompare(b.name||b.company||'','de'); });
       renderKunden(allKunden);
-      // Kunden-Kachel auf Übersicht updaten
-      var tile = document.getElementById('kundenCount');
-      if(tile) tile.textContent = allKunden.length;
+      var cnt = document.getElementById('kundenCount');
+      if(cnt) cnt.textContent = res.total || allKunden.length;
+      var sub = document.getElementById('kundenSubtitle');
+      if(sub) sub.textContent = (res.total||allKunden.length)+' Kunden';
+      // Nächste Kundennummer berechnen
+      var maxNr = 14400;
+      allKunden.forEach(function(k){ if(k.nr && parseInt(k.nr)>maxNr) maxNr=parseInt(k.nr); });
+      nextKundenNr = maxNr + 1;
+      renderKundenPreview(allKunden.slice(0,5));
     })
     .catch(function(err){ el.innerHTML='<p style="color:var(--red);font-size:13px;">Fehler: '+err.message+'</p>'; });
 }
@@ -879,29 +902,46 @@ function filterKunden(q){
   if(!q){ renderKunden(allKunden); return; }
   var lq = q.toLowerCase();
   var filtered = allKunden.filter(function(k){
-    return (k.name+k.company+k.city+k.email+k.phone).toLowerCase().indexOf(lq)!==-1;
+    return (k.name+k.company+k.city+k.email+k.phone+k.zip).toLowerCase().indexOf(lq)!==-1;
   });
   renderKunden(filtered);
+}
+
+function filterKundenHome(q){
+  var el = document.getElementById('kundenPreview'); if(!el) return;
+  if(!q){ renderKundenPreview(allKunden.slice(0,5)); return; }
+  var lq = q.toLowerCase();
+  var filtered = allKunden.filter(function(k){
+    return (k.name+k.company+k.city+k.email+k.phone).toLowerCase().indexOf(lq)!==-1;
+  });
+  renderKundenPreview(filtered.slice(0,8));
+}
+
+function renderKundenPreview(list){
+  var el = document.getElementById('kundenPreview'); if(!el) return;
+  if(!list||!list.length){ el.innerHTML='<p style="color:var(--hint);font-size:13px;">Keine Treffer.</p>'; return; }
+  el.innerHTML = list.map(function(k){
+    var mainName = k.isCompany ? (k.company||(k.firstName+' '+k.lastName).trim()) : (k.firstName+' '+k.lastName).trim()||k.name;
+    var sub = k.isCompany && (k.firstName||k.lastName) ? (k.firstName+' '+k.lastName).trim() : (k.city||'');
+    return '<div onclick="openPersonModal('+JSON.stringify(k)+')" style="display:flex;justify-content:space-between;align-items:center;padding:7px 4px;border-bottom:1px solid var(--glass-brd);cursor:pointer;" onmouseover="this.style.background=\'rgba(255,255,255,.04)\'" onmouseout="this.style.background=\'\'">'
+      +'<div><div style="font-size:13px;font-weight:600;">'+mainName+'</div>'+(sub?'<div style="font-size:11px;color:var(--hint);">'+sub+'</div>':'')+'</div>'
+      +'<div style="font-size:16px;color:var(--hint);">›</div></div>';
+  }).join('');
 }
 
 function renderKunden(list){
   var el = document.getElementById('kundenList'); if(!el) return;
   if(!list.length){ el.innerHTML='<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Keine Kunden gefunden.</p>'; return; }
-  el.innerHTML='<div class="kunden-list">'+list.map(function(k){
-    var initials = k.isCompany
-      ? (k.company||'?').substring(0,2).toUpperCase()
-      : ((k.firstName||'?').charAt(0)+(k.lastName||'').charAt(0)).toUpperCase();
+  el.innerHTML='<div class="kunden-grid">'+list.map(function(k){
     var mainName = k.isCompany ? (k.company||(k.firstName+' '+k.lastName).trim()) : (k.firstName+' '+k.lastName).trim()||k.name;
     var subName = k.isCompany && (k.firstName||k.lastName) ? (k.firstName+' '+k.lastName).trim() : '';
-    var contact = [k.phone||k.mobile, k.city].filter(Boolean).join(' · ');
+    var contact = [k.phone||k.mobile, k.email].filter(Boolean).join(' · ');
+    var loc = [k.zip, k.city].filter(Boolean).join(' ');
     return '<div class="kunden-item" onclick="openPersonModal('+JSON.stringify(k)+')">'
-      +'<div class="kunden-avatar">'+initials+'</div>'
-      +'<div style="flex:1;min-width:0;">'
-        +'<div class="kunden-name">'+mainName+'</div>'
-        +(subName?'<div class="kunden-sub">'+subName+'</div>':'')
-        +(contact?'<div class="kunden-contact">'+contact+'</div>':'')
-      +'</div>'
-      +'<div style="font-size:18px;color:var(--hint);">›</div>'
+      +'<div class="kunden-name">'+mainName+'</div>'
+      +(subName?'<div class="kunden-sub">'+subName+'</div>':'')
+      +(loc?'<div class="kunden-sub">📍 '+loc+'</div>':'')
+      +(contact?'<div class="kunden-contact">'+contact+'</div>':'')
     +'</div>';
   }).join('')+'</div>';
 }
@@ -925,6 +965,8 @@ function setPersonType(isCompany){
 function openPersonModal(person){
   currentPersonId = null;
   document.getElementById('personModalTitle').textContent = 'Neuer Kunde';
+  document.getElementById('pNr').value = nextKundenNr;
+  document.getElementById('pNr').readOnly = true;
   document.getElementById('pCompany').value='';
   document.getElementById('pFirstName').value='';
   document.getElementById('pLastName').value='';
@@ -941,6 +983,7 @@ function openPersonModal(person){
   if(person && person.id){
     currentPersonId = person.id;
     document.getElementById('personModalTitle').textContent = 'Kunde bearbeiten';
+    document.getElementById('pNr').value = person.nr || '';
     setPersonType(!!person.isCompany);
     document.getElementById('pCompany').value=person.company||'';
     document.getElementById('pFirstName').value=person.firstName||'';
@@ -969,6 +1012,7 @@ function savePerson(){
 
   var payload = {
     isCompany: isCompanyMode,
+    nr: document.getElementById('pNr').value.trim(),
     company: document.getElementById('pCompany').value.trim(),
     firstName: document.getElementById('pFirstName').value.trim(),
     lastName: document.getElementById('pLastName').value.trim(),
