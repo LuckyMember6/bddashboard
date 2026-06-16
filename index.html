@@ -1255,6 +1255,7 @@ function renderCcList(listKey, q){
     } else if(listKey === 'rechnungen'){
       actions = '<button class="cc-btn" onclick="downloadCcPdf('+o.id+', this)">📄 PDF</button>';
     }
+    return '<div class="cc-order" id="cc-order-'+o.id+'">'
       +'<div class="cc-order-body">'
         +'<div class="cc-order-title">'+(o.nr||'#'+o.id)+' — '+(o.associateName||'–')+'</div>'
         +'<div class="cc-order-meta">'
@@ -1282,7 +1283,7 @@ function ccContinueOrder(orderId, targetCatId){
   .then(function(res){
     if(res.error){ alert('Fehler: '+JSON.stringify(res.error)); btns.forEach(function(b){ b.disabled=false; }); return; }
     alert(label+' erfolgreich erstellt!');
-    loadCcOrders('auftraege',3); loadCcOrders('offerten',2); loadCcOrders('lieferungen',6);
+    loadCcOrders('auftraege',3); loadCcOrders('offerten',2); loadCcOrders('lieferscheine',6); loadCcOrders('rechnungen',4);
   })
   .catch(function(err){ alert('Fehler: '+err.message); btns.forEach(function(b){ b.disabled=false; }); });
 }
