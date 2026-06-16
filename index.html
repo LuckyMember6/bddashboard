@@ -1386,7 +1386,11 @@ async function buildSignedPdf(){
   var { width, height } = lastPage.getSize();
 
   // Unterschrift als PNG einbetten
-  var sigImage = await pdfDoc.embedPng(Uint8Array.from(atob(sigBase64), function(c){ return c.charCodeAt(0); }));
+  var sigBase64Clean = sigBase64.replace(/\s/g, '');
+  var sigBinary = atob(sigBase64Clean);
+  var sigBytes = new Uint8Array(sigBinary.length);
+  for(var i=0; i<sigBinary.length; i++) sigBytes[i] = sigBinary.charCodeAt(i);
+  var sigImage = await pdfDoc.embedPng(sigBytes);
   var sigDims = sigImage.scale(0.4);
 
   // Unterschrift unten rechts platzieren (60x30mm Bereich)
@@ -1457,8 +1461,14 @@ async function sendSignedPdf(){
   try {
     var pdfBytes = await buildSignedPdf();
     if(!pdfBytes){ btn.disabled=false; status.style.display='none'; return; }
-    // PDF als Base64 an Edge Function
-    var b64 = btoa(String.fromCharCode.apply(null, new Uint8Array(pdfBytes)));
+    // PDF als Base64 an Edge Function - chunk-basiert für grosse PDFs
+    var pdfArr = new Uint8Array(pdfBytes);
+    var b64 = '';
+    var chunkSize = 8192;
+    for(var i = 0; i < pdfArr.length; i += chunkSize){
+      b64 += String.fromCharCode.apply(null, pdfArr.subarray(i, i + chunkSize));
+    }
+    b64 = btoa(b64);
     var res = await fetch(CC_FN+'?action=send-pdf', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
