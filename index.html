@@ -401,36 +401,48 @@ body{
 <!-- AUFTRÄGE -->
 <section id="page-auftraege" class="page-section">
   <div class="page-header">
-    <div><div class="page-title">Aufträge</div><div class="page-sub">Laufende Kundenaufträge</div></div>
-    <button class="btn-add" onclick="openModal('auftrag')">+ Neuer Auftrag</button>
+    <div><div class="page-title">Aufträge</div><div class="page-sub" id="auftraege-sub">Auftragsbestätigungen aus CashCtrl</div></div>
+    <button class="btn-add" onclick="openOrderModal('auftrag')">+ Neuer Auftrag</button>
   </div>
-  <div class="auftrag-grid" id="auftraegeList"></div>
-
   <div class="card">
     <div class="card-header">
-      <div class="card-title">CashCtrl Aufträge</div>
-      <button class="card-action" onclick="loadCashctrlOrders()">↻ Aktualisieren</button>
+      <input id="auftraegeSearch" type="text" placeholder="🔍 Suchen..." oninput="filterCcList('auftraege', this.value)"
+        style="flex:1;padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-size:14px;outline:none;font-family:var(--font);">
+      <button class="card-action" onclick="loadCcOrders('auftraege', 3)">↻</button>
     </div>
-    <div id="cashctrlOrdersList"></div>
+    <div id="auftraegeList"></div>
   </div>
 </section>
 
 <!-- OFFERTEN -->
 <section id="page-offerten" class="page-section">
   <div class="page-header">
-    <div><div class="page-title">Offerten</div><div class="page-sub">Offene Angebote</div></div>
-    <button class="btn-add" onclick="openModal('offerte')">+ Neue Offerte</button>
+    <div><div class="page-title">Offerten</div><div class="page-sub" id="offerten-sub">Angebote aus CashCtrl</div></div>
+    <button class="btn-add" onclick="openOrderModal('offerte')">+ Neue Offerte</button>
   </div>
-  <div class="auftrag-grid" id="offertenList"></div>
+  <div class="card">
+    <div class="card-header">
+      <input id="offertenSearch" type="text" placeholder="🔍 Suchen..." oninput="filterCcList('offerten', this.value)"
+        style="flex:1;padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-size:14px;outline:none;font-family:var(--font);">
+      <button class="card-action" onclick="loadCcOrders('offerten', 2)">↻</button>
+    </div>
+    <div id="offertenList"></div>
+  </div>
 </section>
 
 <!-- LIEFERUNGEN -->
 <section id="page-lieferungen" class="page-section">
   <div class="page-header">
-    <div><div class="page-title">Lieferungen</div><div class="page-sub">Anstehende Lieferungen</div></div>
-    <button class="btn-add" onclick="openModal('lieferung')">+ Neue Lieferung</button>
+    <div><div class="page-title">Lieferscheine</div><div class="page-sub" id="lieferungen-sub">Lieferscheine aus CashCtrl</div></div>
   </div>
-  <div class="auftrag-grid" id="lieferungenList"></div>
+  <div class="card">
+    <div class="card-header">
+      <input id="lieferungenSearch" type="text" placeholder="🔍 Suchen..." oninput="filterCcList('lieferungen', this.value)"
+        style="flex:1;padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-size:14px;outline:none;font-family:var(--font);">
+      <button class="card-action" onclick="loadCcOrders('lieferungen', 6)">↻</button>
+    </div>
+    <div id="lieferungenList"></div>
+  </div>
 </section>
 
 <!-- AUFGABEN -->
@@ -498,6 +510,54 @@ body{
     <div id="kundenList"><p style="color:var(--hint);font-size:13px;padding:1rem 0;">Lade Kunden...</p></div>
   </div>
 </section>
+
+<!-- OFFERTE / AUFTRAG MODAL -->
+<div class="overlay" id="orderModalOverlay" style="display:none;">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:640px;max-height:92vh;overflow-y:auto;">
+    <h3 id="orderModalTitle">Neue Offerte</h3>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:.875rem;">
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Datum *</label>
+        <input id="oDate" type="date" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Beschreibung</label>
+        <input id="oDesc" type="text" placeholder="z.B. Büromöbel Umbau" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+      </div>
+    </div>
+
+    <div style="margin-bottom:.875rem;">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Kunde *</label>
+      <input id="oKundeSearch" type="text" placeholder="Name oder Firma suchen..." oninput="searchOrderKunde(this.value)"
+        style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+      <div id="oKundeResults" style="background:rgba(15,25,65,.97);border:1px solid var(--border);border-radius:8px;margin-top:4px;display:none;max-height:160px;overflow-y:auto;"></div>
+      <div id="oKundeSelected" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(59,130,246,.15);border:1px solid rgba(96,165,250,.4);border-radius:8px;font-size:13px;color:#fff;"></div>
+      <input type="hidden" id="oKundeId">
+    </div>
+
+    <!-- POSITIONEN -->
+    <div style="margin-bottom:.875rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <label style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Positionen *</label>
+        <button onclick="addOrderPosition()" style="background:rgba(59,130,246,.2);border:1px solid rgba(96,165,250,.4);border-radius:8px;padding:5px 12px;font-size:12px;color:#fff;cursor:pointer;font-family:var(--font);">+ Position</button>
+      </div>
+      <div id="oPositionen" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
+    <!-- TOTAL -->
+    <div style="text-align:right;margin-bottom:1.25rem;padding:10px 12px;background:rgba(255,255,255,.04);border-radius:8px;">
+      <span style="font-size:13px;color:var(--muted);">Total exkl. MwSt.: </span>
+      <span id="oTotal" style="font-size:18px;font-weight:800;color:#fff;">CHF 0.00</span>
+    </div>
+
+    <div id="orderSaveStatus" style="display:none;font-size:13px;color:var(--muted);margin-bottom:1rem;text-align:center;padding:10px;background:rgba(255,255,255,.05);border-radius:8px;"></div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeOrderModal()">Abbrechen</button>
+      <button id="orderSaveBtn" onclick="saveOrder()" style="background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-size:14px;font-weight:700;cursor:pointer;">Erstellen in CashCtrl</button>
+    </div>
+  </div>
+</div>
 
 <!-- KUNDEN DETAIL / EDIT MODAL -->
 <div class="overlay" id="personModalOverlay" style="display:none;">
@@ -757,7 +817,9 @@ function showPage(id){
     if(el.getAttribute('onclick')&&el.getAttribute('onclick').indexOf("'"+id+"'")!==-1)el.classList.add('active');
   });
   renderAll();
-  if(id==='auftraege') loadCashctrlOrders();
+  if(id==='auftraege') loadCcOrders('auftraege', 3);
+  if(id==='offerten') loadCcOrders('offerten', 2);
+  if(id==='lieferungen') loadCcOrders('lieferungen', 6);
   if(id==='kunden') loadKunden();
 }
 
@@ -1065,7 +1127,236 @@ function savePerson(){
   });
 }
 
-// ─── CASHCTRL AUFTRÄGE ──────────────────────────────────────
+// ─── CASHCTRL ORDERS (Offerten / Aufträge / Lieferscheine) ────
+var ccLists = { auftraege: [], offerten: [], lieferungen: [] };
+var currentOrderType = 'offerte';
+var currentOrderCatId = 2;
+var selectedKundeId = null;
+var orderPositionen = [];
+
+var CC_CAT = { offerte: 2, auftrag: 3, lieferschein: 6, rechnung: 4 };
+var CC_CAT_NAME = { 2: 'Offerte', 3: 'Auftrag', 6: 'Lieferschein', 4: 'Rechnung' };
+
+function loadCcOrders(listKey, catId){
+  var el = document.getElementById(listKey+'List'); if(!el) return;
+  el.innerHTML = '<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Lade...</p>';
+  fetch(CC_FN+'?action=orders&categoryId='+catId)
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(res.error){ el.innerHTML='<p style="color:var(--red);font-size:13px;">Fehler: '+JSON.stringify(res.error)+'</p>'; return; }
+      ccLists[listKey] = res.data || [];
+      var sub = document.getElementById(listKey+'-sub');
+      if(sub) sub.textContent = ccLists[listKey].length + ' ' + CC_CAT_NAME[catId] + (ccLists[listKey].length!==1?'en':'');
+      renderCcList(listKey);
+      // Badge updaten
+      var badge = document.getElementById('badge-'+listKey);
+      var open = ccLists[listKey].filter(function(o){ return !o.isClosed; });
+      if(badge) badge.textContent = open.length;
+    })
+    .catch(function(err){ el.innerHTML='<p style="color:var(--red);font-size:13px;">Fehler: '+err.message+'</p>'; });
+}
+
+function filterCcList(listKey, q){
+  renderCcList(listKey, q);
+}
+
+function renderCcList(listKey, q){
+  var el = document.getElementById(listKey+'List'); if(!el) return;
+  var list = ccLists[listKey] || [];
+  if(q){
+    var lq = q.toLowerCase();
+    list = list.filter(function(o){ return (o.nr+o.associateName+o.description+o.statusName).toLowerCase().indexOf(lq)!==-1; });
+  }
+  if(!list.length){ el.innerHTML='<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Keine Einträge.</p>'; return; }
+
+  el.innerHTML = list.map(function(o){
+    var statusCol = o.isClosed ? '#22c55e' : '#3b82f6';
+    var total = o.total != null ? 'CHF '+Number(o.total).toLocaleString('de-CH',{minimumFractionDigits:2}) : '';
+    var actions = '';
+    if(listKey === 'offerten'){
+      actions = '<button class="cc-btn" onclick="ccContinueOrder('+o.id+',3)" title="Zu Auftrag">→ Auftrag</button>';
+    } else if(listKey === 'auftraege'){
+      actions = '<button class="cc-btn" onclick="ccContinueOrder('+o.id+',6)" title="Zu Lieferschein">→ Lieferschein</button>'
+               +'<button class="cc-btn" onclick="ccContinueOrder('+o.id+',4)" title="Zu Rechnung">→ Rechnung</button>';
+    } else if(listKey === 'lieferungen'){
+      actions = '<button class="cc-btn" onclick="downloadCcPdf('+o.id+')" title="PDF">📄 PDF</button>';
+    }
+    return '<div class="cc-order" id="cc-order-'+o.id+'">'
+      +'<div class="cc-order-body">'
+        +'<div class="cc-order-title">'+(o.nr||'#'+o.id)+' — '+(o.associateName||'–')+'</div>'
+        +'<div class="cc-order-meta">'
+          +(o.date ? o.date.substring(0,10)+' · ' : '')
+          +(o.description ? o.description+' · ' : '')
+          +(total ? total+' · ' : '')
+          +'<span style="color:'+statusCol+';">'+o.statusName+'</span>'
+        +'</div>'
+      +'</div>'
+      +'<div class="cc-order-actions">'+actions+'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function ccContinueOrder(orderId, targetCatId){
+  var label = CC_CAT_NAME[targetCatId];
+  if(!confirm(label+' aus diesem Dokument erstellen?')) return;
+  var btns = document.querySelectorAll('#cc-order-'+orderId+' .cc-btn');
+  btns.forEach(function(b){ b.disabled=true; });
+  fetch(CC_FN+'?action=continue', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ orderId: orderId, target: targetCatId===6?'lieferschein':'rechnung' })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res){
+    if(res.error){ alert('Fehler: '+JSON.stringify(res.error)); btns.forEach(function(b){ b.disabled=false; }); return; }
+    alert(label+' erfolgreich erstellt!');
+    loadCcOrders('auftraege',3); loadCcOrders('offerten',2); loadCcOrders('lieferungen',6);
+  })
+  .catch(function(err){ alert('Fehler: '+err.message); btns.forEach(function(b){ b.disabled=false; }); });
+}
+
+function downloadCcPdf(orderId){
+  alert('PDF-Download via CashCtrl:\nhttps://baertschdobalag.cashctrl.com/api/v1/order/document/read.pdf?id='+orderId+'\n\n(Direktlink – öffnet in neuem Tab nach Login)');
+}
+
+// ─── OFFERTE/AUFTRAG ERSTELLEN MODAL ──────────────────────────
+function openOrderModal(type){
+  currentOrderType = type;
+  currentOrderCatId = CC_CAT[type];
+  selectedKundeId = null;
+  orderPositionen = [];
+  document.getElementById('orderModalTitle').textContent = 'Neue '+(type==='offerte'?'Offerte':'Auftragsbestätigung');
+  document.getElementById('oDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('oDesc').value = '';
+  document.getElementById('oKundeSearch').value = '';
+  document.getElementById('oKundeId').value = '';
+  document.getElementById('oKundeSelected').style.display = 'none';
+  document.getElementById('oKundeResults').style.display = 'none';
+  document.getElementById('orderSaveStatus').style.display = 'none';
+  document.getElementById('orderSaveBtn').disabled = false;
+  renderOrderPositionen();
+  addOrderPosition();
+  document.getElementById('orderModalOverlay').style.display = 'flex';
+}
+
+function closeOrderModal(){
+  document.getElementById('orderModalOverlay').style.display = 'none';
+}
+
+function searchOrderKunde(q){
+  var el = document.getElementById('oKundeResults');
+  if(!q){ el.style.display='none'; return; }
+  var lq = q.toLowerCase();
+  var hits = allKunden.filter(function(k){
+    return (k.name+k.company+k.city).toLowerCase().indexOf(lq)!==-1;
+  }).slice(0,8);
+  if(!hits.length){ el.style.display='none'; return; }
+  el.innerHTML = hits.map(function(k){
+    var idx = allKunden.indexOf(k);
+    var name = k.isCompany ? (k.company||k.name) : (k.firstName+' '+k.lastName).trim()||k.name;
+    return '<div onclick="selectOrderKunde('+idx+')" style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--glass-brd);" onmouseover="this.style.background=\'rgba(255,255,255,.06)\'" onmouseout="this.style.background=\'\'">'
+      +'<div style="font-weight:600;">'+name+'</div>'
+      +(k.city?'<div style="font-size:11px;color:var(--hint);">'+k.zip+' '+k.city+'</div>':'')
+    +'</div>';
+  }).join('');
+  el.style.display = 'block';
+}
+
+function selectOrderKunde(idx){
+  var k = allKunden[idx];
+  selectedKundeId = k.id;
+  document.getElementById('oKundeId').value = k.id;
+  var name = k.isCompany ? (k.company||k.name) : (k.firstName+' '+k.lastName).trim()||k.name;
+  document.getElementById('oKundeSearch').value = name;
+  document.getElementById('oKundeSelected').textContent = '✓ '+name+(k.city?' · '+k.city:'');
+  document.getElementById('oKundeSelected').style.display = 'block';
+  document.getElementById('oKundeResults').style.display = 'none';
+}
+
+function addOrderPosition(){
+  orderPositionen.push({ name:'', qty:1, price:0 });
+  renderOrderPositionen();
+}
+
+function removeOrderPosition(i){
+  orderPositionen.splice(i,1);
+  renderOrderPositionen();
+}
+
+function updateOrderPosition(i, field, val){
+  orderPositionen[i][field] = field==='qty'||field==='price' ? parseFloat(val)||0 : val;
+  updateOrderTotal();
+}
+
+function updateOrderTotal(){
+  var total = orderPositionen.reduce(function(sum,p){ return sum + (p.qty||0)*(p.price||0); }, 0);
+  document.getElementById('oTotal').textContent = 'CHF '+total.toLocaleString('de-CH',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function renderOrderPositionen(){
+  var el = document.getElementById('oPositionen'); if(!el) return;
+  el.innerHTML = orderPositionen.map(function(p,i){
+    return '<div style="display:grid;grid-template-columns:1fr 80px 100px 36px;gap:6px;align-items:center;">'
+      +'<input type="text" placeholder="Beschreibung" value="'+p.name+'" oninput="updateOrderPosition('+i+',\'name\',this.value)"'
+        +' style="padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:13px;outline:none;">'
+      +'<input type="number" placeholder="Menge" value="'+p.qty+'" oninput="updateOrderPosition('+i+',\'qty\',this.value)"'
+        +' style="padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:13px;outline:none;">'
+      +'<input type="number" placeholder="Preis" value="'+p.price+'" oninput="updateOrderPosition('+i+',\'price\',this.value)"'
+        +' style="padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:13px;outline:none;">'
+      +'<button onclick="removeOrderPosition('+i+')" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:7px;color:#fca5a5;cursor:pointer;padding:8px;font-size:14px;">✕</button>'
+    +'</div>';
+  }).join('');
+  updateOrderTotal();
+}
+
+function saveOrder(){
+  if(!selectedKundeId){ alert('Bitte einen Kunden auswählen.'); return; }
+  if(!orderPositionen.length || !orderPositionen[0].name){ alert('Bitte mindestens eine Position erfassen.'); return; }
+
+  var btn = document.getElementById('orderSaveBtn');
+  var status = document.getElementById('orderSaveStatus');
+  btn.disabled = true;
+  status.style.display = 'block';
+  status.style.color = 'var(--muted)';
+  status.textContent = '⏳ Wird in CashCtrl erstellt...';
+
+  var items = orderPositionen.filter(function(p){ return p.name; }).map(function(p){
+    return { name: p.name, quantity: p.qty||1, unitPrice: p.price||0, accountId: 4 };
+  });
+
+  var payload = {
+    categoryId: currentOrderCatId,
+    associateId: selectedKundeId,
+    date: document.getElementById('oDate').value,
+    description: document.getElementById('oDesc').value.trim(),
+    items: items
+  };
+
+  fetch(CC_FN+'?action=order-create', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res){
+    if(res.error){
+      status.style.color='var(--red)';
+      status.textContent='Fehler: '+JSON.stringify(res.error);
+      btn.disabled=false;
+      return;
+    }
+    status.style.color='var(--green)';
+    status.textContent='✅ Erfolgreich erstellt!';
+    setTimeout(function(){
+      closeOrderModal();
+      loadCcOrders('offerten',2);
+      loadCcOrders('auftraege',3);
+    }, 1200);
+  })
+  .catch(function(err){
+    status.style.color='var(--red)';
+    status.textContent='Fehler: '+err.message;
+    btn.disabled=false;
+  });
+}
 
 function loadCashctrlOrders(){
   var el = document.getElementById('cashctrlOrdersList'); if(!el) return;
