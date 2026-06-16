@@ -174,7 +174,7 @@ body{
 .task-check.checked{background:var(--blue);border-color:var(--blue);box-shadow:0 0 12px var(--blue-glow);}
 
 /* PAGE SECTIONS */
-.page-section{display:none;flex-direction:column;gap:1.5rem;}
+.page-section{display:none;flex-direction:column;gap:1.5rem;max-width:1200px;width:100%;}
 .page-section.active{display:flex;}
 .page-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;}
 .page-title{font-size:32px;font-weight:800;color:#fff;}
@@ -921,9 +921,10 @@ function renderKundenPreview(list){
   var el = document.getElementById('kundenPreview'); if(!el) return;
   if(!list||!list.length){ el.innerHTML='<p style="color:var(--hint);font-size:13px;">Keine Treffer.</p>'; return; }
   el.innerHTML = list.map(function(k){
+    var idx = allKunden.indexOf(k);
     var mainName = k.isCompany ? (k.company||(k.firstName+' '+k.lastName).trim()) : (k.firstName+' '+k.lastName).trim()||k.name;
     var sub = k.isCompany && (k.firstName||k.lastName) ? (k.firstName+' '+k.lastName).trim() : (k.city||'');
-    return '<div onclick="openPersonModal('+JSON.stringify(k)+')" style="display:flex;justify-content:space-between;align-items:center;padding:7px 4px;border-bottom:1px solid var(--glass-brd);cursor:pointer;" onmouseover="this.style.background=\'rgba(255,255,255,.04)\'" onmouseout="this.style.background=\'\'">'
+    return '<div onclick="openPersonModal(allKunden['+idx+'])" style="display:flex;justify-content:space-between;align-items:center;padding:7px 4px;border-bottom:1px solid var(--glass-brd);cursor:pointer;" onmouseover="this.style.background=\'rgba(255,255,255,.04)\'" onmouseout="this.style.background=\'\'">'
       +'<div><div style="font-size:13px;font-weight:600;">'+mainName+'</div>'+(sub?'<div style="font-size:11px;color:var(--hint);">'+sub+'</div>':'')+'</div>'
       +'<div style="font-size:16px;color:var(--hint);">›</div></div>';
   }).join('');
@@ -933,11 +934,12 @@ function renderKunden(list){
   var el = document.getElementById('kundenList'); if(!el) return;
   if(!list.length){ el.innerHTML='<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Keine Kunden gefunden.</p>'; return; }
   el.innerHTML='<div class="kunden-grid">'+list.map(function(k){
+    var idx = allKunden.indexOf(k);
     var mainName = k.isCompany ? (k.company||(k.firstName+' '+k.lastName).trim()) : (k.firstName+' '+k.lastName).trim()||k.name;
     var subName = k.isCompany && (k.firstName||k.lastName) ? (k.firstName+' '+k.lastName).trim() : '';
     var contact = [k.phone||k.mobile, k.email].filter(Boolean).join(' · ');
     var loc = [k.zip, k.city].filter(Boolean).join(' ');
-    return '<div class="kunden-item" onclick="openPersonModal('+JSON.stringify(k)+')">'
+    return '<div class="kunden-item" onclick="openPersonModal(allKunden['+idx+'])">'
       +'<div class="kunden-name">'+mainName+'</div>'
       +(subName?'<div class="kunden-sub">'+subName+'</div>':'')
       +(loc?'<div class="kunden-sub">📍 '+loc+'</div>':'')
