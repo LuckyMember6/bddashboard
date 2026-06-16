@@ -505,9 +505,9 @@ body{
     <h3 id="personModalTitle">Neuer Kunde</h3>
 
     <div style="margin-bottom:1rem;">
-      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Kundennummer (von CashCtrl vergeben)</label>
-      <input id="pNr" type="text" placeholder="wird von CashCtrl automatisch vergeben" readonly
-        style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--muted);font-size:14px;outline:none;box-sizing:border-box;">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Kundennummer</label>
+      <input id="pNr" type="number" placeholder="z.B. 14420"
+        style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
     </div>
 
     <div style="display:flex;gap:10px;margin-bottom:1.25rem;">
@@ -872,7 +872,7 @@ var CC_FN = 'https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/cashctrl';
 var allKunden = [];
 var currentPersonId = null;
 var isCompanyMode = true;
-var nextKundenNr = 14410;
+var nextKundenNr = 14420;
 var ccMeta = { kundenCategoryId: null, kundeRoleId: null, lieferantRoleId: null };
 
 function initCcMeta(){
@@ -899,7 +899,7 @@ function loadKunden(){
       var maxNr = 14400;
       allKunden.forEach(function(k){
         var n = parseInt(k.nr);
-        if(n >= 14410 && n < 20000 && n > maxNr) maxNr = n;
+        if(n >= 14420 && n < 19000 && n > maxNr) maxNr = n;
       });
       nextKundenNr = maxNr + 1;
       renderKundenPreview(allKunden.slice(0,5));
@@ -1023,6 +1023,7 @@ function savePerson(){
 
   var payload = {
     isCompany: isCompanyMode,
+    nr: document.getElementById('pNr').value.trim(),
     company: document.getElementById('pCompany').value.trim(),
     firstName: document.getElementById('pFirstName').value.trim(),
     lastName: document.getElementById('pLastName').value.trim(),
