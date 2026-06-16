@@ -1464,13 +1464,20 @@ async function attachSignedPdfToCashctrl(){
   try {
     var pdfBytes = await buildSignedPdf();
     if(!pdfBytes){ btn.disabled=false; btn.textContent='📎 In CashCtrl anhängen'; status.style.display='none'; return; }
-    var b64 = btoa(String.fromCharCode.apply(null, new Uint8Array(pdfBytes)));
+    // Chunk-basierte Base64 Konvertierung für grosse PDFs
+    var pdfArr = new Uint8Array(pdfBytes);
+    var b64 = '';
+    var chunkSize = 8192;
+    for(var i = 0; i < pdfArr.length; i += chunkSize){
+      b64 += String.fromCharCode.apply(null, pdfArr.subarray(i, i + chunkSize));
+    }
+    var b64encoded = btoa(b64);
     var res = await fetch(CC_FN+'?action=attach-pdf', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         orderId: currentSignOrderId,
-        pdfBase64: b64,
+        pdfBase64: b64encoded,
         fileName: 'lieferschein-signiert-'+currentSignOrderId+'.pdf'
       })
     });
