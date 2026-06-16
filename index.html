@@ -1034,8 +1034,7 @@ function savePerson(){
     mobile: document.getElementById('pMobile').value.trim(),
     email: document.getElementById('pEmail').value.trim(),
     country: 'CH',
-    categoryId: ccMeta.kundenCategoryId || null,
-    roleIds: [ccMeta.kundeRoleId, ccMeta.lieferantRoleId].filter(Boolean)
+    categoryId: 1
   };
 
   var action = currentPersonId ? 'person-update' : 'person-create';
