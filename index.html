@@ -500,7 +500,7 @@ body{
 </section>
 
 <!-- KUNDEN DETAIL / EDIT MODAL -->
-<div class="overlay" id="personModalOverlay" style="display:none;" onclick="closePersonModal()">
+<div class="overlay" id="personModalOverlay" style="display:none;">
   <div class="modal" onclick="event.stopPropagation()" style="max-width:560px;max-height:90vh;overflow-y:auto;">
     <h3 id="personModalTitle">Neuer Kunde</h3>
 
@@ -1055,6 +1055,7 @@ function savePerson(){
     }
     status.style.color='var(--green)';
     status.textContent = currentPersonId ? '✅ Kunde aktualisiert!' : '✅ Kunde erstellt!';
+    if(!currentPersonId) nextKundenNr++;
     setTimeout(function(){ closePersonModal(); loadKunden(); }, 1200);
   })
   .catch(function(err){
@@ -1626,7 +1627,7 @@ document.getElementById('dateBadge').textContent=new Date().toLocaleDateString('
 loadState();
 // Kunden und CashCtrl Meta beim Start laden
 setTimeout(function(){ loadKunden(); initCcMeta(); }, 500);
-document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('modalOverlay').addEventListener('click',function(e){});
 
 // PWA: Service Worker registrieren (ermöglicht "Zum Homescreen hinzufügen")
 if('serviceWorker' in navigator){
