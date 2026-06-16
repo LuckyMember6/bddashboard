@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bärtsch + Dobal</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B2F6E">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="B+D Dashboard">
+<style>
+:root {
+  --navy:#1B2F6E; --navy2:#0F1F4D; --navy3:#16275C;
+  --blue:#3B82F6; --blue-glow:rgba(59,130,246,.45);
+  --green:#22C55E; --green-glow:rgba(34,197,94,.5);
+  --red:#EF4444; --amber:#F59E0B;
+  --glass:rgba(255,255,255,.06); --glass-brd:rgba(255,255,255,.14);
+  --glass-hi:rgba(255,255,255,.18);
+  --text:#F5F7FF; --muted:#A9B4D6; --hint:#7886B8;
+  --radius:18px; --radius-sm:10px;
+  --font:'Segoe UI',-apple-system,'Helvetica Neue',Arial,sans-serif;
+  /* Compatibility aliases for existing JS render functions */
+  --border: var(--glass-brd);
+  --surface: rgba(255,255,255,.05);
+  --ok: #22C55E;
+  --danger: #EF4444;
+  --warn: #F59E0B;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:var(--font);color:var(--text);min-height:100vh;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(59,130,246,.25), transparent 40%),
+    radial-gradient(circle at 85% 30%, rgba(99,102,241,.18), transparent 45%),
+    linear-gradient(155deg, #0B1430 0%, #16235A 45%, #0E1A45 100%);
+  background-attachment:fixed;
+}
+
+/* TOP NAV */
+.topnav{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:1.1rem 2rem;
+  border-bottom:1px solid var(--glass-brd);
+  background:rgba(10,18,46,.35);
+  backdrop-filter:blur(16px);
+  position:sticky;top:0;z-index:20;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 20px;border-radius:14px;
+  font-size:15px;font-weight:500;color:var(--muted);
+  cursor:pointer;border:1px solid transparent;background:transparent;
+  transition:all .2s;font-family:var(--font);
+}
+.nav-item:hover{color:var(--text);background:var(--glass);}
+.nav-item.active{
+  color:var(--text);font-weight:700;
+  background:linear-gradient(135deg, rgba(59,130,246,.35), rgba(99,102,241,.18));
+  border-color:rgba(96,165,250,.55);
+  box-shadow:0 0 22px var(--blue-glow), inset 0 0 18px rgba(96,165,250,.18);
+}
+.nav-icon{font-size:19px;}
+.nav-badge{margin-left:2px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;}
+
+/* MAIN */
+.main{padding:2rem;display:flex;flex-direction:column;gap:1.5rem;max-width:1500px;margin:0 auto;}
+
+/* HEADER */
+.header-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;padding:.5rem 0 .25rem;}
+.greeting{font-size:38px;font-weight:800;color:#fff;letter-spacing:-.01em;}
+.header-right{display:flex;align-items:center;gap:18px;}
+.date-badge{font-size:16px;color:var(--muted);font-weight:500;}
+.header-logo{height:42px;border-radius:6px;box-shadow:0 0 30px rgba(255,255,255,.12);}
+.sync-status{font-size:11px;color:var(--hint);transition:color .3s;}
+
+/* GLASS CARD */
+.card{
+  background:var(--glass);
+  border:1px solid var(--glass-brd);
+  border-radius:var(--radius);
+  padding:1.5rem 1.75rem;
+  backdrop-filter:blur(14px);
+  box-shadow:0 8px 32px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;}
+.card-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+.card-action{
+  font-size:13px;font-weight:600;color:#fff;
+  background:rgba(59,130,246,.22);border:1px solid rgba(96,165,250,.4);
+  border-radius:var(--radius-sm);padding:7px 16px;cursor:pointer;font-family:var(--font);
+  transition:all .15s;
+}
+.card-action:hover{background:rgba(59,130,246,.4);}
+
+/* METRIC CARDS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;}
+.metric{
+  background:linear-gradient(160deg, rgba(59,130,246,.16), rgba(255,255,255,.04));
+  border:1px solid var(--glass-brd);
+  border-radius:var(--radius);
+  padding:1.5rem 1.75rem;
+  cursor:pointer;transition:all .2s;position:relative;overflow:hidden;
+  backdrop-filter:blur(14px);
+  box-shadow:0 8px 32px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.08);
+  min-height:160px;
+}
+.metric::after{
+  content:'';position:absolute;top:-40%;right:-30%;width:80%;height:140%;
+  background:linear-gradient(135deg, rgba(255,255,255,.10), transparent 60%);
+  transform:rotate(15deg);pointer-events:none;
+}
+.metric:hover{transform:translateY(-3px);box-shadow:0 14px 40px rgba(59,130,246,.25), inset 0 1px 0 rgba(255,255,255,.1);}
+.metric-icon{
+  width:46px;height:46px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+  background:rgba(255,255,255,.08);border:1px solid var(--glass-brd);
+  box-shadow:0 0 18px rgba(96,165,250,.25);
+  margin-bottom:10px;
+}
+.metric-val{font-size:46px;font-weight:800;color:#fff;line-height:1;margin-bottom:4px;}
+.metric-label{font-size:15px;color:var(--muted);font-weight:500;}
+.metric-list{margin-top:10px;border-top:1px solid var(--glass-brd);padding-top:8px;}
+.metric-list-item{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:12px;}
+.metric-list-item .title{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:65%;}
+.metric-list-item .date{color:var(--hint);flex-shrink:0;}
+
+/* LAGER CIRCLES */
+.lager-circles{display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:flex-start;padding:.5rem 0;}
+.lager-circle-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:110px;cursor:pointer;}
+.lager-circle-svg{filter:drop-shadow(0 0 8px currentColor);}
+.lager-circle-val{font-size:28px;font-weight:800;line-height:1;}
+.lager-circle-unit{font-size:11px;color:var(--hint);}
+.lager-circle-name{font-size:13px;font-weight:600;color:var(--text);text-align:center;max-width:110px;line-height:1.3;}
+.lager-circle-tief{font-size:10px;color:var(--red);font-weight:700;letter-spacing:.05em;}
+
+/* TWO COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;}
+
+/* FÄLLIGKEITEN */
+.fael-item{display:flex;align-items:center;gap:12px;padding:10px 4px;border-radius:10px;cursor:pointer;transition:background .15s;}
+.fael-item:hover{background:rgba(255,255,255,.05);}
+.fael-bar{width:4px;height:38px;border-radius:3px;flex-shrink:0;box-shadow:0 0 8px currentColor;}
+.fael-body{flex:1;min-width:0;}
+.fael-name{font-size:14px;font-weight:600;color:#fff;}
+.fael-sub{font-size:12px;color:var(--muted);margin-top:1px;}
+.fael-date{font-size:12px;color:var(--hint);flex-shrink:0;}
+
+/* KÜRZLICH */
+.recent-item{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid var(--glass-brd);}
+.recent-item:last-child{border-bottom:none;}
+.recent-name{font-size:14px;font-weight:500;color:#fff;}
+.recent-type{font-size:12px;color:var(--muted);margin-top:1px;}
+
+/* TASKS */
+.task{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--glass-brd);font-size:14px;}
+.task:last-child{border-bottom:none;}
+.prio{width:4px;height:38px;border-radius:3px;flex-shrink:0;box-shadow:0 0 8px currentColor;}
+.prio-rot{background:#EF4444;color:#EF4444;}
+.prio-gelb{background:#F59E0B;color:#F59E0B;}
+.prio-gruen{background:#22C55E;color:#22C55E;}
+.task-text{flex:1;}
+.task-name{font-size:14px;font-weight:600;color:#fff;}
+.task-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+.task-name.done-text{text-decoration:line-through;color:var(--hint);}
+.task-check{
+  width:22px;height:22px;border:1.5px solid var(--glass-brd);border-radius:6px;
+  cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;font-size:12px;color:#fff;background:rgba(255,255,255,.04);
+}
+.task-check:hover{border-color:var(--blue);}
+.task-check.checked{background:var(--blue);border-color:var(--blue);box-shadow:0 0 12px var(--blue-glow);}
+
+/* PAGE SECTIONS */
+.page-section{display:none;flex-direction:column;gap:1.5rem;}
+.page-section.active{display:flex;}
+.page-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;}
+.page-title{font-size:32px;font-weight:800;color:#fff;}
+.page-sub{font-size:15px;color:var(--muted);margin-top:4px;}
+
+/* AUFTRAG CARDS */
+.auftrag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.auftrag-card{
+  background:var(--glass);border:1px solid var(--glass-brd);border-radius:var(--radius);
+  padding:1.25rem 1.4rem;backdrop-filter:blur(14px);
+  box-shadow:0 8px 28px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.06);
+  border-top:3px solid var(--blue);transition:all .2s;
+}
+.auftrag-card:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(59,130,246,.2);}
+.ac-title{font-size:16px;font-weight:700;color:#fff;}
+.ac-meta{font-size:13px;color:var(--muted);margin-top:4px;}
+.ac-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:6px;}
+
+/* LAGER PAGE GRID */
+.lager-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;}
+.lager-card{
+  background:var(--glass);border:1px solid var(--glass-brd);border-radius:var(--radius);
+  padding:1.25rem;backdrop-filter:blur(14px);position:relative;overflow:hidden;
+  box-shadow:0 8px 28px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* TAGS */
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.02em;}
+.tag-kritisch{background:rgba(239,68,68,.18);color:#FCA5A5;border:1px solid rgba(239,68,68,.35);}
+.tag-offen{background:rgba(245,158,11,.18);color:#FCD34D;border:1px solid rgba(245,158,11,.35);}
+.tag-ok{background:rgba(34,197,94,.18);color:#86EFAC;border:1px solid rgba(34,197,94,.35);}
+.tag-idee{background:rgba(59,130,246,.18);color:#93C5FD;border:1px solid rgba(59,130,246,.35);}
+.tag-done,.tag-erledigt{background:rgba(255,255,255,.06);color:var(--hint);border:1px solid var(--glass-brd);}
+
+/* DUE BADGES */
+.due-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
+.due-overdue{background:rgba(239,68,68,.18);color:#FCA5A5;border:1px solid rgba(239,68,68,.35);}
+.due-today{background:rgba(245,158,11,.18);color:#FCD34D;border:1px solid rgba(245,158,11,.35);}
+.due-soon{background:rgba(34,197,94,.18);color:#86EFAC;border:1px solid rgba(34,197,94,.35);}
+.due-normal{background:rgba(255,255,255,.06);color:var(--hint);border:1px solid var(--glass-brd);}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(5,10,28,.6);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.overlay.open{display:flex;}
+.modal{
+  background:linear-gradient(160deg, rgba(30,45,95,.95), rgba(15,25,65,.97));
+  border:1px solid var(--glass-brd);border-radius:var(--radius);
+  padding:1.75rem;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.5), 0 0 40px rgba(59,130,246,.15);
+  backdrop-filter:blur(20px);
+}
+.modal h3{font-size:19px;font-weight:800;color:#fff;margin-bottom:1.25rem;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+.field input,.field select,.field textarea{
+  width:100%;border:1px solid var(--glass-brd);border-radius:var(--radius-sm);
+  padding:10px 12px;font-size:14px;font-family:var(--font);color:#fff;
+  background:rgba(255,255,255,.06);outline:none;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.18);}
+.field input::placeholder{color:var(--hint);}
+.modal-actions{display:flex;gap:10px;margin-top:1.25rem;justify-content:flex-end;}
+.btn-cancel{background:rgba(255,255,255,.06);border:1px solid var(--glass-brd);border-radius:var(--radius-sm);padding:10px 20px;font-size:14px;cursor:pointer;font-family:var(--font);color:var(--muted);}
+.btn-cancel:hover{color:#fff;}
+.btn-save{
+  background:linear-gradient(135deg,#3B82F6,#6366F1);color:#fff;border:none;
+  border-radius:var(--radius-sm);padding:10px 22px;font-size:14px;cursor:pointer;
+  font-family:var(--font);font-weight:700;box-shadow:0 4px 16px var(--blue-glow);
+}
+.btn-save:hover{box-shadow:0 6px 22px var(--blue-glow);}
+.btn-add{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(59,130,246,.14);border:1px dashed rgba(96,165,250,.4);
+  border-radius:var(--radius-sm);padding:10px 16px;font-size:14px;color:var(--muted);
+  cursor:pointer;font-family:var(--font);font-weight:600;
+}
+.btn-add:hover{color:#fff;background:rgba(59,130,246,.22);}
+.btn-del{background:none;border:none;color:var(--hint);cursor:pointer;font-size:15px;padding:0 4px;}
+.btn-del:hover{color:var(--red);}
+.btn-sm{
+  background:rgba(255,255,255,.07);border:1px solid var(--glass-brd);
+  border-radius:var(--radius-sm);padding:5px 12px;font-size:12px;color:var(--muted);
+  cursor:pointer;font-family:var(--font);
+}
+.btn-sm:hover{color:#fff;border-color:rgba(96,165,250,.5);}
+
+/* MAIL */
+.mail-card{
+  background:var(--glass);border:1px solid var(--glass-brd);border-radius:var(--radius);
+  padding:1.25rem 1.4rem;margin-bottom:12px;backdrop-filter:blur(14px);
+  box-shadow:0 8px 28px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.mail-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;}
+.mail-card-name{font-size:16px;font-weight:700;color:#fff;}
+.mail-card-field{font-size:12px;color:var(--muted);margin-bottom:4px;}
+.mail-card-field span{color:var(--text);font-weight:500;}
+.mail-card-body{font-size:13px;color:var(--text);background:rgba(0,0,0,.18);border-radius:var(--radius-sm);padding:12px 14px;margin:8px 0;white-space:pre-wrap;max-height:100px;overflow:hidden;position:relative;border:1px solid var(--glass-brd);}
+.mail-card-body::after{content:'';position:absolute;bottom:0;left:0;right:0;height:30px;background:linear-gradient(transparent, rgba(15,25,65,.9));}
+.mail-send-btn{
+  background:linear-gradient(135deg,#3B82F6,#6366F1);color:#fff;border:none;
+  border-radius:var(--radius-sm);padding:9px 18px;font-size:13px;cursor:pointer;
+  font-family:var(--font);font-weight:700;display:flex;align-items:center;gap:6px;
+  box-shadow:0 4px 16px var(--blue-glow);
+}
+.anhang-hint{font-size:11px;color:var(--hint);font-style:italic;margin-top:4px;}
+.pdf-item{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid var(--glass-brd);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;}
+.pdf-item-name{color:#fff;font-weight:500;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pdf-item-size{color:var(--hint);font-size:11px;flex-shrink:0;}
+.pdf-download{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:var(--font);flex-shrink:0;}
+
+/* CASHCTRL ORDERS */
+.cc-order{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:12px 4px;border-bottom:1px solid var(--glass-brd);
+}
+.cc-order:last-child{border-bottom:none;}
+.cc-order-body{flex:1;min-width:0;}
+.cc-order-title{font-size:14px;font-weight:600;color:#fff;}
+.cc-order-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+.cc-order-actions{display:flex;gap:6px;flex-shrink:0;}
+.cc-btn{
+  background:rgba(59,130,246,.16);border:1px solid rgba(96,165,250,.4);
+  border-radius:var(--radius-sm);padding:7px 14px;font-size:12px;font-weight:600;
+  color:var(--text);cursor:pointer;font-family:var(--font);transition:all .15s;
+}
+.cc-btn:hover{background:rgba(59,130,246,.3);}
+.cc-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+@media(max-width:900px){
+  .metrics{grid-template-columns:1fr;}
+  .two-col{grid-template-columns:1fr;}
+  .topnav{padding:.75rem 1rem;gap:4px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .topnav::-webkit-scrollbar{display:none;}
+  .nav-item{padding:9px 12px;font-size:13px;flex-shrink:0;}
+  .nav-item span:not(.nav-icon){display:none;}
+  .main{padding:1rem;}
+  .greeting{font-size:28px;}
+  .header-logo{height:32px;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <button class="nav-item active" onclick="showPage('overview')"><span class="nav-icon">⊞</span><span>Übersicht</span></button>
+  <button class="nav-item" onclick="showPage('auftraege')"><span class="nav-icon">📋</span><span>Aufträge</span><span class="nav-badge" id="badge-auftraege">0</span></button>
+  <button class="nav-item" onclick="showPage('offerten')"><span class="nav-icon">📄</span><span>Offerten</span><span class="nav-badge" id="badge-offerten">0</span></button>
+  <button class="nav-item" onclick="showPage('lieferungen')"><span class="nav-icon">🚚</span><span>Lieferungen</span><span class="nav-badge" id="badge-lieferungen">0</span></button>
+  <button class="nav-item" onclick="showPage('aufgaben')"><span class="nav-icon">✅</span><span>Aufgaben</span><span class="nav-badge" id="badge-aufgaben">0</span></button>
+  <button class="nav-item" onclick="showPage('lager')"><span class="nav-icon">📦</span><span>Lagerbestand</span></button>
+  <button class="nav-item" onclick="showPage('mails')"><span class="nav-icon">📧</span><span>Mail-Vorlagen</span></button>
+  <button class="nav-item" onclick="showPage('wixshop')"><span class="nav-icon">🛍</span><span>Wix Shop</span></button>
+</nav>
+
+<main class="main">
+
+<!-- HEADER -->
+<div class="header-row">
+  <div class="greeting" id="greetingTitle">Guten Tag!</div>
+  <div class="header-right">
+    <div class="sync-status" id="syncStatus"></div>
+    <div class="date-badge" id="dateBadge">–</div>
+    <img class="header-logo" src="data:image/jpeg;base64,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" alt="Bärtsch + Dobal">
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<section id="page-overview" class="page-section active">
+  <div class="metrics" id="metricCards"></div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">Lagerbestand</div><button class="card-action" onclick="showPage('lager')">Zum Lager</button></div>
+    <div id="lagerCircles" class="lager-circles"></div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Fälligkeiten</div></div>
+      <div id="dashFaellig"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Kürzlich hinzugefügt</div></div>
+      <div id="dashKuerzlich"></div>
+    </div>
+  </div>
+</section>
+
+<!-- AUFTRÄGE -->
+<section id="page-auftraege" class="page-section">
+  <div class="page-header">
+    <div><div class="page-title">Aufträge</div><div class="page-sub">Laufende Kundenaufträge</div></div>
+    <button class="btn-add" onclick="openModal('auftrag')">+ Neuer Auftrag</button>
+  </div>
+  <div class="auftrag-grid" id="auftraegeList"></div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">CashCtrl Aufträge</div>
+      <button class="card-action" onclick="loadCashctrlOrders()">↻ Aktualisieren</button>
+    </div>
+    <div id="cashctrlOrdersList"></div>
+  </div>
+</section>
+
+<!-- OFFERTEN -->
+<section id="page-offerten" class="page-section">
+  <div class="page-header">
+    <div><div class="page-title">Offerten</div><div class="page-sub">Offene Angebote</div></div>
+    <button class="btn-add" onclick="openModal('offerte')">+ Neue Offerte</button>
+  </div>
+  <div class="auftrag-grid" id="offertenList"></div>
+</section>
+
+<!-- LIEFERUNGEN -->
+<section id="page-lieferungen" class="page-section">
+  <div class="page-header">
+    <div><div class="page-title">Lieferungen</div><div class="page-sub">Anstehende Lieferungen</div></div>
+    <button class="btn-add" onclick="openModal('lieferung')">+ Neue Lieferung</button>
+  </div>
+  <div class="auftrag-grid" id="lieferungenList"></div>
+</section>
+
+<!-- AUFGABEN -->
+<section id="page-aufgaben" class="page-section">
+  <div class="page-header">
+    <div><div class="page-title">Aufgaben</div><div class="page-sub">To-Dos und Erinnerungen</div></div>
+    <button class="btn-add" onclick="openModal('task')">+ Neue Aufgabe</button>
+  </div>
+  <div class="card">
+    <div id="tasksList"></div>
+  </div>
+</section>
+
+<!-- LAGER -->
+<section id="page-lager" class="page-section">
+  <div class="page-header">
+    <div><div class="page-title">Lager</div><div class="page-sub">Bestandsverwaltung</div></div>
+    <button class="btn-add" onclick="openLagerModal()">+ Artikel hinzufügen</button>
+  </div>
+  <div id="lagerWarnBanner" style="display:none;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius);padding:1rem 1.25rem;">
+    <div style="font-size:13px;font-weight:700;color:#FCA5A5;margin-bottom:4px;">⚠ Mindestbestand unterschritten</div>
+    <div id="lagerWarnList" style="font-size:13px;color:#FCA5A5;"></div>
+  </div>
+  <div class="lager-grid" id="lagerGrid"></div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">Lagerbewegungen</div></div>
+    <div id="lagerBew"></div>
+  </div>
+</section>
+
+<!-- MAIL-VORLAGEN -->
+<section id="page-mails" class="page-section">
+  <div class="page-header">
+    <div><div class="page-title">Mail-Vorlagen</div><div class="page-sub">Vorlagen erstellen und direkt versenden</div></div>
+    <button class="btn-add" onclick="openMailModal()">+ Neue Vorlage</button>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">📎 PDF-Dateien</div>
+      <label class="card-action" style="cursor:pointer;">
+        + PDF hochladen
+        <input type="file" accept=".pdf" multiple onchange="uploadPDFs(this)" style="display:none;">
+      </label>
+    </div>
+    <div id="pdfListe" style="display:flex;flex-wrap:wrap;gap:8px;min-height:40px;"></div>
+    <div style="font-size:11px;color:var(--hint);margin-top:8px;">PDFs hier ablegen zum schnellen Zugriff beim Versenden von Mails.</div>
+  </div>
+  <div id="mailVorlagenList"></div>
+</section>
+
+</main>
+
+<!-- WIX SHOP SEITE -->
+<section id="page-wixshop" class="page-section">
+  <div class="page-header">
+    <div><div class="page-title">Wix Shop</div><div class="page-sub">Neues Produkt erfassen</div></div>
+  </div>
+  <div class="card" style="max-width:520px;">
+    <div class="card-title" style="margin-bottom:1.25rem;">Produkt hochladen</div>
+
+    <div style="margin-bottom:1rem;">
+      <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Produktbilder (max. 5)</label>
+      <div id="wixImagePreviews" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button onclick="document.getElementById('wixCameraInput').click()" style="padding:12px;border:2px dashed var(--border);border-radius:10px;background:rgba(255,255,255,.03);color:var(--muted);font-size:13px;cursor:pointer;font-family:inherit;">📷 Kamera</button>
+        <button onclick="document.getElementById('wixGalleryInput').click()" style="padding:12px;border:2px dashed var(--border);border-radius:10px;background:rgba(255,255,255,.03);color:var(--muted);font-size:13px;cursor:pointer;font-family:inherit;">🖼 Galerie</button>
+      </div>
+      <input type="file" id="wixCameraInput" accept="image/*" capture="environment" style="display:none;" onchange="addWixImages(event)">
+      <input type="file" id="wixGalleryInput" accept="image/*" multiple style="display:none;" onchange="addWixImages(event)">
+    </div>
+
+    <div style="margin-bottom:.875rem;">
+      <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Produktname *</label>
+      <input id="wixName" type="text" placeholder="z.B. König + Neurath JET IV" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+    </div>
+
+    <div style="margin-bottom:.875rem;">
+      <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Beschreibung</label>
+      <textarea id="wixDesc" placeholder="Produktbeschreibung..." style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;resize:vertical;min-height:80px;font-family:inherit;box-sizing:border-box;"></textarea>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:.875rem;">
+      <div>
+        <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Preis CHF *</label>
+        <input id="wixPrice" type="number" placeholder="z.B. 1290" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Durchgestr. Preis CHF</label>
+        <input id="wixComparePrice" type="number" placeholder="z.B. 1590" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+      </div>
+    </div>
+
+    <div style="margin-bottom:1.25rem;">
+      <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Lagerbestand</label>
+      <input id="wixStock" type="number" placeholder="z.B. 3" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+    </div>
+
+    <div id="wixUploadStatus" style="display:none;font-size:13px;color:var(--muted);margin-bottom:1rem;text-align:center;padding:10px;background:rgba(255,255,255,.05);border-radius:8px;">⏳ Produkt wird hochgeladen...</div>
+
+    <button onclick="uploadWixProduct()" id="wixSubmitBtn" style="width:100%;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;">🛍 Produkt in Wix hochladen</button>
+  </div>
+</section>
+
+
+
+<!-- MODAL -->
+<div class="overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Eintrag</h3>
+    <div id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Abbrechen</button>
+      <button class="btn-save" onclick="saveModal()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+var state = {
+  steps: [
+    {id:1,label:'Kostenvergleich Chur vs. Seewis',sub:'Miete, Betrieb, Fahrtkosten gegenüberstellen',tag:'kritisch',done:false,due:'',person:0},
+    {id:2,label:'Liegenschaft Seewis besichtigen',sub:'Showroom-Potenzial, Lager, Anlieferung prüfen',tag:'offen',done:false,due:'',person:0},
+    {id:3,label:'Kommunikation an Stammkunden planen',sub:'Brief / E-Mail Vorlage vorbereiten',tag:'idee',done:false,due:'',person:0},
+    {id:4,label:'Showroom-Konzept Seewis skizzieren',sub:'Was soll ein Besucher sehen und erleben?',tag:'idee',done:false,due:'',person:0},
+    {id:5,label:'Umzugsplan & Zeitrahmen festlegen',sub:'Realistisches Datum bestimmen',tag:'offen',done:false,due:'',person:0}
+  ],
+  tasks: [
+    {id:1,label:'Lieferung Müller AG – Termin bestätigen',prio:'rot',done:false,due:'',person:0},
+    {id:2,label:'Offerte Bau GmbH nachfassen',prio:'gelb',done:false,due:'',person:1},
+    {id:3,label:'Offerte Praxis Dr. Caviezel senden',prio:'gelb',done:false,due:'',person:1},
+    {id:4,label:'Lagerbestand Chur inventarisieren',prio:'gruen',done:false,due:'',person:2}
+  ],
+  auftraege: [
+    {id:1,title:'Müller AG',desc:'6x Schreibtisch, 6x Stuhl',termin:'2025-06-20',status:'offen',person:0},
+    {id:2,title:'Calanda Treuhand',desc:'Empfangstheke + 2 Sessel',termin:'2025-06-30',status:'offen',person:1},
+    {id:3,title:'Grischconsulta',desc:'Büroumbau 3. OG',termin:'2025-07-15',status:'offen',person:0}
+  ],
+  offerten: [
+    {id:1,title:'Bau GmbH',desc:'Offerte Grossraumbüro',termin:'2025-06-18',status:'offen',person:0},
+    {id:2,title:'Praxis Dr. Caviezel',desc:'Wartezimmer + Beratungsraum',termin:'2025-06-22',status:'offen',person:1}
+  ],
+  lieferungen: [
+    {id:1,title:'Müller AG',desc:'Anlieferung Chur',termin:'2025-06-20',status:'kritisch',person:2}
+  ],
+  lager:[
+    {id:'l1',name:'K+N Okay III',einheit:'Stk',bestand:0,min:2},
+    {id:'l2',name:'K+N Okay II',einheit:'Stk',bestand:0,min:2},
+    {id:'l3',name:'K+N Jet III',einheit:'Stk',bestand:0,min:2},
+    {id:'l4',name:'Girsberger Reflex 1',einheit:'Stk',bestand:0,min:2},
+    {id:'l5',name:'Stuhlrollen Gummi',einheit:'Set',bestand:0,min:5},
+    {id:'l6',name:'Stuhlrollen Teppich',einheit:'Set',bestand:0,min:5}
+  ],
+  lagerBewegungen:[],
+  pdfDateien:[],
+  mailVorlagen:[
+    {id:'m1',name:'Offerte senden',an:'',betreff:'Offerte Büromöbel – Bärtsch + Dobal',nachricht:'Guten Tag\n\nVielen Dank für Ihr Interesse. Im Anhang finden Sie unsere Offerte für die gewünschten Büromöbel.\n\nGerne stehen wir für Rückfragen zur Verfügung.\n\nFreundliche Grüsse\nBärtsch + Dobal',anhangHinweis:'Anhang: Offerte_BD.pdf'},
+    {id:'m2',name:'Auftragsbestätigung',an:'',betreff:'Auftragsbestätigung – Bärtsch + Dobal',nachricht:'Guten Tag\n\nWir bestätigen Ihren Auftrag und werden uns zeitnah mit Ihnen in Verbindung setzen bezüglich Liefertermin.\n\nFreundliche Grüsse\nBärtsch + Dobal',anhangHinweis:''},
+    {id:'m3',name:'Liefertermin ankündigen',an:'',betreff:'Liefertermin Ihre Bestellung – Bärtsch + Dobal',nachricht:'Guten Tag\n\nWir freuen uns, Ihnen mitzuteilen, dass Ihre Bestellung am [DATUM] zwischen [UHRZEIT] Uhr geliefert wird.\n\nBitte stellen Sie sicher, dass jemand vor Ort ist.\n\nFreundliche Grüsse\nBärtsch + Dobal',anhangHinweis:''}
+  ],
+  nextId:100
+};
+
+// ─── SUPABASE SYNC ─────────────────────────────────────
+var SUPA_URL = 'https://osxrgginjkzonvyyndpi.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zeHJnZ2luamt6b252eXluZHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMDExMjksImV4cCI6MjA5Njc3NzEyOX0.X-Ftee85CqLG0jvYVaUA1oYPr-v5svmguZuUNJAHnWo';
+
+function supaHeaders() {
+  return { 'Content-Type':'application/json', 'apikey': SUPA_KEY, 'Authorization':'Bearer '+SUPA_KEY };
+}
+
+function showSyncStatus(msg, color) {
+  var el = document.getElementById('syncStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = color || 'var(--hint)';
+}
+
+function saveState() {
+  try { localStorage.setItem('bd_dash_v3', JSON.stringify(state)); } catch(e) {}
+  var payload = { id: 'main', type: 'state', data: state, updated_at: new Date().toISOString() };
+  var h = supaHeaders();
+  h['Prefer'] = 'resolution=merge-duplicates';
+  fetch(SUPA_URL + '/rest/v1/entries', {
+    method: 'POST', headers: h, body: JSON.stringify(payload)
+  })
+  .then(function(r){ showSyncStatus('✓ Gespeichert', 'var(--ok)'); setTimeout(function(){ showSyncStatus(''); },2000); })
+  .catch(function(){ showSyncStatus('⚠ Offline', 'var(--warn)'); });
+}
+
+function loadState() {
+  // Load from Supabase - source of truth
+  showSyncStatus('Lade Daten…');
+  fetch(SUPA_URL + '/rest/v1/entries?id=eq.main&select=data', { headers: supaHeaders() })
+  .then(function(r){ return r.json(); })
+  .then(function(rows) {
+    if (rows && rows.length > 0 && rows[0].data) {
+      state = rows[0].data;
+      try { localStorage.setItem('bd_dash_v3', JSON.stringify(state)); } catch(e) {}
+      renderAll();
+      showSyncStatus('✓ Synchronisiert', 'var(--ok)');
+      setTimeout(function(){ showSyncStatus(''); }, 2000);
+    } else {
+      try { var s = localStorage.getItem('bd_dash_v3'); if(s){ state=JSON.parse(s); } } catch(e) {}
+      renderAll();
+      showSyncStatus('');
+    }
+  })
+  .catch(function() {
+    try { var s = localStorage.getItem('bd_dash_v3'); if(s){ state=JSON.parse(s); } } catch(e) {}
+    renderAll();
+    showSyncStatus('Offline', 'var(--warn)');
+  });
+}
+
+function today(){var d=new Date();d.setHours(0,0,0,0);return d;}
+function parseDate(s){if(!s)return null;var d=new Date(s);d.setHours(0,0,0,0);return isNaN(d)?null:d;}
+function diffDays(d){return Math.round((d-today())/86400000);}
+function fmtDate(s){var d=parseDate(s);if(!d)return '';return d.toLocaleDateString('de-CH',{day:'numeric',month:'short'});}
+function dueBadge(due){
+  var d=parseDate(due);if(!d)return '';
+  var diff=diffDays(d);
+  if(diff<0)return '<span class="due-badge due-overdue">Überfällig</span>';
+  if(diff===0)return '<span class="due-badge due-today">Heute</span>';
+  if(diff<=3)return '<span class="due-badge due-soon">In '+diff+'d</span>';
+  return '<span class="due-badge due-normal">'+fmtDate(due)+'</span>';
+}
+
+
+function showPage(id){
+  document.querySelectorAll('.page-section').forEach(function(el){el.classList.remove('active');el.style.display='none';});
+  document.querySelectorAll('.nav-item').forEach(function(el){el.classList.remove('active');});
+  var page = document.getElementById('page-'+id);
+  if(page){page.classList.add('active');page.style.display='';}
+  document.querySelectorAll('.nav-item').forEach(function(el){
+    if(el.getAttribute('onclick')&&el.getAttribute('onclick').indexOf("'"+id+"'")!==-1)el.classList.add('active');
+  });
+  renderAll();
+  if(id==='auftraege') loadCashctrlOrders();
+}
+
+// ─── WIX SHOP ──────────────────────────────────────────────
+var SUPABASE_WIX = 'https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/wix';
+var wixImages = []; // [{base64, mime, name, preview}]
+
+function openWixModal(){ showPage('wixshop'); }
+function closeWixModal(){}
+function loadWixProducts(){}
+
+function addWixImages(event){
+  var files = Array.from(event.target.files);
+  var remaining = 5 - wixImages.length;
+  if(remaining <= 0){ alert('Maximum 5 Bilder erreicht.'); return; }
+  files = files.slice(0, remaining);
+  files.forEach(function(file){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var dataUrl = e.target.result;
+      wixImages.push({
+        base64: dataUrl.split(',')[1],
+        mime: file.type || 'image/jpeg',
+        name: file.name || 'produkt.jpg',
+        preview: dataUrl
+      });
+      renderWixPreviews();
+    };
+    reader.readAsDataURL(file);
+  });
+  event.target.value = '';
+}
+
+function renderWixPreviews(){
+  var el = document.getElementById('wixImagePreviews');
+  if(!el) return;
+  el.innerHTML = wixImages.map(function(img, i){
+    return '<div style="position:relative;width:80px;height:80px;">'
+      +'<img src="'+img.preview+'" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:2px solid var(--border);">'
+      +'<button onclick="removeWixImage('+i+')" style="position:absolute;top:-6px;right:-6px;background:#ef4444;border:none;color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1;padding:0;">✕</button>'
+      +'</div>';
+  }).join('');
+}
+
+function removeWixImage(i){
+  wixImages.splice(i, 1);
+  renderWixPreviews();
+}
+
+function resetWixForm(){
+  wixImages = [];
+  renderWixPreviews();
+  document.getElementById('wixName').value='';
+  document.getElementById('wixDesc').value='';
+  document.getElementById('wixPrice').value='';
+  document.getElementById('wixComparePrice').value='';
+  document.getElementById('wixStock').value='';
+  var status = document.getElementById('wixUploadStatus');
+  if(status){ status.style.display='none'; status.style.color='var(--muted)'; }
+  var btn = document.getElementById('wixSubmitBtn');
+  if(btn){ btn.disabled=false; btn.textContent='🛍 Produkt in Wix hochladen'; }
+}
+
+function uploadWixProduct(){
+  var name = document.getElementById('wixName').value.trim();
+  var price = document.getElementById('wixPrice').value.trim();
+  if(!name||!price){ alert('Bitte Name und Preis eingeben.'); return; }
+
+  var btn = document.getElementById('wixSubmitBtn');
+  var status = document.getElementById('wixUploadStatus');
+  btn.disabled = true;
+  status.style.display = 'block';
+  status.style.color = 'var(--muted)';
+  status.textContent = '⏳ Produkt wird hochgeladen' + (wixImages.length?' ('+wixImages.length+' Bild'+( wixImages.length>1?'er':'')+'...':'...');
+
+  var payload = {
+    name: name,
+    price: price,
+    description: document.getElementById('wixDesc').value.trim(),
+    compareAtPrice: document.getElementById('wixComparePrice').value.trim() || null,
+    stock: document.getElementById('wixStock').value.trim() || null,
+    images: wixImages.map(function(img){ return {base64: img.base64, mime: img.mime, name: img.name}; })
+  };
+
+  fetch(SUPABASE_WIX+'?action=create-product', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){return r.json();})
+  .then(function(res){
+    if(res.error){
+      alert('Fehler: '+JSON.stringify(res.error));
+      btn.disabled=false;
+      status.style.display='none';
+      return;
+    }
+    status.style.color='#22c55e';
+    status.textContent='✅ Produkt erfolgreich erstellt!';
+    btn.textContent='✅ Hochgeladen';
+    setTimeout(function(){ resetWixForm(); }, 2000);
+  })
+  .catch(function(err){
+    alert('Verbindungsfehler: '+err.message);
+    btn.disabled=false;
+    status.style.display='none';
+  });
+}
+
+// ─── CASHCTRL INTEGRATION ──────────────────────────────
+var CASHCTRL_FN_URL = 'https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/cashctrl';
+
+function loadCashctrlOrders(){
+  var el = document.getElementById('cashctrlOrdersList'); if(!el) return;
+  el.innerHTML = '<p style="color:var(--hint);font-size:13px;">Lade Aufträge...</p>';
+  fetch(CASHCTRL_FN_URL + '?action=list')
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(res.error){ el.innerHTML = '<p style="color:var(--red);font-size:13px;">Fehler: '+JSON.stringify(res.error)+'</p>'; return; }
+      var orders = res.data || [];
+      if(!orders.length){ el.innerHTML = '<p style="color:var(--hint);font-size:13px;">Keine offenen CashCtrl-Aufträge.</p>'; return; }
+      el.innerHTML = orders.map(function(o){
+        return '<div class="cc-order" id="cc-order-'+o.id+'">'
+          +'<div class="cc-order-body">'
+            +'<div class="cc-order-title">'+(o.nr||'#'+o.id)+' — '+(o.associateName||'Unbekannt')+'</div>'
+            +'<div class="cc-order-meta">'+(o.description||'')+' · '+(o.total!=null?o.total+' '+(o.currencyCode||'CHF'):'')+' · '+(o.statusName||'')+'</div>'
+          +'</div>'
+          +'<div class="cc-order-actions">'
+            +'<button class="cc-btn" onclick="cashctrlContinue('+o.id+',\'lieferschein\')">→ Lieferschein</button>'
+            +'<button class="cc-btn" onclick="cashctrlContinue('+o.id+',\'rechnung\')">→ Rechnung</button>'
+          +'</div>'
+        +'</div>';
+      }).join('');
+    })
+    .catch(function(err){
+      el.innerHTML = '<p style="color:var(--red);font-size:13px;">Verbindungsfehler: '+err.message+'</p>';
+    });
+}
+
+function cashctrlContinue(orderId, target){
+  var label = target === 'lieferschein' ? 'Lieferschein' : 'Rechnung';
+  if(!confirm('Wirklich '+label+' aus diesem Auftrag erstellen?')) return;
+
+  var container = document.getElementById('cc-order-'+orderId);
+  var buttons = container ? container.querySelectorAll('.cc-btn') : [];
+  buttons.forEach(function(b){ b.disabled = true; });
+
+  fetch(CASHCTRL_FN_URL + '?action=continue', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderId: orderId, target: target })
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(res.error){
+        alert('Fehler beim Erstellen: '+JSON.stringify(res.error));
+        buttons.forEach(function(b){ b.disabled = false; });
+        return;
+      }
+      alert(label+' wurde erfolgreich erstellt.');
+      loadCashctrlOrders();
+    })
+    .catch(function(err){
+      alert('Verbindungsfehler: '+err.message);
+      buttons.forEach(function(b){ b.disabled = false; });
+    });
+}
+
+function tagHtml(t){return '<span class="tag tag-'+t+'">'+t+'</span>';}
+
+function sortByDate(items){
+  return items.slice().sort(function(a,b){
+    var da=a.termin?new Date(a.termin):new Date('9999');
+    var db=b.termin?new Date(b.termin):new Date('9999');
+    return da-db;
+  });
+}
+
+function renderMetrics(){
+  var auf=state.auftraege.filter(function(a){return a.status!=='erledigt';});
+  var off=state.offerten.filter(function(a){return a.status!=='erledigt';});
+  var lief=state.lieferungen.filter(function(a){return a.status!=='erledigt';});
+  var auf2=state.tasks.filter(function(t){return !t.done;});
+  var auf2sorted=auf2.slice().sort(function(a,b){
+    var da=a.due?new Date(a.due):new Date('9999');
+    var db=b.due?new Date(b.due):new Date('9999');
+    return da-db;
+  }).map(function(t){return {title:t.label,termin:t.due};});
+  document.getElementById('metricCards').innerHTML=
+    metric(auf.length,'Offene Aufträge',sortByDate(auf),'📋','auftraege')
+    +metric(off.length,'Offene Offerten',sortByDate(off),'📄','offerten')
+    +metric(lief.length,'Lieferungen',sortByDate(lief),'🚚','lieferungen')
+    +metric(auf2.length,'Aufgaben',auf2sorted,'✅','aufgaben');
+  var b=document.getElementById('badge-auftraege');if(b)b.textContent=auf.length;
+  var b2=document.getElementById('badge-offerten');if(b2)b2.textContent=off.length;
+  var b3=document.getElementById('badge-lieferungen');if(b3)b3.textContent=lief.length;
+  var b4=document.getElementById('badge-aufgaben');if(b4)b4.textContent=auf2.length;
+}
+function metric(val,label,items,icon,page){
+  var list='';
+  if(items&&items.length){
+    list='<div class="metric-list">';
+    items.slice(0,5).forEach(function(x){
+      list+='<div class="metric-list-item"><span class="title">'+x.title+'</span>'
+        +(x.termin?'<span class="date">'+fmtDate(x.termin)+'</span>':'')
+        +'</div>';
+    });
+    list+='</div>';
+  }
+  return '<div class="metric" onclick="showPage(\''+page+'\')">'
+    +'<div class="metric-icon">'+icon+'</div>'
+    +'<div class="metric-val">'+val+'</div><div class="metric-label">'+label+'</div>'+list+'</div>';
+}
+
+function renderLagerCircles() {
+  var el = document.getElementById('lagerCircles'); if(!el) return;
+  if(!state.lager||!state.lager.length){el.innerHTML='<p style="color:var(--muted);font-size:13px;">Keine Artikel erfasst.</p>';return;}
+  var MAX = 15;
+  el.innerHTML = state.lager.map(function(a, idx) {
+    var bestand = a.bestand||0;
+    var THRESHOLD = 7;
+    var col;
+    if(bestand >= THRESHOLD) {
+      col = '#22C55E'; // grün
+    } else {
+      var p = bestand / THRESHOLD;
+      var r = Math.round(220 - p*160);
+      var g = Math.round(p*200);
+      var b = Math.round(p*60);
+      col = 'rgb('+r+','+g+','+b+')';
+    }
+    var pct = Math.min(1, bestand/MAX);
+    var circ = 2*Math.PI*40;
+    var filled = circ*pct;
+    var empty = circ - filled;
+    return '<div class="lager-circle-wrap" onclick="openLagerModal('+idx+')" style="color:'+col+';">'
+      +'<div style="position:relative;width:100px;height:100px;">'
+      +'<svg class="lager-circle-svg" width="100" height="100" style="transform:rotate(-90deg);pointer-events:none;">'
+        +'<circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/>'
+        +'<circle cx="50" cy="50" r="40" fill="none" stroke="'+col+'" stroke-width="9"'
+          +' stroke-linecap="round"'
+          +' stroke-dasharray="'+filled.toFixed(1)+' '+empty.toFixed(1)+'"/>'
+      +'</svg>'
+      +'<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">'
+        +'<div class="lager-circle-val" style="color:'+col+';">'+bestand+'</div>'
+        +'<div class="lager-circle-unit">'+a.einheit+'</div>'
+      +'</div></div>'
+      +'<div class="lager-circle-name">'+a.name+'</div>'
+      +(bestand<=a.min?'<div class="lager-circle-tief">TIEF</div>':'')
+      +'</div>';
+  }).join('');
+}
+
+function renderDashFaellig(){
+  var el=document.getElementById('dashFaellig');if(!el)return;
+  var items=[];
+  var now=new Date();
+  function addItems(arr,type){
+    arr.filter(function(x){return x.status!=='erledigt'&&x.termin;}).forEach(function(x){
+      items.push({title:x.title||x.label,termin:x.termin,type:type,diff:diffDays(parseDate(x.termin))});
+    });
+  }
+  function addTasks(arr,type){
+    arr.filter(function(x){return !x.done&&x.due;}).forEach(function(x){
+      items.push({title:x.title||x.label,termin:x.due,type:type,diff:diffDays(parseDate(x.due))});
+    });
+  }
+  addItems(state.auftraege,'Auftrag');
+  addItems(state.offerten,'Offerte');
+  addItems(state.lieferungen,'Lieferung');
+  addTasks(state.tasks,'Aufgabe');
+  items.sort(function(a,b){return a.diff-b.diff;});
+  if(!items.length){el.innerHTML='<p style="color:var(--hint);font-size:13px;">Keine Fälligkeiten.</p>';return;}
+  var pages={Auftrag:'auftraege',Offerte:'offerten',Lieferung:'lieferungen',Aufgabe:'overview'};
+  el.innerHTML=items.slice(0,8).map(function(x){
+    var col=x.diff<0?'#EF4444':x.diff<=3?'#F59E0B':'#7886B8';
+    var sub=x.diff<0?'Überfällig ('+Math.abs(x.diff)+'d)':x.diff===0?'Heute':x.diff===1?'Morgen':'In '+x.diff+'d';
+    var pg=pages[x.type]||'auftraege';
+    return '<div class="fael-item" onclick="showPage(\''+pg+'\')">'
+      +'<div class="fael-bar" style="background:'+col+';color:'+col+';"></div>'
+      +'<div class="fael-body">'
+        +'<div class="fael-name">'+x.title+'</div>'
+        +'<div class="fael-sub" style="color:'+col+';">'+x.type+' · '+sub+'</div>'
+      +'</div>'
+      +'<div class="fael-date">'+fmtDate(x.termin)+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function renderDashKuerzlich(){
+  var el=document.getElementById('dashKuerzlich');if(!el)return;
+  var items=[];
+  function addItems(arr,type){
+    arr.forEach(function(x){
+      items.push({title:x.title||x.label,type:type,createdAt:x.createdAt||''});
+    });
+  }
+  addItems(state.auftraege,'Auftrag');
+  addItems(state.offerten,'Offerte');
+  addItems(state.lieferungen,'Lieferung');
+  addItems(state.tasks||[],'Aufgabe');
+  items.sort(function(a,b){
+    if(!a.createdAt&&!b.createdAt)return 0;
+    if(!a.createdAt)return 1;
+    if(!b.createdAt)return -1;
+    return new Date(b.createdAt)-new Date(a.createdAt);
+  });
+  if(!items.length){el.innerHTML='<p style="color:var(--hint);font-size:13px;">Noch nichts erfasst.</p>';return;}
+  el.innerHTML=items.slice(0,6).map(function(x){
+    return '<div class="recent-item">'
+      +'<div style="flex:1;min-width:0;">'
+        +'<div class="recent-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+x.title+'</div>'
+        +'<div class="recent-type">'+x.type+'</div>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function renderDashSteps(){
+  var firstOpen=state.steps.findIndex(function(x){return !x.done;});
+  var html='';
+  state.steps.slice(0,5).forEach(function(s,i){
+    var nc=s.done?'done':(i===firstOpen?'active':'');
+    html+='<div class="step"><div class="step-num '+nc+'">'+(s.done?'✓':(i+1))+'</div><div class="step-body">'
+      +'<div class="step-label">'+s.label+'</div>'
+      +'<div class="step-sub">'+tagHtml(s.done?'done':s.tag)+' '+(s.due?' '+dueBadge(s.due):'')+'<span style="color:var(--hint);font-size:11px;">'+s.sub+'</span></div>'
+      +'</div></div>';
+  });
+  document.getElementById('dashSteps').innerHTML=html;
+}
+
+function renderDashTasks(){
+  var html='';
+  state.tasks.forEach(function(t,i){
+    html+='<div class="task"><div class="prio prio-'+t.prio+'"></div>'
+      +'<div class="task-text"><div class="task-name'+(t.done?' done-text':'')+'">'+t.label+'</div>'
+      +'<div class="task-meta">'+(t.due?' '+dueBadge(t.due):'')+'</div></div>'
+      +'<div class="task-check'+(t.done?' checked':'')+'" onclick="toggleTask('+i+')">'+(t.done?'✓':'')+'</div></div>';
+  });
+  document.getElementById('dashTasks').innerHTML=html;
+}
+
+function renderStepsList(){
+  var el=document.getElementById('stepsList');if(!el)return;
+  var firstOpen=state.steps.findIndex(function(x){return !x.done;});
+  var html='';
+  state.steps.forEach(function(s,i){
+    var nc=s.done?'done':(i===firstOpen?'active':'');
+    html+='<div class="step"><div class="step-num '+nc+'">'+(s.done?'✓':(i+1))+'</div><div class="step-body">'
+      +'<div class="step-label">'+s.label+'</div>'
+      +'<div class="step-sub">'+tagHtml(s.done?'done':s.tag)+' '+(s.due?' '+dueBadge(s.due):'')+'<span style="color:var(--hint);font-size:11px;">'+s.sub+'</span></div>'
+      +'<div class="step-actions"><button class="btn-sm" onclick="toggleStep('+i+')">'+(s.done?'↩ Rückgängig':'✓ Erledigt')+'</button>'
+      +'<button class="btn-sm" onclick="editItem(\'step\','+i+')">✏ Bearbeiten</button>'
+      +'<button class="btn-del" onclick="deleteStep('+i+')">🗑</button></div>'
+      +'</div></div>';
+  });
+  el.innerHTML=html;
+}
+
+function renderTasksList(){
+  var el=document.getElementById('tasksList');if(!el)return;
+  var html='';
+  state.tasks.forEach(function(t,i){
+    html+='<div class="task"><div class="prio prio-'+t.prio+'"></div>'
+      +'<div class="task-text"><div class="task-name'+(t.done?' done-text':'')+'">'+t.label+'</div>'
+      +'<div class="task-meta">'+(t.due?' '+dueBadge(t.due):'')+'</div></div>'
+      +'<div style="display:flex;align-items:center;gap:5px;margin-left:auto;">'
+      +'<button class="btn-sm" onclick="editItem(\'task\','+i+')">✏</button>'
+      +'<button class="btn-del" onclick="deleteTask('+i+')">🗑</button>'
+      +'<div class="task-check'+(t.done?' checked':'')+'" onclick="toggleTask('+i+')">'+(t.done?'✓':'')+'</div>'
+      +'</div></div>';
+  });
+  el.innerHTML=html;
+}
+
+function renderList(listId,items,type){
+  var el=document.getElementById(listId);if(!el)return;
+  if(!items||!items.length){el.innerHTML='<p style="color:var(--hint);font-size:13px;padding:0.875rem 0;">Noch keine Einträge.</p>';return;}
+  var sorted=sortByDate(items);
+  var html='';
+  sorted.forEach(function(a,i){
+    var origIdx=items.indexOf(a);
+    html+='<div class="auftrag-card">'
+      +'<div class="ac-title">'+a.title+'</div>'
+      +(a.desc?'<div class="ac-meta">'+a.desc+'</div>':'')
+      +'<div class="ac-footer">'
+      +'<span class="tag tag-'+a.status+'">'+a.status+'</span>'
+      +'<div style="display:flex;align-items:center;gap:5px;">'+(a.termin?dueBadge(a.termin):'')+' '
+      +'<button class="btn-sm" onclick="editItem(\''+type+'\','+origIdx+')">✏</button>'
+      +'<button class="btn-del" onclick="deleteItem(\''+type+'\','+origIdx+')">🗑</button>'
+      +'</div></div></div>';
+  });
+  el.innerHTML=html;
+}
+
+function renderAll(){
+  renderMetrics();
+  renderLagerCircles();renderDashFaellig();renderDashKuerzlich();renderMailVorlagen();renderPDFListe();
+  renderStepsList();renderTasksList();
+  renderList('auftraegeList',state.auftraege,'auftrag');
+  renderList('offertenList',state.offerten,'offerte');
+  renderList('lieferungenList',state.lieferungen,'lieferung');
+  renderLager();
+}
+
+function toggleTask(i){state.tasks[i].done=!state.tasks[i].done;saveState();renderAll();}
+function toggleStep(i){state.steps[i].done=!state.steps[i].done;saveState();renderAll();}
+function deleteTask(i){state.tasks.splice(i,1);saveState();renderAll();}
+function deleteStep(i){state.steps.splice(i,1);saveState();renderAll();}
+function deleteItem(type,i){
+  if(type==='auftrag')state.auftraege.splice(i,1);
+  else if(type==='offerte')state.offerten.splice(i,1);
+  else state.lieferungen.splice(i,1);
+  saveState();renderAll();
+}
+function editItem(type,i){
+  var d=type==='auftrag'?state.auftraege[i]:type==='offerte'?state.offerten[i]:type==='lieferung'?state.lieferungen[i]:type==='step'?state.steps[i]:state.tasks[i];
+  currentEdit={type:type,index:i};
+  openModalWith(type,d);
+}
+
+var currentEdit=null,currentModalType='';
+
+function f(label,id,type,val){return '<div class="field"><label>'+label+'</label><input type="'+type+'" id="'+id+'" value="'+(val||'')+'"></div>';}
+function fs(label,id,opts){return '<div class="field"><label>'+label+'</label><select id="'+id+'">'+opts+'</select></div>';}
+function gv(id){var el=document.getElementById(id);return el?el.value:'';}
+
+function openModal(type){currentEdit=null;openModalWith(type,{});}
+function openModalWith(type,d){
+  currentModalType=type;
+  var titles={auftrag:'Auftrag',offerte:'Offerte',lieferung:'Lieferung',step:'Umzug-Schritt',task:'Aufgabe'};
+  document.getElementById('modalTitle').textContent=(currentEdit?'Bearbeiten: ':'Neu: ')+titles[type];
+  var html='';
+  if(type==='auftrag'||type==='offerte'||type==='lieferung'){
+    var sOpts=['offen','kritisch','ok','erledigt'].map(function(s){return '<option value="'+s+'"'+(d.status===s?' selected':'')+'>'+s+'</option>';}).join('');
+    html=f('Kunde / Titel','f-title','text',d.title)+f('Beschreibung','f-desc','text',d.desc)+f('Fälligkeit','f-termin','date',d.termin)+fs('Status','f-status',sOpts);
+  }else if(type==='step'){
+    var tOpts=['kritisch','offen','idee','ok'].map(function(t){return '<option value="'+t+'"'+(d.tag===t?' selected':'')+'>'+t+'</option>';}).join('');
+    html=f('Schritt','f-label','text',d.label)+f('Details','f-sub','text',d.sub)+f('Fälligkeit','f-due','date',d.due)+fs('Status','f-tag',tOpts);
+  }else if(type==='task'){
+    var pOpts=[{v:'rot',l:'Dringend'},{v:'gelb',l:'Diese Woche'},{v:'gruen',l:'Geplant'}].map(function(p){return '<option value="'+p.v+'"'+(d.prio===p.v?' selected':'')+'>'+p.l+'</option>';}).join('');
+    html=f('Aufgabe','f-label','text',d.label)+f('Fälligkeit','f-due','date',d.due)+fs('Priorität','f-prio',pOpts);
+  }
+  document.getElementById('modalBody').innerHTML=html;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');currentEdit=null;}
+
+function saveModal(){
+  if(currentModalType==='mail'){
+    if(!state.mailVorlagen) state.mailVorlagen=[];
+    var item={id:currentEdit?state.mailVorlagen[currentEdit.index].id:'m'+Date.now(),name:gv('f-mailname'),an:gv('f-mailan'),betreff:gv('f-mailbetreff'),nachricht:document.getElementById('f-mailnachricht')?document.getElementById('f-mailnachricht').value:'',anhangHinweis:gv('f-mailanhang')};
+    if(currentEdit)state.mailVorlagen[currentEdit.index]=item;else state.mailVorlagen.push(item);
+    saveState();closeModal();renderMailVorlagen();return;
+  }
+  if(currentModalType==='lager'){
+    var item={id:currentEdit?state.lager[currentEdit.index].id:'l'+Date.now(),name:gv('f-label').trim(),einheit:gv('f-einheit')||'Stk',bestand:parseInt(gv('f-bestand'))||0,min:parseInt(gv('f-min'))||2};
+    if(currentEdit)state.lager[currentEdit.index]=item;else state.lager.push(item);
+    saveState();closeModal();renderAll();return;
+  }
+  var type=currentModalType;
+  var newItem;
+  if(type==='auftrag'||type==='offerte'||type==='lieferung'){
+    newItem={id:state.nextId++,title:gv('f-title'),desc:gv('f-desc'),termin:gv('f-termin'),status:gv('f-status'),createdAt:new Date().toISOString()};
+    var arr=type==='auftrag'?state.auftraege:type==='offerte'?state.offerten:state.lieferungen;
+    if(currentEdit)arr[currentEdit.index]=newItem;else arr.push(newItem);
+  }else if(type==='step'){
+    newItem={id:state.nextId++,label:gv('f-label'),sub:gv('f-sub'),due:gv('f-due'),tag:gv('f-tag'),done:false};
+    if(currentEdit)state.steps[currentEdit.index]=newItem;else state.steps.push(newItem);
+  }else if(type==='task'){
+    newItem={id:state.nextId++,label:gv('f-label'),due:gv('f-due'),prio:gv('f-prio'),done:false,createdAt:new Date().toISOString()};
+    if(currentEdit)state.tasks[currentEdit.index]=newItem;else state.tasks.push(newItem);
+  }
+  saveState();closeModal();renderAll();
+}
+
+
+
+
+
+function typeLabels() { return {task:'Aufgabe',auftrag:'Auftrag',offerte:'Offerte',lieferung:'Lieferung',step:'Umzug-Schritt'}; }
+
+
+// ─── LAGER ────────────────────────────────────────────
+function renderLager() {
+  var el = document.getElementById('lagerGrid'); if(!el) return;
+  if(!state.lager||!state.lager.length){ el.innerHTML='<p style="color:var(--hint);font-size:13px;padding:.875rem 0;">Noch keine Artikel.</p>'; return; }
+  var warns = [];
+  el.innerHTML = state.lager.map(function(a,i){
+    var low=a.bestand<=a.min;
+    var col=a.bestand===0?'#EF4444':low?'#F59E0B':'#22C55E';
+    var pct=Math.min(100, a.min>0 ? Math.round(a.bestand/Math.max(a.min*2,1)*100) : 50);
+    if(low) warns.push(a.name+' – '+a.bestand+' '+a.einheit);
+    return '<div class="lager-card" style="border-top:3px solid '+col+';">'
+      +'<div style="position:absolute;right:-8px;bottom:-8px;font-size:56px;opacity:.08;pointer-events:none;">📦</div>'
+      +'<div style="font-size:15px;font-weight:700;color:#fff;">'+a.name+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);">'+a.einheit+'</div>'
+      +'<div style="font-size:34px;font-weight:800;line-height:1;margin:8px 0 2px;color:'+col+';">'+a.bestand+'</div>'
+      +'<div style="background:rgba(255,255,255,.1);border-radius:20px;height:5px;margin:8px 0;"><div style="height:5px;border-radius:20px;width:'+pct+'%;background:'+col+';transition:width .5s;"></div></div>'
+      +'<div style="font-size:11px;color:var(--muted);">Min: '+a.min+(low?' <span class="tag tag-kritisch">Tief</span>':'')+'</div>'
+      +'<div style="display:flex;gap:6px;margin-top:10px;">'
+      +'<button class="btn-sm" onclick="lagerKorr('+i+',1)">▲ +1</button>'
+      +'<button class="btn-sm" onclick="lagerKorr('+i+',-1)">▼ −1</button>'
+      +'<button class="btn-sm" onclick="openLagerModal('+i+')">✏</button>'
+      +'<button class="btn-del" onclick="delLager('+i+')">🗑</button>'
+      +'</div></div>';
+  }).join('');
+  var wb=document.getElementById('lagerWarnBanner'), wl=document.getElementById('lagerWarnList');
+  if(wb&&wl){ wl.innerHTML=warns.join(' · '); wb.style.display=warns.length?'block':'none'; }
+  renderLagerBew();
+}
+
+function renderLagerBew() {
+  var el=document.getElementById('lagerBew'); if(!el) return;
+  var bw=state.lagerBewegungen||[];
+  if(!bw.length){ el.innerHTML='<p style="color:var(--hint);font-size:13px;">Noch keine Bewegungen.</p>'; return; }
+  el.innerHTML=bw.slice().reverse().slice(0,12).map(function(b){
+    var p=b.menge>0;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--glass-brd);">'
+      +'<div style="width:4px;height:32px;background:'+(p?'#22C55E':'#EF4444')+';border-radius:3px;flex-shrink:0;box-shadow:0 0 8px '+(p?'#22C55E':'#EF4444')+';"></div>'
+      +'<div><div style="font-size:13px;font-weight:500;color:#fff;">'+b.artikel+'</div>'
+      +'<div style="font-size:11px;color:var(--hint);">'+(p?'+':'')+b.menge+' '+b.einheit+' · '+b.grund+'</div></div></div>';
+  }).join('');
+}
+
+function lagerKorr(i,d) {
+  state.lager[i].bestand=Math.max(0,(state.lager[i].bestand||0)+d);
+  addLagerBew(state.lager[i].id,d,'Manuelle Korrektur');
+  saveState(); renderLager();
+}
+
+function addLagerBew(aid,menge,grund) {
+  if(!state.lagerBewegungen) state.lagerBewegungen=[];
+  var a=state.lager.find(function(x){return x.id===aid;})||{};
+  state.lagerBewegungen.push({id:state.nextId++,artikelId:aid,artikel:a.name||'',einheit:a.einheit||'Stk',menge:menge,grund:grund});
+}
+
+function delLager(i) {
+  if(!confirm('Artikel "'+state.lager[i].name+'" löschen?')) return;
+  state.lager.splice(i,1); saveState(); renderAll();
+}
+
+function openLagerModal(idx) {
+  currentEdit = idx!==undefined ? {type:'lager',index:idx} : null;
+  currentModalType = 'lager';
+  var a = currentEdit ? state.lager[idx] : {};
+  document.getElementById('modalTitle').textContent = currentEdit ? 'Artikel bearbeiten' : 'Neuer Artikel';
+  document.getElementById('modalBody').innerHTML =
+    f('Artikelname','f-label','text',a.name||'')
+    +f('Einheit','f-einheit','text',a.einheit||'Stk')
+    +f('Aktueller Bestand','f-bestand','number',a.bestand||0)
+    +f('Mindestbestand','f-min','number',a.min||2);
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+
+// ─── PDF DATEIEN ───────────────────────────────────────
+function uploadPDFs(input) {
+  var files = Array.from(input.files);
+  if(!state.pdfDateien) state.pdfDateien = [];
+  var pending = files.length;
+  files.forEach(function(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      state.pdfDateien.push({
+        id: 'pdf'+Date.now()+Math.random(),
+        name: file.name,
+        size: Math.round(file.size/1024),
+        data: e.target.result
+      });
+      pending--;
+      if(pending === 0) { saveState(); renderPDFListe(); }
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function renderPDFListe() {
+  var el = document.getElementById('pdfListe'); if(!el) return;
+  var pdfs = state.pdfDateien || [];
+  if(!pdfs.length) {
+    el.innerHTML = '<span style="font-size:12px;color:var(--hint);">Noch keine PDFs hochgeladen.</span>';
+    return;
+  }
+  el.innerHTML = pdfs.map(function(p, i) {
+    return '<div class="pdf-item">'
+      +'<span style="font-size:16px;">📄</span>'
+      +'<span class="pdf-item-name" title="'+p.name+'">'+p.name+'</span>'
+      +'<span class="pdf-item-size">'+p.size+' KB</span>'
+      +'<button class="pdf-download" onclick="downloadPDF('+i+')">↓</button>'
+      +'<button class="btn-del" onclick="deletePDF('+i+')" title="Entfernen">🗑</button>'
+      +'</div>';
+  }).join('');
+}
+
+function downloadPDF(i) {
+  var p = state.pdfDateien[i];
+  var a = document.createElement('a');
+  a.href = p.data;
+  a.download = p.name;
+  a.click();
+}
+
+function deletePDF(i) {
+  if(!confirm('PDF "'+state.pdfDateien[i].name+'" entfernen?')) return;
+  state.pdfDateien.splice(i,1);
+  saveState(); renderPDFListe();
+}
+
+
+// ─── MAIL-VORLAGEN ─────────────────────────────────────
+function renderMailVorlagen() {
+  var el = document.getElementById('mailVorlagenList'); if(!el) return;
+  var vorlagen = state.mailVorlagen || [];
+  if(!vorlagen.length) { el.innerHTML='<p style="color:var(--hint);font-size:13px;">Noch keine Vorlagen.</p>'; return; }
+  el.innerHTML = vorlagen.map(function(m, i) {
+    return '<div class="mail-card">'
+      +'<div class="mail-card-header">'
+        +'<div class="mail-card-name">✉ '+m.name+'</div>'
+        +'<div style="display:flex;gap:6px;">'
+          +'<button class="btn-sm" onclick="openMailModal('+i+')">✏ Bearbeiten</button>'
+          +'<button class="btn-del" onclick="deleteMail('+i+')">🗑</button>'
+        +'</div>'
+      +'</div>'
+      +(m.an?'<div class="mail-card-field">An: <span>'+m.an+'</span></div>':'<div class="mail-card-field" style="color:var(--warn);">An: <span>noch nicht gesetzt</span></div>')
+      +'<div class="mail-card-field">Betreff: <span>'+m.betreff+'</span></div>'
+      +'<div class="mail-card-body">'+m.nachricht+'</div>'
+      +(m.anhangHinweis?'<div class="anhang-hint">📎 '+m.anhangHinweis+'</div>':'')
+      +'<div style="display:flex;justify-content:flex-end;margin-top:10px;">'
+        +'<button class="mail-send-btn" onclick="sendMail('+i+')">✉ In Mail-Programm öffnen</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function sendMail(i) {
+  var m = state.mailVorlagen[i];
+  var body = encodeURIComponent(m.nachricht + (m.anhangHinweis ? '\n\n📎 ' + m.anhangHinweis : ''));
+  var subject = encodeURIComponent(m.betreff);
+  var to = encodeURIComponent(m.an || '');
+  window.location.href = 'mailto:' + to + '?subject=' + subject + '&body=' + body;
+}
+
+function deleteMail(i) {
+  if(!confirm('Vorlage "'+state.mailVorlagen[i].name+'" löschen?')) return;
+  state.mailVorlagen.splice(i,1); saveState(); renderMailVorlagen();
+}
+
+function openMailModal(idx) {
+  var m = idx !== undefined ? state.mailVorlagen[idx] : {};
+  var isEdit = idx !== undefined;
+  document.getElementById('modalTitle').textContent = isEdit ? 'Vorlage bearbeiten' : 'Neue Mail-Vorlage';
+  document.getElementById('modalBody').innerHTML =
+    f('Name der Vorlage','f-mailname','text', m.name||'')
+    +f('An (E-Mail-Adresse)','f-mailan','text', m.an||'')
+    +f('Betreff','f-mailbetreff','text', m.betreff||'')
+    +'<div class="field"><label>Nachricht</label><textarea id="f-mailnachricht" rows="8" style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;font-family:var(--font);color:var(--text);background:var(--surface);outline:none;resize:vertical;">'+( m.nachricht||'')+'</textarea></div>'
+    +f('Anhang-Hinweis (nur Text, z.B. "Offerte_BD.pdf")','f-mailanhang','text', m.anhangHinweis||'');
+  currentModalType = 'mail';
+  currentEdit = isEdit ? {type:'mail', index:idx} : null;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+
+var h=new Date().getHours();
+document.getElementById('greetingTitle').textContent=(h<12?'Guten Morgen':h<18?'Guten Tag':'Guten Abend')+'!';
+document.getElementById('dateBadge').textContent=new Date().toLocaleDateString('de-CH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+loadState();
+document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+// PWA: Service Worker registrieren (ermöglicht "Zum Homescreen hinzufügen")
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(err){
+      console.log('Service Worker Registrierung fehlgeschlagen:', err);
+    });
+  });
+}
+</script>
+
+</body>
+</html>
