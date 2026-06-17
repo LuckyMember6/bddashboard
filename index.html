@@ -1437,7 +1437,7 @@ function downloadCcPdf(orderId, btn){
 
 // ─── DATEIEN (Supabase Storage) ────────────────────────────────
 var SUPA_STORAGE = SUPA_URL + '/storage/v1';
-var STORAGE_BUCKET = 'dashboard-files';
+var STORAGE_BUCKET = 'Dashboard BD';
 var currentFolder = 'angebote';
 var allDateien = [];
 
@@ -1471,17 +1471,17 @@ function selectFolder(folder){
 }
 
 function storageUrl(path){
-  return SUPA_STORAGE+'/object/'+STORAGE_BUCKET+'/'+path;
+  return SUPA_STORAGE+'/object/'+encodeURIComponent(STORAGE_BUCKET)+'/'+path;
 }
 
 function listUrl(prefix){
-  return SUPA_STORAGE+'/object/list/'+STORAGE_BUCKET+'?prefix='+encodeURIComponent(prefix)+'&limit=200&sortBy=created_at&sortOrder=desc';
+  return SUPA_STORAGE+'/object/list/'+encodeURIComponent(STORAGE_BUCKET)+'?prefix='+encodeURIComponent(prefix)+'&limit=200&sortBy=created_at&sortOrder=desc';
 }
 
 function loadDateien(folder){
   var el = document.getElementById('dateiListe'); if(!el) return;
   el.innerHTML = '<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Lade Dateien...</p>';
-  fetch(SUPA_STORAGE+'/object/list/'+STORAGE_BUCKET, {
+  fetch(SUPA_STORAGE+'/object/list/'+encodeURIComponent(STORAGE_BUCKET), {
     method: 'POST',
     headers: { ...storageHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ prefix: folder+'/', limit: 200, sortBy: { column: 'created_at', order: 'desc' } })
@@ -1570,7 +1570,7 @@ function uploadSingleFile(file, path){
 }
 
 function downloadDatei(path, name){
-  fetch(SUPA_STORAGE+'/object/authenticated/'+STORAGE_BUCKET+'/'+path, {
+  fetch(SUPA_STORAGE+'/object/authenticated/'+encodeURIComponent(STORAGE_BUCKET)+'/'+path, {
     headers: storageHeaders()
   })
   .then(function(r){ return r.blob(); })
@@ -1585,7 +1585,7 @@ function downloadDatei(path, name){
 
 function deleteDatei(path){
   if(!confirm('Datei löschen?')) return;
-  fetch(SUPA_STORAGE+'/object/'+STORAGE_BUCKET+'/'+path, {
+  fetch(SUPA_STORAGE+'/object/'+encodeURIComponent(STORAGE_BUCKET)+'/'+path, {
     method: 'DELETE', headers: storageHeaders()
   })
   .then(function(){ loadDateien(currentFolder); })
@@ -1595,7 +1595,7 @@ function deleteDatei(path){
 function loadDateienKunden(){
   var el = document.getElementById('dateiKundenListe'); if(!el) return;
   el.innerHTML = '<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Lade Kundenordner...</p>';
-  fetch(SUPA_STORAGE+'/object/list/'+STORAGE_BUCKET, {
+  fetch(SUPA_STORAGE+'/object/list/'+encodeURIComponent(STORAGE_BUCKET), {
     method: 'POST',
     headers: { ...storageHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ prefix: 'kunden/', limit: 500, sortBy: { column: 'name', order: 'asc' } })
