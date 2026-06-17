@@ -447,7 +447,7 @@ function analyseFile(file){
 }
 
 function claudeAnalyse(base64, mime, fileName){
-  fetch('https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/claude-vision',{
+  fetch('https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/smart-api',{
     method:'POST',
     headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zeHJnZ2luamt6b252eXluZHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMDExMjksImV4cCI6MjA5Njc3NzEyOX0.X-Ftee85CqLG0jvYVaUA1oYPr-v5svmguZuUNJAHnWo'},
     body:JSON.stringify({
@@ -474,7 +474,7 @@ function claudeAnalyse(base64, mime, fileName){
 }
 
 function claudeAnalyseText(fileName){
-  fetch('https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/claude-vision',{
+  fetch('https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/smart-api',{
     method:'POST',
     headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zeHJnZ2luamt6b252eXluZHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMDExMjksImV4cCI6MjA5Njc3NzEyOX0.X-Ftee85CqLG0jvYVaUA1oYPr-v5svmguZuUNJAHnWo'},
     body:JSON.stringify({
