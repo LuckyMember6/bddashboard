@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>B+D Archiv</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B2F6E">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="B+D Archiv">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+:root{
+  --navy:#1B2F6E;--navy2:#0F1F4D;--navy3:#16275C;
+  --blue:#3B82F6;--blue-glow:rgba(59,130,246,.45);
+  --green:#22C55E;--red:#EF4444;--amber:#F59E0B;
+  --glass:rgba(255,255,255,.06);--glass-brd:rgba(255,255,255,.14);
+  --text:#F5F7FF;--muted:#A9B4D6;--hint:#7886B8;
+  --radius:16px;--radius-sm:10px;
+  --font:'Segoe UI',-apple-system,'Helvetica Neue',Arial,sans-serif;
+  --border:var(--glass-brd);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:var(--font);color:var(--text);min-height:100vh;
+  background:radial-gradient(circle at 15% 0%,rgba(59,130,246,.25),transparent 40%),
+    radial-gradient(circle at 85% 30%,rgba(99,102,241,.18),transparent 45%),
+    linear-gradient(155deg,#0B1430 0%,#16235A 45%,#0E1A45 100%);
+  background-attachment:fixed;
+}
+
+/* HEADER */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1rem 2rem;border-bottom:1px solid var(--glass-brd);
+  background:rgba(10,18,46,.4);backdrop-filter:blur(16px);
+  position:sticky;top:0;z-index:20;
+}
+.header-title{font-size:20px;font-weight:800;color:#fff;display:flex;align-items:center;gap:10px;}
+.header-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.header-logo{height:36px;border-radius:5px;}
+.back-btn{
+  background:rgba(255,255,255,.08);border:1px solid var(--glass-brd);
+  border-radius:var(--radius-sm);padding:7px 14px;font-size:13px;
+  color:var(--muted);cursor:pointer;font-family:var(--font);text-decoration:none;
+}
+.back-btn:hover{color:#fff;}
+
+/* MAIN */
+.main{padding:1.5rem 2rem;max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:1.5rem;}
+
+/* CARDS */
+.card{
+  background:var(--glass);border:1px solid var(--glass-brd);
+  border-radius:var(--radius);padding:1.5rem;
+  backdrop-filter:blur(14px);
+  box-shadow:0 8px 32px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.06);
+}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px;}
+.card-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.filter-bar select,.filter-bar input{
+  padding:9px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);
+  background:rgba(255,255,255,.07);color:var(--text);font-size:13px;
+  outline:none;font-family:var(--font);cursor:pointer;
+}
+.filter-bar select option{background:#1B2F6E;color:#fff;}
+
+/* UPLOAD ZONE */
+.upload-zone{
+  border:2px dashed var(--glass-brd);border-radius:var(--radius);
+  padding:2rem;text-align:center;cursor:pointer;
+  transition:all .2s;background:rgba(255,255,255,.02);
+}
+.upload-zone:hover,.upload-zone.drag-over{
+  border-color:rgba(96,165,250,.6);background:rgba(59,130,246,.08);
+}
+.upload-zone-icon{font-size:36px;margin-bottom:8px;}
+.upload-zone-text{font-size:14px;color:var(--muted);}
+.upload-zone-sub{font-size:12px;color:var(--hint);margin-top:4px;}
+
+/* DATEI LISTE */
+.datei-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;}
+.datei-card{
+  background:rgba(255,255,255,.04);border:1px solid var(--glass-brd);
+  border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;
+  transition:all .18s;
+}
+.datei-card:hover{background:rgba(255,255,255,.07);border-color:rgba(96,165,250,.3);}
+.datei-card-header{display:flex;align-items:flex-start;gap:10px;}
+.datei-icon{font-size:28px;flex-shrink:0;margin-top:2px;}
+.datei-name{font-size:13px;font-weight:600;color:#fff;word-break:break-all;line-height:1.4;}
+.datei-meta{font-size:11px;color:var(--hint);margin-top:2px;}
+.datei-kunde-badge{display:inline-block;background:rgba(59,130,246,.2);border:1px solid rgba(96,165,250,.3);border-radius:20px;padding:2px 8px;font-size:10px;color:#93c5fd;margin-top:4px;}
+.datei-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.btn-sm{
+  background:rgba(255,255,255,.07);border:1px solid var(--glass-brd);
+  border-radius:8px;padding:5px 12px;font-size:11px;color:var(--muted);
+  cursor:pointer;font-family:var(--font);transition:all .15s;
+}
+.btn-sm:hover{color:#fff;border-color:rgba(96,165,250,.5);}
+.btn-danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);color:#fca5a5;}
+.btn-primary{background:rgba(59,130,246,.2);border-color:rgba(96,165,250,.4);color:#93c5fd;}
+.btn-green{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:#86efac;}
+
+/* ARCHIV BADGE */
+.archiv-badge{background:rgba(107,114,128,.2);border:1px solid rgba(107,114,128,.3);border-radius:20px;padding:2px 8px;font-size:10px;color:#9ca3af;}
+
+/* STATUS */
+.status-msg{font-size:13px;padding:10px 14px;border-radius:var(--radius-sm);margin-top:8px;}
+.status-ok{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.3);}
+.status-err{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.3);}
+.status-load{background:rgba(59,130,246,.12);color:#93c5fd;border:1px solid rgba(59,130,246,.3);}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(5,10,28,.7);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.overlay.open{display:flex;}
+.modal{
+  background:linear-gradient(160deg,rgba(30,45,95,.97),rgba(15,25,65,.99));
+  border:1px solid var(--glass-brd);border-radius:var(--radius);
+  padding:1.75rem;width:520px;max-width:95vw;max-height:92vh;overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 40px rgba(59,130,246,.15);
+}
+.modal h3{font-size:18px;font-weight:800;color:#fff;margin-bottom:1.25rem;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+.field input,.field select,.field textarea{
+  width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);
+  background:rgba(255,255,255,.06);color:#fff;font-size:14px;outline:none;font-family:var(--font);
+}
+.field input:focus,.field select:focus{border-color:var(--blue);}
+.field select option{background:#1B2F6E;}
+.modal-actions{display:flex;gap:10px;margin-top:1.25rem;justify-content:flex-end;}
+
+/* KREDIT SCANNER */
+.scan-result{background:rgba(0,0,0,.25);border:1px solid var(--glass-brd);border-radius:var(--radius-sm);padding:1rem;font-size:13px;color:var(--text);white-space:pre-wrap;max-height:300px;overflow-y:auto;margin-top:1rem;}
+
+/* KAMERA */
+.camera-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+.camera-btn{
+  padding:12px;border:2px dashed var(--border);border-radius:10px;
+  background:rgba(255,255,255,.03);color:var(--muted);font-size:13px;
+  cursor:pointer;font-family:var(--font);text-align:center;
+}
+.camera-btn:hover{border-color:rgba(96,165,250,.4);color:#fff;}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:rgba(0,0,0,.2);border-radius:12px;padding:4px;}
+.tab{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;border:none;background:transparent;font-family:var(--font);}
+.tab.active{background:rgba(59,130,246,.25);color:#fff;box-shadow:0 0 12px var(--blue-glow);}
+
+/* EMPTY */
+.empty{text-align:center;padding:3rem 1rem;color:var(--hint);font-size:13px;}
+.empty-icon{font-size:40px;margin-bottom:8px;}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .main{padding:1rem;}
+  .header{padding:.75rem 1rem;}
+  .datei-grid{grid-template-columns:1fr;}
+  .filter-bar{flex-direction:column;align-items:stretch;}
+  .filter-bar select,.filter-bar input{width:100%;}
+}
+
+/* PROGRESS */
+.progress-bar{height:4px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;margin-top:8px;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--blue),#6366f1);border-radius:2px;transition:width .3s;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <a href="index.html" class="back-btn">← Dashboard</a>
+    <div>
+      <div class="header-title">🗂 B+D Archiv</div>
+      <div class="header-sub">Dokumentenverwaltung & Kreditoren-Scanner</div>
+    </div>
+  </div>
+  <img class="header-logo" src="data:image/jpeg;base64,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" alt="BD">
+</div>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- TABS -->
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('archiv')">📁 Archiv</button>
+      <button class="tab" onclick="switchTab('scanner')">📷 Kreditoren-Scanner</button>
+    </div>
+    <div id="uploadStatus"></div>
+  </div>
+
+  <!-- ARCHIV TAB -->
+  <div id="tab-archiv">
+
+    <!-- FILTER -->
+    <div class="card">
+      <div class="filter-bar">
+        <select id="filterOrdner" onchange="loadDateien()">
+          <option value="">Alle Ordner</option>
+          <option value="angebote">📄 Angebote</option>
+          <option value="auftragsbestaetigung">📋 Auftragsbestätigungen</option>
+          <option value="lieferscheine">🚛 Lieferscheine signiert</option>
+          <option value="rechnungen-debi">🧾 Rechnungen Debi</option>
+          <option value="rechnungen-kredi">🧾 Rechnungen Kredi</option>
+          <option value="ab-lieferanten">📦 AB Lieferanten</option>
+        </select>
+        <select id="filterKunde" onchange="loadDateien()">
+          <option value="">Alle Kunden</option>
+        </select>
+        <input id="filterSuche" type="text" placeholder="🔍 Dateiname suchen..." oninput="renderDateiGrid()" style="flex:1;min-width:200px;">
+        <select id="filterStatus" onchange="loadDateien()">
+          <option value="">Alle Status</option>
+          <option value="aktiv">📂 Aktiv</option>
+          <option value="archiviert">🗄 Archiviert</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- UPLOAD -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Datei hochladen</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1rem;">
+        <div class="field">
+          <label>Ordner *</label>
+          <select id="uploadOrdner">
+            <option value="angebote">📄 Angebote</option>
+            <option value="auftragsbestaetigung">📋 Auftragsbestätigungen</option>
+            <option value="lieferscheine">🚛 Lieferscheine signiert</option>
+            <option value="rechnungen-debi">🧾 Rechnungen Debi</option>
+            <option value="rechnungen-kredi">🧾 Rechnungen Kredi</option>
+            <option value="ab-lieferanten">📦 AB Lieferanten</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Kunde (optional)</label>
+          <select id="uploadKunde">
+            <option value="">Kein Kunde</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Dateiname (optional)</label>
+          <input id="uploadName" type="text" placeholder="Leer = Originalname">
+        </div>
+      </div>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleDrop(event)">
+        <div class="upload-zone-icon">📂</div>
+        <div class="upload-zone-text">Dateien hierher ziehen oder klicken</div>
+        <div class="upload-zone-sub">PDF, Excel, Word, Bilder – max. 50MB</div>
+      </div>
+      <input type="file" id="fileInput" multiple style="display:none" onchange="handleFileSelect(this)">
+      <div class="camera-btns">
+        <div class="camera-btn" onclick="document.getElementById('cameraInput').click()">📷 Kamera</div>
+        <div class="camera-btn" onclick="document.getElementById('galleryInput').click()">🖼 Galerie</div>
+      </div>
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFileSelect(this)">
+      <input type="file" id="galleryInput" accept="image/*" multiple style="display:none" onchange="handleFileSelect(this)">
+      <div id="uploadProgress" style="display:none">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <div style="font-size:12px;color:var(--hint);margin-top:4px;" id="progressText">Hochladen...</div>
+      </div>
+    </div>
+
+    <!-- DATEIEN LISTE -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" id="dateiListeTitle">Alle Dateien</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-sm" onclick="loadDateien()">↻ Aktualisieren</button>
+        </div>
+      </div>
+      <div id="dateiGrid"></div>
+    </div>
+  </div>
+
+  <!-- SCANNER TAB -->
+  <div id="tab-scanner" style="display:none;">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📷 Kreditoren-Rechnung scannen</div>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;">Fotografiere eine Kreditoren-Rechnung – Claude liest die Daten automatisch aus und bereitet sie für CashCtrl vor.</p>
+
+      <div style="margin-bottom:1rem;">
+        <div class="camera-btns">
+          <div class="camera-btn" onclick="document.getElementById('scanCamera').click()">📷 Rechnung fotografieren</div>
+          <div class="camera-btn" onclick="document.getElementById('scanGallery').click()">🖼 Aus Galerie wählen</div>
+        </div>
+        <input type="file" id="scanCamera" accept="image/*" capture="environment" style="display:none" onchange="handleScan(this)">
+        <input type="file" id="scanGallery" accept="image/*,application/pdf" style="display:none" onchange="handleScan(this)">
+      </div>
+
+      <div id="scanPreview" style="display:none;margin-bottom:1rem;">
+        <img id="scanImg" style="max-width:100%;max-height:300px;border-radius:10px;border:1px solid var(--glass-brd);">
+      </div>
+
+      <div id="scanStatus" style="display:none;" class="status-msg status-load">⏳ Claude liest die Rechnung aus...</div>
+
+      <div id="scanResult" style="display:none;">
+        <div class="card-title" style="margin-bottom:.75rem;">Ausgelesene Daten</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem;">
+          <div class="field"><label>Lieferant</label><input id="scanLieferant" type="text"></div>
+          <div class="field"><label>Rechnungsnummer</label><input id="scanRechNr" type="text"></div>
+          <div class="field"><label>Datum</label><input id="scanDatum" type="date"></div>
+          <div class="field"><label>Betrag (CHF)</label><input id="scanBetrag" type="number" step="0.01"></div>
+          <div class="field"><label>MwSt.</label><input id="scanMwst" type="text" placeholder="z.B. 8.1%"></div>
+          <div class="field"><label>Konto</label><input id="scanKonto" type="text" placeholder="z.B. 4000"></div>
+        </div>
+        <div class="field"><label>Beschreibung / Positionen</label><textarea id="scanBeschreibung" rows="4" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;font-size:13px;outline:none;font-family:var(--font);resize:vertical;"></textarea></div>
+
+        <div id="scanResultStatus" style="display:none;" class="status-msg"></div>
+        <div style="display:flex;gap:10px;margin-top:1rem;flex-wrap:wrap;">
+          <button onclick="scanAlsDateiSpeichern()" class="btn-sm btn-primary">💾 Als Datei archivieren</button>
+          <button onclick="scanNeueScan()" class="btn-sm">📷 Neue Scan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- UMBENENNEN / ZUORDNEN MODAL -->
+<div class="overlay" id="editModal">
+  <div class="modal">
+    <h3>Datei bearbeiten</h3>
+    <div class="field"><label>Dateiname</label><input id="editName" type="text"></div>
+    <div class="field">
+      <label>Ordner</label>
+      <select id="editOrdner">
+        <option value="angebote">📄 Angebote</option>
+        <option value="auftragsbestaetigung">📋 Auftragsbestätigungen</option>
+        <option value="lieferscheine">🚛 Lieferscheine signiert</option>
+        <option value="rechnungen-debi">🧾 Rechnungen Debi</option>
+        <option value="rechnungen-kredi">🧾 Rechnungen Kredi</option>
+        <option value="ab-lieferanten">📦 AB Lieferanten</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Kunde zuordnen</label>
+      <select id="editKunde"><option value="">Kein Kunde</option></select>
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <select id="editStatus">
+        <option value="aktiv">📂 Aktiv</option>
+        <option value="archiviert">🗄 Archiviert</option>
+      </select>
+    </div>
+    <div id="editStatus2" style="display:none;" class="status-msg"></div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeEditModal()">Abbrechen</button>
+      <button onclick="saveEdit()" style="background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer;">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────
+var SUPA_URL = 'https://osxrgginjkzonvyyndpi.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zeHJnZ2luamt6b252eXluZHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMDExMjksImV4cCI6MjA5Njc3NzEyOX0.X-Ftee85CqLG0jvYVaUA1oYPr-v5svmguZuUNJAHnWo';
+var CC_FN = 'https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/cashctrl';
+var STORAGE_BUCKET = 'Dashboard BD';
+var SUPA_STORAGE = SUPA_URL+'/storage/v1';
+var META_TABLE = 'file_meta'; // Supabase Tabelle für Metadaten
+
+var allDateien = [];
+var allKunden = [];
+var currentEditFile = null;
+var currentScanFile = null;
+
+function storageHeaders(){ return {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}; }
+function bucketPath(path){ return SUPA_STORAGE+'/object/'+encodeURIComponent(STORAGE_BUCKET)+'/'+path; }
+
+// ── TABS ─────────────────────────────────────────────────────────
+function switchTab(tab){
+  document.getElementById('tab-archiv').style.display = tab==='archiv'?'':'none';
+  document.getElementById('tab-scanner').style.display = tab==='scanner'?'':'none';
+  document.querySelectorAll('.tab').forEach(function(b,i){
+    b.classList.toggle('active', (i===0&&tab==='archiv')||(i===1&&tab==='scanner'));
+  });
+}
+
+// ── KUNDEN LADEN ─────────────────────────────────────────────────
+function loadKunden(){
+  fetch(CC_FN+'?action=persons')
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      allKunden = res.data || [];
+      allKunden.sort(function(a,b){ return (a.name||'').localeCompare(b.name||'','de'); });
+      var opts = '<option value="">Kein Kunde</option>'
+        + allKunden.map(function(k){
+          var name = k.company||(k.firstName+' '+k.lastName).trim()||k.name;
+          return '<option value="'+k.nr+'">'+k.nr+' – '+name+'</option>';
+        }).join('');
+      ['filterKunde','uploadKunde','editKunde'].forEach(function(id){
+        var el = document.getElementById(id);
+        if(el) el.innerHTML = id==='filterKunde'?'<option value="">Alle Kunden</option>'+opts.substring(opts.indexOf('<option value="')):opts;
+      });
+    }).catch(function(){});
+}
+
+// ── DATEIEN LADEN ────────────────────────────────────────────────
+function loadDateien(){
+  var ordner = document.getElementById('filterOrdner').value;
+  var status = document.getElementById('filterStatus').value;
+  var kunde = document.getElementById('filterKunde').value;
+  var title = document.getElementById('dateiListeTitle');
+  title.textContent = (ordner?ordner:'Alle Ordner')+' – Lade...';
+
+  // Metadaten aus Supabase DB laden
+  var url = SUPA_URL+'/rest/v1/file_meta?select=*&order=created_at.desc';
+  if(ordner) url += '&folder=eq.'+ordner;
+  if(status) url += '&status=eq.'+status;
+  if(kunde) url += '&kunde_nr=eq.'+kunde;
+
+  fetch(url, { headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY} })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(Array.isArray(data)){
+        allDateien = data;
+      } else {
+        // Tabelle existiert noch nicht – Storage direkt abfragen
+        loadDateienFromStorage(ordner);
+        return;
+      }
+      title.textContent = (ordner?ordner:'Alle Ordner')+' ('+allDateien.length+')';
+      renderDateiGrid();
+    })
+    .catch(function(){ loadDateienFromStorage(ordner); });
+}
+
+function loadDateienFromStorage(ordner){
+  var prefix = ordner ? ordner+'/' : '';
+  fetch(SUPA_STORAGE+'/object/list/'+encodeURIComponent(STORAGE_BUCKET), {
+    method:'POST',
+    headers:{...storageHeaders(),'Content-Type':'application/json'},
+    body: JSON.stringify({ prefix: prefix, limit:500, sortBy:{column:'created_at',order:'desc'} })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(files){
+    allDateien = (files||[]).filter(function(f){ return f.name && f.id; }).map(function(f){
+      var parts = (prefix+f.name).split('/');
+      return {
+        id: f.id,
+        path: prefix+f.name,
+        folder: parts[0],
+        name: f.name,
+        size: f.metadata?.size||0,
+        created_at: f.created_at,
+        status: 'aktiv',
+        kunde_nr: null,
+        kunde_name: null
+      };
+    });
+    document.getElementById('dateiListeTitle').textContent = (ordner||'Alle')+' ('+allDateien.length+')';
+    renderDateiGrid();
+  })
+  .catch(function(err){ document.getElementById('dateiGrid').innerHTML='<div class="empty"><div class="empty-icon">⚠️</div>Fehler: '+err.message+'</div>'; });
+}
+
+function renderDateiGrid(){
+  var el = document.getElementById('dateiGrid');
+  var q = document.getElementById('filterSuche').value.toLowerCase();
+  var list = allDateien.filter(function(f){ return !q || f.name.toLowerCase().includes(q); });
+
+  if(!list.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">📭</div>Keine Dateien gefunden.</div>';
+    return;
+  }
+
+  var FOLDER_ICONS = {angebote:'📄',auftragsbestaetigung:'📋',lieferscheine:'🚛','rechnungen-debi':'🧾','rechnungen-kredi':'🧾','ab-lieferanten':'📦'};
+
+  el.innerHTML='<div class="datei-grid">'+list.map(function(f){
+    var ext = (f.name||'').split('.').pop().toLowerCase();
+    var icon = ext==='pdf'?'📄':ext==='xlsx'||ext==='xls'?'📊':ext==='docx'||ext==='doc'?'📝':ext==='jpg'||ext==='jpeg'||ext==='png'?'🖼':'📎';
+    var size = f.size ? (f.size>1048576?(f.size/1048576).toFixed(1)+'MB':(f.size/1024).toFixed(0)+'KB') : '';
+    var date = f.created_at ? new Date(f.created_at).toLocaleDateString('de-CH') : '';
+    var folderIcon = FOLDER_ICONS[f.folder]||'📁';
+    var isArchiv = f.status==='archiviert';
+    return '<div class="datei-card">'
+      +'<div class="datei-card-header">'
+        +'<div class="datei-icon">'+icon+'</div>'
+        +'<div style="flex:1;min-width:0;">'
+          +'<div class="datei-name">'+f.name+'</div>'
+          +'<div class="datei-meta">'+folderIcon+' '+(f.folder||'')+(size?' · '+size:'')+(date?' · '+date:'')+'</div>'
+          +(f.kunde_nr?'<div class="datei-kunde-badge">👤 '+f.kunde_nr+(f.kunde_name?' – '+f.kunde_name:'')+'</div>':'')
+          +(isArchiv?'<div class="archiv-badge">🗄 Archiviert</div>':'')
+        +'</div>'
+      +'</div>'
+      +'<div class="datei-actions">'
+        +'<button class="btn-sm btn-primary" onclick="downloadDatei(\''+f.path+'\',\''+f.name+'\')">⬇ Download</button>'
+        +'<button class="btn-sm" onclick="openEditModal(\''+f.path+'\',\''+f.name+'\',\''+f.folder+'\',\''+( f.kunde_nr||'')+'\',\'\'+(f.status||\'aktiv\')+\'\')">✏ Bearbeiten</button>'
+        +(isArchiv?'':'<button class="btn-sm btn-green" onclick="archiviereDatei(\''+f.path+'\')">🗄 Archivieren</button>')
+        +'<button class="btn-sm btn-danger" onclick="deleteDatei(\''+f.path+'\')">🗑</button>'
+      +'</div>'
+    +'</div>';
+  }).join('')+'</div>';
+}
+
+// ── UPLOAD ───────────────────────────────────────────────────────
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag-over');
+  uploadFiles(Array.from(e.dataTransfer.files));
+}
+function handleFileSelect(input){ uploadFiles(Array.from(input.files)); input.value=''; }
+
+function uploadFiles(files){
+  if(!files.length) return;
+  var ordner = document.getElementById('uploadOrdner').value;
+  var kunde = document.getElementById('uploadKunde').value;
+  var customName = document.getElementById('uploadName').value.trim();
+  var prog = document.getElementById('uploadProgress');
+  var fill = document.getElementById('progressFill');
+  var progText = document.getElementById('progressText');
+  prog.style.display='block'; fill.style.width='0%';
+
+  var done=0;
+  var promises = files.map(function(file, i){
+    var fileName = files.length===1 && customName ? customName+(customName.includes('.')?'':'.'+file.name.split('.').pop()) : file.name;
+    if(kunde) fileName = kunde+'_'+fileName;
+    var path = ordner+'/'+fileName;
+    return fetch(bucketPath(path), {
+      method:'POST',
+      headers:{...storageHeaders(),'Content-Type':file.type||'application/octet-stream','x-upsert':'true'},
+      body:file
+    })
+    .then(function(r){
+      done++;
+      fill.style.width=(done/files.length*100)+'%';
+      progText.textContent = done+'/'+files.length+' hochgeladen';
+      if(!r.ok) throw new Error('Fehler bei '+fileName);
+      return r.json();
+    });
+  });
+
+  Promise.all(promises)
+    .then(function(){
+      showStatus('✅ '+files.length+' Datei(en) erfolgreich hochgeladen!','ok');
+      setTimeout(function(){ prog.style.display='none'; },2000);
+      document.getElementById('uploadName').value='';
+      loadDateien();
+    })
+    .catch(function(err){ showStatus('❌ '+err.message,'err'); prog.style.display='none'; });
+}
+
+// ── DOWNLOAD ─────────────────────────────────────────────────────
+function downloadDatei(path, name){
+  fetch(SUPA_STORAGE+'/object/sign/'+encodeURIComponent(STORAGE_BUCKET)+'/'+path, {
+    method:'POST',
+    headers:{...storageHeaders(),'Content-Type':'application/json'},
+    body: JSON.stringify({expiresIn:60})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    var url = data.signedURL||data.signedUrl;
+    if(!url) throw new Error(JSON.stringify(data));
+    if(!url.startsWith('http')) url = SUPA_URL+url;
+    var a = document.createElement('a');
+    a.href=url; a.download=name; a.target='_blank'; a.click();
+  })
+  .catch(function(err){ alert('Download Fehler: '+err.message); });
+}
+
+// ── ARCHIVIEREN ──────────────────────────────────────────────────
+function archiviereDatei(path){
+  if(!confirm('Datei ins Archiv verschieben?')) return;
+  // Verschiebt in archiv/ Unterordner
+  var newPath = 'archiv/'+path;
+  // Copy + Delete (Supabase hat kein Move)
+  fetch(SUPA_STORAGE+'/object/move', {
+    method:'POST',
+    headers:{...storageHeaders(),'Content-Type':'application/json'},
+    body: JSON.stringify({bucketId:STORAGE_BUCKET, sourceKey:path, destinationKey:newPath})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(){ showStatus('✅ Archiviert!','ok'); loadDateien(); })
+  .catch(function(err){ showStatus('❌ '+err.message,'err'); });
+}
+
+// ── LÖSCHEN ──────────────────────────────────────────────────────
+function deleteDatei(path){
+  if(!confirm('Datei endgültig löschen?')) return;
+  fetch(bucketPath(path), { method:'DELETE', headers:storageHeaders() })
+    .then(function(){ showStatus('✅ Gelöscht!','ok'); loadDateien(); })
+    .catch(function(err){ showStatus('❌ '+err.message,'err'); });
+}
+
+// ── EDIT MODAL ───────────────────────────────────────────────────
+function openEditModal(path, name, folder, kundeNr, status){
+  currentEditFile = {path, name, folder, kundeNr, status};
+  document.getElementById('editName').value = name;
+  document.getElementById('editOrdner').value = folder;
+  document.getElementById('editKunde').value = kundeNr||'';
+  document.getElementById('editStatus').value = status||'aktiv';
+  document.getElementById('editStatus2').style.display='none';
+  document.getElementById('editModal').classList.add('open');
+}
+function closeEditModal(){ document.getElementById('editModal').classList.remove('open'); }
+
+function saveEdit(){
+  var newName = document.getElementById('editName').value.trim();
+  var newFolder = document.getElementById('editOrdner').value;
+  var newKunde = document.getElementById('editKunde').value;
+  var newStatus = document.getElementById('editStatus').value;
+  if(!newName){ alert('Bitte einen Namen eingeben.'); return; }
+
+  var statusEl = document.getElementById('editStatus2');
+  statusEl.style.display='block';
+  statusEl.className='status-msg status-load';
+  statusEl.textContent='⏳ Wird gespeichert...';
+
+  var prefix = newKunde ? newKunde+'_' : '';
+  var newPath = newFolder+'/'+prefix+newName;
+
+  // Move via Supabase Storage Move API
+  fetch(SUPA_STORAGE+'/object/move', {
+    method:'POST',
+    headers:{...storageHeaders(),'Content-Type':'application/json'},
+    body: JSON.stringify({ bucketId:STORAGE_BUCKET, sourceKey:currentEditFile.path, destinationKey:newPath })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(){
+    statusEl.className='status-msg status-ok';
+    statusEl.textContent='✅ Gespeichert!';
+    setTimeout(function(){ closeEditModal(); loadDateien(); }, 1000);
+  })
+  .catch(function(err){
+    statusEl.className='status-msg status-err';
+    statusEl.textContent='❌ '+err.message;
+  });
+}
+
+// ── KREDITOREN SCANNER ───────────────────────────────────────────
+function handleScan(input){
+  var file = input.files[0]; if(!file) return; input.value='';
+  currentScanFile = file;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    document.getElementById('scanImg').src = e.target.result;
+    document.getElementById('scanPreview').style.display='block';
+    document.getElementById('scanResult').style.display='none';
+    runClaudeScan(e.target.result, file.type);
+  };
+  reader.readAsDataURL(file);
+}
+
+function runClaudeScan(dataUrl, mimeType){
+  var statusEl = document.getElementById('scanStatus');
+  statusEl.style.display='block';
+  statusEl.className='status-msg status-load';
+  statusEl.textContent='⏳ Claude liest die Rechnung aus...';
+
+  var base64 = dataUrl.split(',')[1];
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model:'claude-sonnet-4-6',
+      max_tokens:1000,
+      messages:[{
+        role:'user',
+        content:[
+          { type:'image', source:{ type:'base64', media_type:mimeType||'image/jpeg', data:base64 } },
+          { type:'text', text:'Lies diese Kreditoren-Rechnung aus und antworte NUR mit JSON (kein Markdown, keine Erklärung):\n{"lieferant":"","rechnungsnummer":"","datum":"YYYY-MM-DD","betrag_netto":0,"betrag_brutto":0,"mwst_satz":"","waehrung":"CHF","beschreibung":"","positionen":[{"name":"","menge":1,"preis":0}]}' }
+        ]
+      }]
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res){
+    var text = (res.content||[]).map(function(c){ return c.text||''; }).join('');
+    var clean = text.replace(/```json|```/g,'').trim();
+    try {
+      var data = JSON.parse(clean);
+      document.getElementById('scanLieferant').value = data.lieferant||'';
+      document.getElementById('scanRechNr').value = data.rechnungsnummer||'';
+      document.getElementById('scanDatum').value = data.datum||'';
+      document.getElementById('scanBetrag').value = data.betrag_brutto||data.betrag_netto||'';
+      document.getElementById('scanMwst').value = data.mwst_satz||'';
+      document.getElementById('scanBeschreibung').value = data.beschreibung||(data.positionen||[]).map(function(p){ return p.name; }).join(', ')||'';
+      statusEl.style.display='none';
+      document.getElementById('scanResult').style.display='block';
+    } catch(e){
+      statusEl.className='status-msg status-err';
+      statusEl.textContent='❌ Konnte Daten nicht lesen. Bitte manuell eingeben.';
+      document.getElementById('scanResult').style.display='block';
+    }
+  })
+  .catch(function(err){
+    statusEl.className='status-msg status-err';
+    statusEl.textContent='❌ Fehler: '+err.message;
+  });
+}
+
+function scanAlsDateiSpeichern(){
+  if(!currentScanFile) return;
+  var lieferant = document.getElementById('scanLieferant').value||'rechnung';
+  var datum = document.getElementById('scanDatum').value||new Date().toISOString().split('T')[0];
+  var ext = currentScanFile.name.split('.').pop();
+  var fileName = datum+'_'+lieferant.replace(/[^a-zA-Z0-9äöüÄÖÜ]/g,'-')+'.'+ext;
+  var path = 'rechnungen-kredi/'+fileName;
+  var statusEl = document.getElementById('scanResultStatus');
+  statusEl.style.display='block';
+  statusEl.className='status-msg status-load';
+  statusEl.textContent='⏳ Wird archiviert...';
+
+  fetch(bucketPath(path), {
+    method:'POST',
+    headers:{...storageHeaders(),'Content-Type':currentScanFile.type||'image/jpeg','x-upsert':'true'},
+    body: currentScanFile
+  })
+  .then(function(r){ if(!r.ok) throw new Error('Upload fehlgeschlagen'); return r.json(); })
+  .then(function(){
+    statusEl.className='status-msg status-ok';
+    statusEl.textContent='✅ Als "'+fileName+'" in Rechnungen Kredi archiviert!';
+  })
+  .catch(function(err){ statusEl.className='status-msg status-err'; statusEl.textContent='❌ '+err.message; });
+}
+
+function scanNeueScan(){
+  currentScanFile = null;
+  document.getElementById('scanPreview').style.display='none';
+  document.getElementById('scanResult').style.display='none';
+  document.getElementById('scanStatus').style.display='none';
+  ['scanLieferant','scanRechNr','scanDatum','scanBetrag','scanMwst','scanBeschreibung','scanKonto'].forEach(function(id){ document.getElementById(id).value=''; });
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────
+function showStatus(msg, type){
+  var el = document.getElementById('uploadStatus');
+  el.innerHTML='<div class="status-msg status-'+type+'">'+msg+'</div>';
+  setTimeout(function(){ el.innerHTML=''; },3000);
+}
+
+// INIT
+loadKunden();
+loadDateien();
+</script>
+</body>
+</html>
