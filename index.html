@@ -1150,17 +1150,43 @@ function openPersonModal(person){
   if(person && person.id){
     currentPersonId = person.id;
     document.getElementById('personModalTitle').textContent = 'Kunde bearbeiten';
-    document.getElementById('pNr').value = person.nr || '';
+    // Erst Basis-Daten setzen
     setPersonType(!!person.isCompany);
-    document.getElementById('pCompany').value=person.company||'';
-    document.getElementById('pFirstName').value=person.firstName||'';
-    document.getElementById('pLastName').value=person.lastName||'';
-    document.getElementById('pAddress').value=person.address||'';
-    document.getElementById('pZip').value=person.zip||'';
-    document.getElementById('pCity').value=person.city||'';
-    document.getElementById('pPhone').value=person.phone||'';
-    document.getElementById('pMobile').value=person.mobile||'';
-    document.getElementById('pEmail').value=person.email||'';
+    document.getElementById('pNr').value = person.nr || '';
+    document.getElementById('pCompany').value = person.company||'';
+    document.getElementById('pFirstName').value = person.firstName||'';
+    document.getElementById('pLastName').value = person.lastName||'';
+    document.getElementById('pAddress').value = person.address||'';
+    document.getElementById('pZip').value = person.zip||'';
+    document.getElementById('pCity').value = person.city||'';
+    document.getElementById('pPhone').value = person.phone||'';
+    document.getElementById('pMobile').value = person.mobile||'';
+    document.getElementById('pEmail').value = person.email||'';
+    // Dann vollständige Daten via API nachladen (contacts sind nur in read.json)
+    fetch(CC_FN+'?action=person-read&id='+person.id)
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res.error || !res.data) return;
+        var d = res.data;
+        var contacts = d.contacts || [];
+        var email = '';
+        var phone = '';
+        var mobile = '';
+        contacts.forEach(function(c){
+          var type = c.type || '';
+          if(type.indexOf('EMAIL')!==-1) email = c.address||'';
+          else if(type.indexOf('MOBILE')!==-1) mobile = c.address||'';
+          else if(type.indexOf('PHONE')!==-1) phone = c.address||'';
+        });
+        if(email) document.getElementById('pEmail').value = email;
+        if(phone) document.getElementById('pPhone').value = phone;
+        if(mobile) document.getElementById('pMobile').value = mobile;
+        // Adresse aus addresses Array
+        var addr = (d.addresses||[])[0]||{};
+        if(addr.address) document.getElementById('pAddress').value = addr.address;
+        if(addr.zip) document.getElementById('pZip').value = addr.zip;
+        if(addr.city) document.getElementById('pCity').value = addr.city;
+      }).catch(function(){});
   }
   document.getElementById('personModalOverlay').style.display='flex';
 }
