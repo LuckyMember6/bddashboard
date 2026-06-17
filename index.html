@@ -286,6 +286,15 @@ body{
 .pdf-item-name{color:#fff;font-weight:500;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .pdf-item-size{color:var(--hint);font-size:11px;flex-shrink:0;}
 .pdf-download{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:var(--font);flex-shrink:0;}
+.folder-btn{padding:9px 16px;border-radius:10px;border:1px solid var(--glass-brd);background:var(--glass);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;white-space:nowrap;}
+.folder-btn:hover{color:#fff;border-color:rgba(96,165,250,.4);}
+.active-folder{background:linear-gradient(135deg,rgba(59,130,246,.3),rgba(99,102,241,.2));border-color:rgba(96,165,250,.55);color:#fff;box-shadow:0 0 16px var(--blue-glow);}
+.datei-item{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--glass-brd);}
+.datei-item:last-child{border-bottom:none;}
+.datei-icon{font-size:22px;flex-shrink:0;}
+.datei-name{font-size:13px;font-weight:600;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.datei-meta{font-size:11px;color:var(--hint);}
+.datei-kunde{font-size:11px;color:rgba(96,165,250,.8);margin-top:1px;}
 
 /* KUNDEN */
 .kunden-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
@@ -347,6 +356,7 @@ body{
   <button class="nav-item" onclick="showPage('lager')"><span class="nav-icon">📦</span><span>Lagerbestand</span></button>
   <button class="nav-item" onclick="showPage('kunden')"><span class="nav-icon">👥</span><span>Kunden</span></button>
   <button class="nav-item" onclick="showPage('mails')"><span class="nav-icon">📧</span><span>Mail-Vorlagen</span></button>
+  <button class="nav-item" onclick="showPage('dateien')"><span class="nav-icon">🗂</span><span>Dateien</span></button>
   <button class="nav-item" onclick="showPage('wixshop')"><span class="nav-icon">🛍</span><span>Wix Shop</span></button>
 </nav>
 
@@ -718,6 +728,52 @@ body{
   </div>
 </div>
 
+<!-- DATEIEN -->
+<section id="page-dateien" class="page-section">
+  <div class="page-header">
+    <div><div class="page-title">Dateien</div><div class="page-sub">Dokumentenverwaltung</div></div>
+  </div>
+
+  <!-- ORDNER TABS -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button onclick="selectFolder('angebote')" id="folder-btn-angebote" class="folder-btn active-folder">📄 Angebote</button>
+    <button onclick="selectFolder('auftragsbestaetigung')" id="folder-btn-auftragsbestaetigung" class="folder-btn">📋 Auftragsbestätigungen</button>
+    <button onclick="selectFolder('lieferscheine')" id="folder-btn-lieferscheine" class="folder-btn">🚛 Lieferscheine signiert</button>
+    <button onclick="selectFolder('rechnungen-debi')" id="folder-btn-rechnungen-debi" class="folder-btn">🧾 Rechnungen Debi</button>
+    <button onclick="selectFolder('rechnungen-kredi')" id="folder-btn-rechnungen-kredi" class="folder-btn">🧾 Rechnungen Kredi</button>
+    <button onclick="selectFolder('ab-lieferanten')" id="folder-btn-ab-lieferanten" class="folder-btn">📦 AB Lieferanten</button>
+    <button onclick="selectFolder('kunden')" id="folder-btn-kunden" class="folder-btn">👥 Nach Kunde</button>
+  </div>
+
+  <!-- UPLOAD BEREICH -->
+  <div class="card" id="dateiUploadCard">
+    <div class="card-header">
+      <div class="card-title" id="currentFolderTitle">📄 Angebote</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input id="dateiKundenNr" type="text" placeholder="Kundennr. (optional)"
+          style="width:160px;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-size:13px;outline:none;">
+        <label class="card-action" style="cursor:pointer;">
+          + Datei hochladen
+          <input type="file" multiple onchange="uploadDateien(this)" style="display:none;">
+        </label>
+      </div>
+    </div>
+    <div id="dateiUploadStatus" style="display:none;font-size:13px;padding:8px;color:var(--muted);"></div>
+    <div id="dateiListe"></div>
+  </div>
+
+  <!-- KUNDENANSICHT -->
+  <div class="card" id="dateiKundenCard" style="display:none;">
+    <div class="card-header">
+      <div class="card-title">👥 Dateien nach Kunde</div>
+      <input id="dateiKundenSearch" type="text" placeholder="🔍 Kundennr. oder Name..."
+        oninput="filterDateienKunde(this.value)"
+        style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-size:13px;outline:none;width:220px;">
+    </div>
+    <div id="dateiKundenListe"></div>
+  </div>
+</section>
+
 <!-- WIX SHOP SEITE -->
 <section id="page-wixshop" class="page-section">
   <div class="page-header">
@@ -907,6 +963,7 @@ function showPage(id){
   if(id==='auftraege') loadCcOrders('auftraege', 3);
   if(id==='offerten') loadCcOrders('offerten', 2);
   if(id==='lieferscheine') { loadCcOrders('lieferscheine', 6); loadSignedDocs(); }
+  if(id==='dateien') { selectFolder(currentFolder); }
   if(id==='rechnungen') loadCcOrders('rechnungen', 4);
   if(id==='kunden') loadKunden();
 }
@@ -1378,7 +1435,242 @@ function downloadCcPdf(orderId, btn){
     });
 }
 
-// ─── UNTERSCHRIFT / SIGNATUR ───────────────────────────────────
+// ─── DATEIEN (Supabase Storage) ────────────────────────────────
+var SUPA_STORAGE = SUPA_URL + '/storage/v1';
+var STORAGE_BUCKET = 'dashboard-files';
+var currentFolder = 'angebote';
+var allDateien = [];
+
+var FOLDER_LABELS = {
+  'angebote': '📄 Angebote',
+  'auftragsbestaetigung': '📋 Auftragsbestätigungen',
+  'lieferscheine': '🚛 Lieferscheine signiert',
+  'rechnungen-debi': '🧾 Rechnungen Debi',
+  'rechnungen-kredi': '🧾 Rechnungen Kredi',
+  'ab-lieferanten': '📦 AB Lieferanten',
+  'kunden': '👥 Nach Kunde'
+};
+
+function storageHeaders(){
+  return { 'Authorization': 'Bearer '+SUPA_KEY, 'apikey': SUPA_KEY };
+}
+
+function selectFolder(folder){
+  currentFolder = folder;
+  // Buttons updaten
+  document.querySelectorAll('.folder-btn').forEach(function(b){ b.classList.remove('active-folder'); });
+  document.getElementById('folder-btn-'+folder).classList.add('active-folder');
+  // Label updaten
+  document.getElementById('currentFolderTitle').textContent = FOLDER_LABELS[folder]||folder;
+  // Kundenansicht togglen
+  var isKunden = folder === 'kunden';
+  document.getElementById('dateiUploadCard').style.display = isKunden ? 'none' : '';
+  document.getElementById('dateiKundenCard').style.display = isKunden ? '' : 'none';
+  if(isKunden){ loadDateienKunden(); return; }
+  loadDateien(folder);
+}
+
+function storageUrl(path){
+  return SUPA_STORAGE+'/object/'+STORAGE_BUCKET+'/'+path;
+}
+
+function listUrl(prefix){
+  return SUPA_STORAGE+'/object/list/'+STORAGE_BUCKET+'?prefix='+encodeURIComponent(prefix)+'&limit=200&sortBy=created_at&sortOrder=desc';
+}
+
+function loadDateien(folder){
+  var el = document.getElementById('dateiListe'); if(!el) return;
+  el.innerHTML = '<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Lade Dateien...</p>';
+  fetch(SUPA_STORAGE+'/object/list/'+STORAGE_BUCKET, {
+    method: 'POST',
+    headers: { ...storageHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prefix: folder+'/', limit: 200, sortBy: { column: 'created_at', order: 'desc' } })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(files){
+    if(!files || !files.length){
+      el.innerHTML = '<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Keine Dateien in diesem Ordner.</p>';
+      return;
+    }
+    renderDateiListe(files, folder, el);
+  })
+  .catch(function(err){ el.innerHTML = '<p style="color:var(--red);font-size:13px;">Fehler: '+err.message+'</p>'; });
+}
+
+function renderDateiListe(files, folder, el){
+  el.innerHTML = files.filter(function(f){ return f.name; }).map(function(f){
+    var meta = f.metadata || {};
+    var size = meta.size ? Math.round(meta.size/1024)+'KB' : '';
+    var date = f.created_at ? new Date(f.created_at).toLocaleDateString('de-CH') : '';
+    var path = folder+'/'+f.name;
+    var ext = f.name.split('.').pop().toLowerCase();
+    var icon = ext==='pdf'?'📄':ext==='xlsx'||ext==='xls'?'📊':ext==='docx'||ext==='doc'?'📝':'📎';
+    // Kundennummer aus Dateiname extrahieren (Format: KUNDENNR_dateiname)
+    var kundeInfo = '';
+    var nameParts = f.name.split('_');
+    if(nameParts.length > 1 && /^\d+$/.test(nameParts[0])){
+      kundeInfo = '<div class="datei-kunde">👤 Kunde '+nameParts[0]+'</div>';
+    }
+    return '<div class="datei-item">'
+      +'<div class="datei-icon">'+icon+'</div>'
+      +'<div style="flex:1;min-width:0;">'
+        +'<div class="datei-name" title="'+f.name+'">'+f.name+'</div>'
+        +'<div class="datei-meta">'+[size,date].filter(Boolean).join(' · ')+'</div>'
+        +kundeInfo
+      +'</div>'
+      +'<button onclick="downloadDatei(\''+path+'\',\''+f.name+'\')" class="cc-btn">⬇</button>'
+      +'<button onclick="deleteDatei(\''+path+'\')" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:7px 10px;font-size:12px;color:#fca5a5;cursor:pointer;">🗑</button>'
+    +'</div>';
+  }).join('');
+}
+
+function uploadDateien(input){
+  var files = Array.from(input.files);
+  if(!files.length) return;
+  var kundeNr = document.getElementById('dateiKundenNr').value.trim();
+  var status = document.getElementById('dateiUploadStatus');
+  status.style.display = 'block';
+  status.textContent = '⏳ '+files.length+' Datei(en) werden hochgeladen...';
+
+  var promises = files.map(function(file){
+    // Dateiname: kundennr_originalname oder originalname
+    var fileName = kundeNr ? kundeNr+'_'+file.name : file.name;
+    var path = currentFolder+'/'+fileName;
+    // Auch unter Kunden speichern falls Kundennr vorhanden
+    var uploads = [uploadSingleFile(file, path)];
+    if(kundeNr){
+      uploads.push(uploadSingleFile(file, 'kunden/'+kundeNr+'/'+file.name));
+    }
+    return Promise.all(uploads);
+  });
+
+  Promise.all(promises)
+    .then(function(){
+      status.textContent = '✅ '+files.length+' Datei(en) hochgeladen!';
+      status.style.color = 'var(--green)';
+      setTimeout(function(){ status.style.display='none'; status.style.color='var(--muted)'; }, 2500);
+      loadDateien(currentFolder);
+      input.value = '';
+    })
+    .catch(function(err){
+      status.textContent = 'Fehler: '+err.message;
+      status.style.color = 'var(--red)';
+    });
+}
+
+function uploadSingleFile(file, path){
+  return fetch(storageUrl(path), {
+    method: 'POST',
+    headers: { ...storageHeaders(), 'Content-Type': file.type||'application/octet-stream', 'x-upsert': 'true' },
+    body: file
+  }).then(function(r){
+    if(!r.ok) throw new Error('Upload fehlgeschlagen: '+path);
+    return r.json();
+  });
+}
+
+function downloadDatei(path, name){
+  fetch(SUPA_STORAGE+'/object/authenticated/'+STORAGE_BUCKET+'/'+path, {
+    headers: storageHeaders()
+  })
+  .then(function(r){ return r.blob(); })
+  .then(function(blob){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name; a.click();
+    URL.revokeObjectURL(url);
+  })
+  .catch(function(err){ alert('Download Fehler: '+err.message); });
+}
+
+function deleteDatei(path){
+  if(!confirm('Datei löschen?')) return;
+  fetch(SUPA_STORAGE+'/object/'+STORAGE_BUCKET+'/'+path, {
+    method: 'DELETE', headers: storageHeaders()
+  })
+  .then(function(){ loadDateien(currentFolder); })
+  .catch(function(err){ alert('Fehler: '+err.message); });
+}
+
+function loadDateienKunden(){
+  var el = document.getElementById('dateiKundenListe'); if(!el) return;
+  el.innerHTML = '<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Lade Kundenordner...</p>';
+  fetch(SUPA_STORAGE+'/object/list/'+STORAGE_BUCKET, {
+    method: 'POST',
+    headers: { ...storageHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prefix: 'kunden/', limit: 500, sortBy: { column: 'name', order: 'asc' } })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(items){
+    if(!items||!items.length){ el.innerHTML='<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Keine Kundenordner vorhanden.</p>'; return; }
+    // Eindeutige Kundennummern aus Unterordnern
+    var kunden = {};
+    items.forEach(function(item){
+      if(item.id) return; // Ist Datei, kein Ordner
+      kunden[item.name] = item;
+    });
+    // Falls keine Unterordner, zeige Dateien direkt
+    renderKundenOrdner(items);
+  })
+  .catch(function(err){ el.innerHTML='<p style="color:var(--red);font-size:13px;">Fehler: '+err.message+'</p>'; });
+}
+
+function renderKundenOrdner(items){
+  var el = document.getElementById('dateiKundenListe'); if(!el) return;
+  // Gruppiere nach Kundennummer (Prefix vor _)
+  var gruppen = {};
+  items.forEach(function(f){
+    if(!f.name) return;
+    var parts = f.name.split('/');
+    var kundeNr = parts[0];
+    if(!gruppen[kundeNr]) gruppen[kundeNr] = [];
+    gruppen[kundeNr].push(f);
+  });
+  var keys = Object.keys(gruppen).sort();
+  if(!keys.length){ el.innerHTML='<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Keine Dateien vorhanden.</p>'; return; }
+  el.innerHTML = keys.map(function(nr){
+    var dateien = gruppen[nr];
+    // Kundenname suchen
+    var kunde = allKunden.find(function(k){ return String(k.nr)===String(nr); });
+    var kundeName = kunde ? (kunde.company||((kunde.firstName+' '+kunde.lastName).trim())) : '';
+    return '<div style="margin-bottom:1rem;">'
+      +'<div style="font-size:13px;font-weight:700;color:#fff;padding:8px 0;border-bottom:1px solid var(--glass-brd);">👤 '+nr+(kundeName?' – '+kundeName:'')+'</div>'
+      +dateien.map(function(f){
+        var name = f.name.split('/').pop();
+        var path = 'kunden/'+f.name;
+        var ext = name.split('.').pop().toLowerCase();
+        var icon = ext==='pdf'?'📄':ext==='xlsx'?'📊':ext==='docx'?'📝':'📎';
+        return '<div class="datei-item" style="padding-left:12px;">'
+          +'<div class="datei-icon">'+icon+'</div>'
+          +'<div class="datei-name">'+name+'</div>'
+          +'<button onclick="downloadDatei(\''+path+'\',\''+name+'\')" class="cc-btn">⬇</button>'
+        +'</div>';
+      }).join('')
+    +'</div>';
+  }).join('');
+}
+
+function filterDateienKunde(q){
+  if(!q){ loadDateienKunden(); return; }
+  // Suche in bereits geladenem Inhalt – einfach neu laden mit Filter
+  loadDateienKunden();
+}
+
+// Signierte Lieferscheine auch in Supabase Storage speichern
+async function saveSignedPdfToStorage(pdfBytes, orderId, kundenName){
+  var pdfArr = new Uint8Array(pdfBytes);
+  var blob = new Blob([pdfArr], { type: 'application/pdf' });
+  var fileName = 'lieferschein-signiert-'+orderId+'.pdf';
+  var path = 'lieferscheine/'+fileName;
+  try {
+    await fetch(storageUrl(path), {
+      method: 'POST',
+      headers: { ...storageHeaders(), 'Content-Type': 'application/pdf', 'x-upsert': 'true' },
+      body: blob
+    });
+    return true;
+  } catch(e){ return false; }
+}
 var signaturePad = null;
 var currentSignOrderId = null;
 var currentSignPdfBytes = null;
@@ -1563,6 +1855,8 @@ async function saveSignedPdfLocal(){
 
     status.style.color = 'var(--green)';
     status.textContent = '✅ Im Dashboard gespeichert!';
+    // Auch in Supabase Storage speichern
+    saveSignedPdfToStorage(pdfBytes, currentSignOrderId, currentSignAssociateName);
     loadSignedDocs();
   } catch(err){
     status.style.color = 'var(--red)';
