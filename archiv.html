@@ -9,6 +9,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="B+D Archiv">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
 <style>
 :root{
   --navy:#1B2F6E;--blue:#3B82F6;--blue-glow:rgba(59,130,246,.45);
@@ -447,43 +450,35 @@ function analyseFile(file){
     };
     reader.readAsDataURL(file);
   } else if(ext === 'pdf'){
-    // PDF als document type - Claude kann PDFs direkt lesen!
-    var reader=new FileReader();
-    reader.onload=function(e){
-      var base64=e.target.result.split(',')[1];
-      claudeAnalysePdf(base64, file.name);
-    };
-    reader.readAsDataURL(file);
+    // PDF erste Seite → Canvas → JPEG → Claude Vision
+    var pdfUrl = URL.createObjectURL(file);
+    renderPdfToJpeg(pdfUrl, file.name);
   } else {
     claudeAnalyseText(file.name);
   }
 }
 
-function claudeAnalysePdf(base64, fileName){
-  fetch('https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/smart-api',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zeHJnZ2luamt6b252eXluZHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMDExMjksImV4cCI6MjA5Njc3NzEyOX0.X-Ftee85CqLG0jvYVaUA1oYPr-v5svmguZuUNJAHnWo'},
-    body:JSON.stringify({
-      model:'claude-sonnet-4-6',
-      max_tokens:800,
-      messages:[{
-        role:'user',
-        content:[
-          {type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}},
-          {type:'text',text:'Analysiere dieses PDF für Bärtsch+Dobal AG (Schweizer Büromöbel-Händler).\nOrdner-Regeln:\n- Lieferschein → lieferscheine\n- Rechnung AN Kunden → rechnungen-debi\n- Rechnung VON Lieferant → rechnungen-kredi\n- Offerte/Angebot → angebote\n- Auftragsbestätigung an Kunden → auftragsbestaetigung\n- Bestellung an Lieferant → ab-lieferanten\nAntworte NUR mit JSON:\n{"ordner":"angebote|auftragsbestaetigung|lieferscheine|rechnungen-debi|rechnungen-kredi|ab-lieferanten","ordner_grund":"kurze Begründung","dateiname":"vorgeschlagener-dateiname.pdf","kunde_lieferant":"Name falls erkennbar","datum":"YYYY-MM-DD","betrag":0,"referenz":"Dokumentnummer","beschreibung":"kurze Zusammenfassung"}'}
-        ]
-      }]
-    })
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(res){
-    var text=(res.content||[]).map(function(c){ return c.text||''; }).join('');
-    try{
-      var data=JSON.parse(text.replace(/```json|```/g,'').trim());
-      fillAnalyseForm(data);
-    }catch(e){ showAnalyseResult(); }
-  })
-  .catch(function(){ claudeAnalyseText(fileName); });
+function renderPdfToJpeg(pdfUrl, fileName){
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf){
+    return pdf.getPage(1);
+  }).then(function(page){
+    var scale = 1.5;
+    var viewport = page.getViewport({scale: scale});
+    var canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    var ctx = canvas.getContext('2d');
+    return page.render({canvasContext: ctx, viewport: viewport}).promise.then(function(){
+      var jpegDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      var jpegBase64 = jpegDataUrl.split(',')[1];
+      // Vorschau zeigen
+      document.getElementById('filePreview').innerHTML = '<img src="'+jpegDataUrl+'" class="preview-img">';
+      claudeAnalyse(jpegBase64, 'image/jpeg', fileName);
+    });
+  }).catch(function(){
+    claudeAnalyseText(fileName);
+  });
 }
 
 function claudeAnalyse(base64, mime, fileName){
