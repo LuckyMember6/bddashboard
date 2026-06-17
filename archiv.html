@@ -8,6 +8,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="B+D Archiv">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
   --navy:#1B2F6E;--blue:#3B82F6;--blue-glow:rgba(59,130,246,.45);
@@ -159,7 +160,13 @@ body{
       <button class="tab active" onclick="switchTab('upload')">📤 Hochladen</button>
       <button class="tab" onclick="switchTab('archiv')">📁 Archiv</button>
     </div>
-    <div id="globalStatus"></div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button onclick="doBackup()" id="backupBtn"
+        style="background:linear-gradient(135deg,rgba(34,197,94,.25),rgba(16,185,129,.15));border:1px solid rgba(34,197,94,.4);border-radius:var(--radius-sm);padding:9px 18px;font-size:13px;font-weight:700;color:#86efac;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px;">
+        💾 Backup erstellen
+      </button>
+      <div id="globalStatus"></div>
+    </div>
   </div>
 
   <!-- TAB: UPLOAD + CLAUDE ANALYSE -->
@@ -431,19 +438,52 @@ function analyseFile(file){
   document.getElementById('fName').value=file.name;
   document.getElementById('fDatum').value=new Date().toISOString().split('T')[0];
 
-  // Claude Analyse (nur für Bilder und PDFs mit Vision)
-  if(['jpg','jpeg','png','gif','webp','pdf'].includes(ext)){
+  // Claude Analyse
+  if(['jpg','jpeg','png','gif','webp'].includes(ext)){
     var reader=new FileReader();
     reader.onload=function(e){
       var base64=e.target.result.split(',')[1];
-      var mime=file.type||'image/jpeg';
-      claudeAnalyse(base64, mime, file.name);
+      claudeAnalyse(base64, file.type||'image/jpeg', file.name);
+    };
+    reader.readAsDataURL(file);
+  } else if(ext === 'pdf'){
+    // PDF als document type - Claude kann PDFs direkt lesen!
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var base64=e.target.result.split(',')[1];
+      claudeAnalysePdf(base64, file.name);
     };
     reader.readAsDataURL(file);
   } else {
-    // Für andere Dateitypen: nur Dateiname analysieren
     claudeAnalyseText(file.name);
   }
+}
+
+function claudeAnalysePdf(base64, fileName){
+  fetch('https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/smart-api',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zeHJnZ2luamt6b252eXluZHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMDExMjksImV4cCI6MjA5Njc3NzEyOX0.X-Ftee85CqLG0jvYVaUA1oYPr-v5svmguZuUNJAHnWo'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-6',
+      max_tokens:800,
+      messages:[{
+        role:'user',
+        content:[
+          {type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}},
+          {type:'text',text:'Analysiere dieses PDF für Bärtsch+Dobal AG (Schweizer Büromöbel-Händler).\nOrdner-Regeln:\n- Lieferschein → lieferscheine\n- Rechnung AN Kunden → rechnungen-debi\n- Rechnung VON Lieferant → rechnungen-kredi\n- Offerte/Angebot → angebote\n- Auftragsbestätigung an Kunden → auftragsbestaetigung\n- Bestellung an Lieferant → ab-lieferanten\nAntworte NUR mit JSON:\n{"ordner":"angebote|auftragsbestaetigung|lieferscheine|rechnungen-debi|rechnungen-kredi|ab-lieferanten","ordner_grund":"kurze Begründung","dateiname":"vorgeschlagener-dateiname.pdf","kunde_lieferant":"Name falls erkennbar","datum":"YYYY-MM-DD","betrag":0,"referenz":"Dokumentnummer","beschreibung":"kurze Zusammenfassung"}'}
+        ]
+      }]
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res){
+    var text=(res.content||[]).map(function(c){ return c.text||''; }).join('');
+    try{
+      var data=JSON.parse(text.replace(/```json|```/g,'').trim());
+      fillAnalyseForm(data);
+    }catch(e){ showAnalyseResult(); }
+  })
+  .catch(function(){ claudeAnalyseText(fileName); });
 }
 
 function claudeAnalyse(base64, mime, fileName){
@@ -457,7 +497,7 @@ function claudeAnalyse(base64, mime, fileName){
         role:'user',
         content:[
           {type:'image',source:{type:'base64',media_type:mime,data:base64}},
-          {type:'text',text:'Analysiere dieses Dokument für ein Schweizer Büromöbel-Unternehmen (Bärtsch+Dobal AG). Antworte NUR mit JSON (kein Markdown):\n{"ordner":"angebote|auftragsbestaetigung|lieferscheine|rechnungen-debi|rechnungen-kredi|ab-lieferanten","ordner_grund":"kurze Begründung","dateiname":"vorgeschlagener-dateiname.ext","kunde_lieferant":"Name falls erkennbar","datum":"YYYY-MM-DD oder leer","betrag":0,"referenz":"Nummer falls sichtbar","beschreibung":"kurze Zusammenfassung"}'}
+          {type:'text',text:'Analysiere dieses Dokument für Bärtsch+Dobal AG (Schweizer Büromöbel-Händler).\nOrdner-Regeln:\n- Lieferschein → lieferscheine\n- Rechnung AN Kunden (Debitor) → rechnungen-debi\n- Rechnung VON Lieferant (Kreditor) → rechnungen-kredi\n- Offerte/Angebot → angebote\n- Auftragsbestätigung an Kunden → auftragsbestaetigung\n- Bestellung/AB an Lieferant → ab-lieferanten\nAntworte NUR mit JSON:\n{"ordner":"angebote|auftragsbestaetigung|lieferscheine|rechnungen-debi|rechnungen-kredi|ab-lieferanten","ordner_grund":"kurze Begründung","dateiname":"vorgeschlagener-dateiname.pdf","kunde_lieferant":"Name falls erkennbar","datum":"YYYY-MM-DD oder leer","betrag":0,"referenz":"Nummer falls sichtbar","beschreibung":"kurze Zusammenfassung"}'}
         ]
       }]
     })
@@ -480,7 +520,7 @@ function claudeAnalyseText(fileName){
     body:JSON.stringify({
       model:'claude-sonnet-4-6',
       max_tokens:400,
-      messages:[{role:'user',content:'Dateiname: "'+fileName+'". Für ein Schweizer Büromöbel-Unternehmen – in welchen Ordner gehört diese Datei? Antworte NUR mit JSON:\n{"ordner":"angebote|auftragsbestaetigung|lieferscheine|rechnungen-debi|rechnungen-kredi|ab-lieferanten","ordner_grund":"Begründung","dateiname":"'+fileName+'","beschreibung":""}'}]
+      messages:[{role:'user',content:'Dateiname: "'+fileName+'"\n\nRegeln für Ordnerzuordnung:\n- "lieferschein" oder "ls-" im Name → lieferscheine\n- "rechnung" oder "re-" oder "inv" im Name → rechnungen-debi (falls Kunde) oder rechnungen-kredi (falls Lieferant)\n- "offerte" oder "angebot" oder "an-" im Name → angebote\n- "auftrag" oder "ab-" oder "auftragsbestätigung" → auftragsbestaetigung\n- "lieferant" oder Lieferantenname → ab-lieferanten\n- sonst → angebote\n\nAntworte NUR mit JSON:\n{"ordner":"angebote|auftragsbestaetigung|lieferscheine|rechnungen-debi|rechnungen-kredi|ab-lieferanten","ordner_grund":"Begründung","dateiname":"'+fileName+'","beschreibung":""}'}]
     })
   })
   .then(function(r){ return r.json(); })
@@ -726,8 +766,130 @@ function saveEdit(){
   });
 }
 
-// INIT
-loadKunden();
+// ── BACKUP ───────────────────────────────────────────────────────
+async function doBackup(){
+  var btn = document.getElementById('backupBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Backup läuft...';
+
+  var ORDNER_NAMEN = {
+    'angebote': 'Angebote',
+    'auftragsbestaetigung': 'Auftragsbestaetigung',
+    'lieferscheine': 'Lieferscheine_signiert',
+    'rechnungen-debi': 'Rechnungen_Debi',
+    'rechnungen-kredi': 'Rechnungen_Kredi',
+    'ab-lieferanten': 'AB_Lieferanten'
+  };
+
+  try {
+    var zip = new JSZip();
+    var datum = new Date().toISOString().split('T')[0];
+    var rootFolder = zip.folder('BD_Archiv_Backup_'+datum);
+
+    // Alle Ordner durchgehen
+    var ordner = Object.keys(ORDNER_NAMEN);
+    var totalFiles = 0;
+    var doneFiles = 0;
+
+    // Zuerst alle Dateilisten laden
+    var allFiles = [];
+    for(var i = 0; i < ordner.length; i++){
+      var ord = ordner[i];
+      try {
+        var listRes = await fetch(SUPA_ST+'/object/list/'+encodeURIComponent(BUCKET), {
+          method: 'POST',
+          headers: {...sh(), 'Content-Type': 'application/json'},
+          body: JSON.stringify({prefix: ord+'/', limit: 500, sortBy:{column:'name',order:'asc'}})
+        });
+        var files = await listRes.json();
+        if(Array.isArray(files)){
+          files.filter(function(f){ return f.name && f.id; }).forEach(function(f){
+            allFiles.push({ ordner: ord, name: f.name, path: ord+'/'+f.name });
+          });
+        }
+      } catch(e){}
+    }
+
+    totalFiles = allFiles.length;
+    if(!totalFiles){
+      alert('Keine Dateien gefunden.');
+      btn.disabled = false;
+      btn.textContent = '💾 Backup erstellen';
+      return;
+    }
+
+    btn.textContent = '⏳ 0/'+totalFiles+' Dateien...';
+
+    // Dateien herunterladen und in ZIP packen
+    for(var j = 0; j < allFiles.length; j++){
+      var file = allFiles[j];
+      try {
+        // Signed URL holen
+        var signRes = await fetch(SUPA_ST+'/object/sign/'+encodeURIComponent(BUCKET)+'/'+file.path, {
+          method: 'POST',
+          headers: {...sh(), 'Content-Type': 'application/json'},
+          body: JSON.stringify({expiresIn: 300})
+        });
+        var signData = await signRes.json();
+        var url = signData.signedURL || signData.signedUrl;
+        if(!url) continue;
+        if(!url.startsWith('http')) url = SUPA_URL + url;
+
+        // Datei herunterladen
+        var fileRes = await fetch(url);
+        var blob = await fileRes.blob();
+        var arrayBuf = await blob.arrayBuffer();
+
+        // Ordnerstruktur: Ordnername / Kundennummer_Kundenname / Dateiname
+        var ordnerName = ORDNER_NAMEN[file.ordner] || file.ordner;
+        var fileName = file.name;
+
+        // Kundennummer aus Dateiname extrahieren
+        var nameParts = fileName.split('_');
+        var subFolder = '';
+        if(nameParts.length > 1 && /^\d+$/.test(nameParts[0])){
+          var kundeNr = nameParts[0];
+          var kunde = allKunden.find(function(k){ return String(k.nr) === kundeNr; });
+          var kundeName = kunde ? (kunde.company||(kunde.firstName+' '+kunde.lastName).trim()||kunde.name) : kundeNr;
+          // Sonderzeichen entfernen für Ordnernamen
+          subFolder = kundeNr+'_'+kundeName.replace(/[\/\\:*?"<>|]/g,'_');
+        }
+
+        var zipPath = subFolder
+          ? ordnerName+'/'+subFolder+'/'+fileName
+          : ordnerName+'/'+fileName;
+
+        rootFolder.file(zipPath, arrayBuf);
+        doneFiles++;
+        btn.textContent = '⏳ '+doneFiles+'/'+totalFiles+' Dateien...';
+
+      } catch(e){ console.log('Fehler bei', file.path, e); }
+    }
+
+    // ZIP generieren und herunterladen
+    btn.textContent = '⏳ ZIP wird erstellt...';
+    var zipBlob = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
+    var zipUrl = URL.createObjectURL(zipBlob);
+    var a = document.createElement('a');
+    a.href = zipUrl;
+    a.download = 'BD_Archiv_Backup_'+datum+'.zip';
+    a.click();
+    URL.revokeObjectURL(zipUrl);
+
+    btn.textContent = '✅ Backup fertig! ('+doneFiles+' Dateien)';
+    btn.style.background = 'linear-gradient(135deg,rgba(34,197,94,.35),rgba(16,185,129,.25))';
+    setTimeout(function(){
+      btn.textContent = '💾 Backup erstellen';
+      btn.style.background = '';
+      btn.disabled = false;
+    }, 3000);
+
+  } catch(err){
+    alert('Backup Fehler: '+err.message);
+    btn.disabled = false;
+    btn.textContent = '💾 Backup erstellen';
+  }
+}
 </script>
 </body>
 </html>
