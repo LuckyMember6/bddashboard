@@ -1112,13 +1112,19 @@ function setPersonType(isCompany){
   var compBtn = document.getElementById('personTypeCompany');
   var persBtn = document.getElementById('personTypePerson');
   var compRow = document.getElementById('personCompanyRow');
+  var activeStyle = 'flex:1;padding:10px;border-radius:10px;border:2px solid var(--blue);background:rgba(59,130,246,.2);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);';
+  var inactiveStyle = 'flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);';
   if(isCompany){
-    compBtn.style.cssText='flex:1;padding:10px;border-radius:10px;border:2px solid var(--blue);background:rgba(59,130,246,.2);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);';
-    persBtn.style.cssText='flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);';
+    compBtn.setAttribute('style', activeStyle);
+    compBtn.setAttribute('onclick', 'setPersonType(true)');
+    persBtn.setAttribute('style', inactiveStyle);
+    persBtn.setAttribute('onclick', 'setPersonType(false)');
     compRow.style.display='block';
   } else {
-    persBtn.style.cssText='flex:1;padding:10px;border-radius:10px;border:2px solid var(--blue);background:rgba(59,130,246,.2);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);';
-    compBtn.style.cssText='flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);';
+    persBtn.setAttribute('style', activeStyle);
+    persBtn.setAttribute('onclick', 'setPersonType(false)');
+    compBtn.setAttribute('style', inactiveStyle);
+    compBtn.setAttribute('onclick', 'setPersonType(true)');
     compRow.style.display='none';
   }
 }
