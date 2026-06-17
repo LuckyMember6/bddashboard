@@ -1,0 +1,24 @@
+{
+  "name": "Bärtsch + Dobal Dashboard",
+  "short_name": "B+D Dashboard",
+  "description": "Internes Dashboard Bärtsch + Dobal AG",
+  "start_url": "/bddashboard/",
+  "display": "standalone",
+  "background_color": "#0B1430",
+  "theme_color": "#1B2F6E",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
