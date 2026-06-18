@@ -401,12 +401,13 @@ function switchTab(t){
 }
 
 // ── KUNDEN
-function loadKunden(){
+function loadKunden(callback){
   fetch(CC_FN+'?action=persons')
     .then(function(r){ return r.json(); })
     .then(function(res){
       allKunden=(res.data||[]).sort(function(a,b){ return (a.name||'').localeCompare(b.name||'','de'); });
-    }).catch(function(){});
+      if(callback) callback();
+    }).catch(function(){ if(callback) callback(); });
 }
 
 function searchKunde(q, resultsId, hiddenId){
@@ -1009,7 +1010,7 @@ async function backupMonat(jahr, monat, btnEl){
         root.file(allFiles[j].ordner+'/'+allFiles[j].name, buf);
       }
     }catch(e){}
-    btn.textContent='⏳ '+( j+1)+'/'+allFiles.length;
+    if(btn) btn.textContent='⏳ '+(j+1)+'/'+allFiles.length;
   }
 
   var blob = await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
@@ -1062,6 +1063,11 @@ function loadDateien(){
 
 function renderDateiGrid(){
   var el=document.getElementById('dateiGrid');
+  // Falls Kunden noch nicht geladen: zuerst laden dann nochmal rendern
+  if(!allKunden.length){
+    loadKunden(function(){ renderDateiGrid(); });
+    return;
+  }
   var q=document.getElementById('filterSuche').value.toLowerCase();
   // Suche auch in Kundennamen
   var list=allDateien.filter(function(f){
