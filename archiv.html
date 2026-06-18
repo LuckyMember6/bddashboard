@@ -537,19 +537,32 @@ function fillAnalyseForm(data){
   if(data.referenz) document.getElementById('fReferenz').value=data.referenz;
   if(data.beschreibung) document.getElementById('fBeschreibung').value=data.beschreibung;
 
-  // Kunde/Lieferant automatisch suchen
-  if(data.kunde_lieferant){
-    var lq=data.kunde_lieferant.toLowerCase();
-    var hit=allKunden.find(function(k){
-      var name=(k.company||(k.firstName+' '+k.lastName).trim()||k.name).toLowerCase();
-      return name.includes(lq)||lq.includes(name.substring(0,5));
+  // Kunde/Lieferant automatisch suchen mit Fuzzy-Matching
+  if(data.kunde_lieferant && data.kunde_lieferant.trim()){
+    var searchTerm = data.kunde_lieferant.trim();
+    document.getElementById('fKundeSearch').value = searchTerm;
+
+    // Fuzzy-Suche: bereinige beide Seiten und vergleiche
+    function normalize(s){ return s.toLowerCase().replace(/\s+ag$|\s+gmbh$|\s+sarl$|\s+sa$|\s+kg$|\s+ltd$/,'').replace(/[^a-z0-9äöüß]/g,' ').trim(); }
+    var lq = normalize(searchTerm);
+    var words = lq.split(' ').filter(function(w){ return w.length > 2; });
+
+    var hit = allKunden.find(function(k){
+      var name = k.company||(k.firstName+' '+k.lastName).trim()||k.name;
+      var kn = normalize(name);
+      // Exakter Match nach Normalisierung
+      if(kn === lq) return true;
+      // Alle Wörter müssen vorkommen
+      return words.length > 0 && words.every(function(w){ return kn.includes(w); });
     });
+
     if(hit){
-      var name=hit.company||(hit.firstName+' '+hit.lastName).trim()||hit.name;
-      document.getElementById('fKundeSearch').value=hit.nr+' – '+name;
-      document.getElementById('fKundeNr').value=hit.nr;
+      var name = hit.company||(hit.firstName+' '+hit.lastName).trim()||hit.name;
+      document.getElementById('fKundeSearch').value = hit.nr+' – '+name;
+      document.getElementById('fKundeNr').value = hit.nr;
     } else {
-      document.getElementById('fKundeSearch').value=data.kunde_lieferant;
+      // Kein exakter Match → Suchfeld befüllen damit User selbst wählen kann
+      searchKunde(searchTerm);
     }
   }
 
@@ -654,42 +667,73 @@ function renderDateiGrid(){
   if(!list.length){ el.innerHTML='<div class="empty"><div class="empty-icon">📭</div>Keine Dateien gefunden.</div>'; return; }
 
   var FICONS={angebote:'📄',auftragsbestaetigung:'📋',lieferscheine:'🚛','rechnungen-debi':'🧾','rechnungen-kredi':'🧾','ab-lieferanten':'📦'};
-  el.innerHTML='<div class="datei-grid">'+list.map(function(f){
-    var ext=(f.name||'').split('.').pop().toLowerCase();
-    var icon=ext==='pdf'?'📄':ext==='xlsx'||ext==='xls'?'📊':ext==='docx'?'📝':['jpg','jpeg','png'].includes(ext)?'🖼':'📎';
-    var size=f.size?(f.size>1048576?(f.size/1048576).toFixed(1)+'MB':(f.size/1024).toFixed(0)+'KB'):'';
-    var date=f.created_at?new Date(f.created_at).toLocaleDateString('de-CH'):'';
-    var fi=FICONS[f.folder]||'📁';
-    // Kundennummer aus Name extrahieren
-    var nameParts=f.rawName.split('_');
-    var kundeInfo='';
-    if(nameParts.length>1&&/^\d+$/.test(nameParts[0])){
-      var k=allKunden.find(function(x){ return String(x.nr)===nameParts[0]; });
-      var kname=k?(k.company||(k.firstName+' '+k.lastName).trim()||k.name):'';
-      kundeInfo='<div style="font-size:10px;color:rgba(96,165,250,.8);margin-top:2px;">👤 '+nameParts[0]+(kname?' – '+kname:'')+'</div>';
+
+  // Dateien nach Kundennummer gruppieren
+  var gruppen = {}; // { 'KUNDENNR': {label, dateien} } oder { '': {label:'Kein Kunde', dateien} }
+  list.forEach(function(f){
+    var nameParts = f.rawName.split('_');
+    var kundeNr = '';
+    var kundeLabel = '📂 Kein Kunde';
+    if(nameParts.length > 1 && /^\d+$/.test(nameParts[0])){
+      kundeNr = nameParts[0];
+      var k = allKunden.find(function(x){ return String(x.nr) === kundeNr; });
+      var kname = k ? (k.company||(k.firstName+' '+k.lastName).trim()||k.name) : kundeNr;
+      kundeLabel = '👤 '+kundeNr+' – '+kname;
     }
-    return '<div class="datei-card">'
-      +'<div style="display:flex;align-items:flex-start;gap:10px;">'
-        +'<div style="font-size:26px;flex-shrink:0;">'+icon+'</div>'
-        +'<div style="flex:1;min-width:0;">'
-          +'<div class="datei-name">'+f.name+'</div>'
-          +'<div class="datei-meta">'+fi+' '+(f.folder||'')+(size?' · '+size:'')+(date?' · '+date:'')+'</div>'
-          +kundeInfo
+    if(!gruppen[kundeNr]) gruppen[kundeNr] = {label: kundeLabel, dateien: []};
+    gruppen[kundeNr].dateien.push(f);
+  });
+
+  // Sortiert: Kunden alphabetisch, "kein Kunde" zuletzt
+  var keys = Object.keys(gruppen).sort(function(a,b){
+    if(a===''&&b!=='') return 1;
+    if(b===''&&a!=='') return -1;
+    return parseInt(a)-parseInt(b);
+  });
+
+  el.innerHTML = keys.map(function(key){
+    var gruppe = gruppen[key];
+    var dateienHtml = gruppe.dateien.map(function(f){
+      var ext=(f.name||'').split('.').pop().toLowerCase();
+      var icon=ext==='pdf'?'📄':ext==='xlsx'||ext==='xls'?'📊':ext==='docx'?'📝':['jpg','jpeg','png'].includes(ext)?'🖼':'📎';
+      var size=f.size?(f.size>1048576?(f.size/1048576).toFixed(1)+'MB':(f.size/1024).toFixed(0)+'KB'):'';
+      var date=f.created_at?new Date(f.created_at).toLocaleDateString('de-CH'):'';
+      var fi=FICONS[f.folder]||'📁';
+      // Dateiname ohne Kundennummer-Prefix anzeigen
+      var displayName = f.rawName;
+      if(key && displayName.startsWith(key+'_')) displayName = displayName.substring((key+'_').length);
+      return '<div class="datei-card">'
+        +'<div style="display:flex;align-items:flex-start;gap:10px;">'
+          +'<div style="font-size:26px;flex-shrink:0;">'+icon+'</div>'
+          +'<div style="flex:1;min-width:0;">'
+            +'<div class="datei-name" title="'+f.rawName+'">'+displayName+'</div>'
+            +'<div class="datei-meta">'+fi+' '+(f.folder||'')+(size?' · '+size:'')+(date?' · '+date:'')+'</div>'
+          +'</div>'
         +'</div>'
+        +'<div class="datei-actions">'
+          +'<button class="btn-sm" style="color:#93c5fd;border-color:rgba(96,165,250,.3);" onclick="downloadDatei(\''+f.path+'\',\''+f.rawName+'\')">⬇ Download</button>'
+          +'<button class="btn-sm" onclick="openEditModal(\''+f.path+'\',\''+f.rawName+'\',\''+f.folder+'\')">✏ Bearbeiten</button>'
+          +'<button class="btn-sm btn-danger" onclick="deleteDatei(\''+f.path+'\')">🗑</button>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+
+    return '<div style="margin-bottom:1.5rem;">'
+      +'<div style="font-size:13px;font-weight:700;color:rgba(165,185,230,.9);padding:8px 4px 6px;border-bottom:1px solid var(--glass-brd);margin-bottom:10px;display:flex;align-items:center;gap:6px;">'
+        +gruppe.label
+        +'<span style="font-size:11px;color:var(--hint);font-weight:400;">('+gruppe.dateien.length+')</span>'
       +'</div>'
-      +'<div class="datei-actions">'
-        +'<button class="btn-sm" style="color:#93c5fd;border-color:rgba(96,165,250,.3);" onclick="downloadDatei(\''+f.path+'\',\''+f.rawName+'\')">⬇ Download</button>'
-        +'<button class="btn-sm" onclick="openEditModal(\''+f.path+'\',\''+f.rawName+'\',\''+f.folder+'\')">✏ Bearbeiten</button>'
-        +'<button class="btn-sm btn-danger" onclick="deleteDatei(\''+f.path+'\')">🗑</button>'
-      +'</div>'
+      +'<div class="datei-grid">'+dateienHtml+'</div>'
     +'</div>';
-  }).join('')+'</div>';
+  }).join('');
 }
 
 function downloadDatei(path,name){
-  fetch(SUPA_ST+'/object/sign/'+encodeURIComponent(BUCKET)+'/'+path,{
+  // Pfad korrekt encoden - jeden Teil separat
+  var encodedPath = path.split('/').map(function(p){ return encodeURIComponent(p); }).join('/');
+  fetch(SUPA_ST+'/object/sign/'+encodeURIComponent(BUCKET)+'/'+encodedPath,{
     method:'POST',headers:{...sh(),'Content-Type':'application/json'},
-    body:JSON.stringify({expiresIn:60})
+    body:JSON.stringify({expiresIn:120})
   })
   .then(function(r){ return r.json(); })
   .then(function(data){
