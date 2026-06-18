@@ -807,6 +807,8 @@ function renderMonatsUebersicht(monateData, jahre){
       var total = Object.values(data).reduce(function(s,v){ return s+v; },0);
       var istAkt = (jahr===aktJahr && monat===aktMonat);
       var hat = total > 0;
+      // Leere Monate ausblenden (ausser aktueller Monat)
+      if(!hat && !istAkt) return;
       var badges = hat ? Object.keys(data).map(function(o){ return '<span style="font-size:9px;background:rgba(255,255,255,.1);border-radius:3px;padding:1px 4px;color:var(--muted);">'+ORDNER_KURZ[o]+':'+data[o]+'</span>'; }).join(' ') : '';
 
       html += '<div style="background:'+(istAkt?'rgba(59,130,246,.18)':hat?'rgba(255,255,255,.05)':'rgba(255,255,255,.015)')+';border:1px solid '+(istAkt?'rgba(96,165,250,.55)':hat?'rgba(255,255,255,.1)':'rgba(255,255,255,.04)')+';border-radius:10px;padding:11px;">'
@@ -1017,9 +1019,8 @@ function renderDateiGrid(){
     if(nameParts.length > 1 && /^\d+$/.test(nameParts[0])){
       kundeNr = nameParts[0];
       var k = allKunden.find(function(x){ return String(x.nr) === kundeNr; });
-      // Label: nur Kundenname (nicht doppelte Nummer)
       var kname = k ? (k.company||(k.firstName+' '+k.lastName).trim()||k.name) : '';
-      kundeLabel = '👤 '+kundeNr+(kname ? ' – '+kname : '');
+      kundeLabel = '👤 '+kundeNr+(kname ? ' – '+kname : ' (unbekannt)');
     }
     if(!gruppen[kundeNr]) gruppen[kundeNr] = {label: kundeLabel, dateien: []};
     gruppen[kundeNr].dateien.push(f);
