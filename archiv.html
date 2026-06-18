@@ -10,338 +10,497 @@
 <meta name="apple-mobile-web-app-title" content="B+D Archiv">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
 <style>
-:root{
-  --navy:#1B2F6E;--blue:#3B82F6;--blue-glow:rgba(59,130,246,.45);
-  --green:#22C55E;--red:#EF4444;--amber:#F59E0B;
-  --glass:rgba(255,255,255,.06);--glass-brd:rgba(255,255,255,.14);
-  --text:#F5F7FF;--muted:#A9B4D6;--hint:#7886B8;
-  --radius:16px;--radius-sm:10px;
-  --font:'Segoe UI',-apple-system,'Helvetica Neue',Arial,sans-serif;
-  --border:var(--glass-brd);
+:root {
+  --bg: #0d1526;
+  --sidebar: #111827;
+  --sidebar-w: 200px;
+  --blue: #3b82f6;
+  --blue2: #60a5fa;
+  --indigo: #6366f1;
+  --green: #22c55e;
+  --red: #ef4444;
+  --amber: #f59e0b;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --hint: #64748b;
+  --border: rgba(255,255,255,.08);
+  --card: rgba(255,255,255,.04);
+  --card-hover: rgba(255,255,255,.07);
+  --radius: 12px;
+  --font: 'Inter',-apple-system,'Segoe UI',sans-serif;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-body{
-  font-family:var(--font);color:var(--text);min-height:100vh;
-  background:radial-gradient(circle at 15% 0%,rgba(59,130,246,.25),transparent 40%),
-    radial-gradient(circle at 85% 30%,rgba(99,102,241,.18),transparent 45%),
-    linear-gradient(155deg,#0B1430 0%,#16235A 45%,#0E1A45 100%);
-  background-attachment:fixed;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; }
+
+/* SIDEBAR */
+.sidebar {
+  width: var(--sidebar-w); background: var(--sidebar); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 30;
 }
-.header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:1rem 2rem;border-bottom:1px solid var(--glass-brd);
-  background:rgba(10,18,46,.4);backdrop-filter:blur(16px);
-  position:sticky;top:0;z-index:20;
+.sidebar-logo {
+  display: flex; align-items: center; gap: 10px; padding: 20px 16px;
+  border-bottom: 1px solid var(--border);
 }
-.header-title{font-size:20px;font-weight:800;color:#fff;}
-.header-sub{font-size:12px;color:var(--muted);margin-top:2px;}
-.back-btn{background:rgba(255,255,255,.08);border:1px solid var(--glass-brd);border-radius:var(--radius-sm);padding:7px 14px;font-size:13px;color:var(--muted);cursor:pointer;font-family:var(--font);text-decoration:none;}
-.back-btn:hover{color:#fff;}
-.main{padding:1.5rem 2rem;max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:1.5rem;}
-.card{background:var(--glass);border:1px solid var(--glass-brd);border-radius:var(--radius);padding:1.5rem;backdrop-filter:blur(14px);box-shadow:0 8px 32px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.06);}
-.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px;}
-.card-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
-.tabs{display:flex;gap:4px;background:rgba(0,0,0,.2);border-radius:12px;padding:4px;}
-.tab{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;border:none;background:transparent;font-family:var(--font);}
-.tab.active{background:rgba(59,130,246,.25);color:#fff;box-shadow:0 0 12px var(--blue-glow);}
-
-/* UPLOAD ZONE */
-.upload-zone{
-  border:2px dashed var(--glass-brd);border-radius:var(--radius);
-  padding:3rem 2rem;text-align:center;cursor:pointer;transition:all .2s;
-  background:rgba(255,255,255,.02);position:relative;
+.sidebar-logo-icon {
+  width: 32px; height: 32px; background: var(--blue); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #fff;
 }
-.upload-zone:hover,.upload-zone.drag-over{border-color:rgba(96,165,250,.7);background:rgba(59,130,246,.08);}
-.upload-zone-icon{font-size:48px;margin-bottom:12px;}
-.upload-zone-text{font-size:16px;font-weight:600;color:var(--muted);}
-.upload-zone-sub{font-size:12px;color:var(--hint);margin-top:6px;}
-.camera-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
-.camera-btn{padding:11px;border:1px dashed var(--border);border-radius:10px;background:rgba(255,255,255,.03);color:var(--muted);font-size:13px;cursor:pointer;font-family:var(--font);transition:all .15s;}
-.camera-btn:hover{border-color:rgba(96,165,250,.4);color:#fff;}
-
-/* ANALYSE */
-.analyse-card{background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(99,102,241,.08));border:1px solid rgba(96,165,250,.3);border-radius:var(--radius);padding:1.5rem;display:none;}
-.analyse-loading{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:14px;}
-.spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.15);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.preview-img{max-width:100%;max-height:200px;border-radius:10px;border:1px solid var(--glass-brd);margin-bottom:1rem;}
-.preview-pdf{display:flex;align-items:center;gap:10px;padding:12px;background:rgba(255,255,255,.05);border-radius:10px;border:1px solid var(--glass-brd);margin-bottom:1rem;}
-
-/* FORM */
-.field{margin-bottom:12px;}
-.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
-.field input,.field select,.field textarea{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;font-size:14px;outline:none;font-family:var(--font);}
-.field input:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.15);}
-.field select option{background:#1B2F6E;}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-@media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
-
-/* AUTOCOMPLETE */
-.autocomplete-wrap{position:relative;}
-.autocomplete-results{
-  position:absolute;top:100%;left:0;right:0;z-index:50;
-  background:linear-gradient(160deg,rgba(20,35,85,.98),rgba(10,20,60,.99));
-  border:1px solid var(--glass-brd);border-radius:10px;margin-top:3px;
-  max-height:200px;overflow-y:auto;display:none;
-  box-shadow:0 8px 24px rgba(0,0,0,.4);
+.sidebar-logo-text { font-size: 15px; font-weight: 700; color: var(--text); }
+.sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px;
+  font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer;
+  transition: all .15s; border: none; background: transparent; width: 100%; text-align: left;
+  text-decoration: none;
 }
-.autocomplete-item{padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid rgba(255,255,255,.06);}
-.autocomplete-item:hover{background:rgba(59,130,246,.15);}
-.autocomplete-item:last-child{border-bottom:none;}
-.autocomplete-item-name{font-weight:600;color:#fff;}
-.autocomplete-item-sub{font-size:11px;color:var(--hint);margin-top:1px;}
+.nav-item:hover { background: rgba(255,255,255,.05); color: var(--text); }
+.nav-item.active { background: rgba(59,130,246,.15); color: var(--blue2); }
+.nav-item-icon { font-size: 16px; flex-shrink: 0; }
+.sidebar-footer {
+  padding: 12px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.avatar {
+  width: 32px; height: 32px; background: linear-gradient(135deg,var(--blue),var(--indigo));
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.avatar-info { flex: 1; min-width: 0; }
+.avatar-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.avatar-role { font-size: 10px; color: var(--hint); }
 
-/* ORDNER BADGE */
-.ordner-vorschlag{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:12px;}
-.ordner-badge-angebote{background:rgba(59,130,246,.2);border:1px solid rgba(96,165,250,.4);color:#93c5fd;}
-.ordner-badge-auftragsbestaetigung{background:rgba(99,102,241,.2);border:1px solid rgba(139,92,246,.4);color:#c4b5fd;}
-.ordner-badge-lieferscheine{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac;}
-.ordner-badge-rechnungen-debi{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:#fcd34d;}
-.ordner-badge-rechnungen-kredi{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
-.ordner-badge-ab-lieferanten{background:rgba(107,114,128,.2);border:1px solid rgba(107,114,128,.4);color:#d1d5db;}
+/* MAIN LAYOUT */
+.app-main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
 
-/* BUTTONS */
-.btn-primary{background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:var(--radius-sm);padding:12px 24px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font);}
-.btn-primary:hover{opacity:.9;}
-.btn-secondary{background:rgba(255,255,255,.07);border:1px solid var(--glass-brd);border-radius:var(--radius-sm);padding:11px 20px;font-size:14px;color:var(--muted);cursor:pointer;font-family:var(--font);}
-.btn-secondary:hover{color:#fff;}
-.btn-sm{background:rgba(255,255,255,.07);border:1px solid var(--glass-brd);border-radius:8px;padding:5px 12px;font-size:11px;color:var(--muted);cursor:pointer;font-family:var(--font);}
-.btn-sm:hover{color:#fff;}
-.btn-danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);color:#fca5a5;}
+/* TOPBAR */
+.topbar {
+  height: 60px; background: rgba(13,21,38,.8); border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(16px); display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; position: sticky; top: 0; z-index: 20;
+}
+.topbar-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+.topbar-breadcrumb a { color: var(--muted); text-decoration: none; }
+.topbar-breadcrumb a:hover { color: var(--text); }
+.topbar-breadcrumb-sep { color: var(--hint); }
+.topbar-breadcrumb-cur { color: var(--text); font-weight: 600; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.search-box {
+  display: flex; align-items: center; gap: 8px; padding: 8px 14px;
+  background: rgba(255,255,255,.06); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--muted); font-size: 13px; cursor: text; min-width: 220px;
+}
+.search-box input { background: transparent; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: var(--font); }
+.search-box input::placeholder { color: var(--hint); }
+.upload-btn {
+  display: flex; align-items: center; gap: 8px; padding: 8px 16px;
+  background: var(--blue); border: none; border-radius: 8px;
+  color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font);
+}
+.upload-btn:hover { background: #2563eb; }
 
-/* STATUS */
-.status-msg{font-size:13px;padding:10px 14px;border-radius:var(--radius-sm);}
-.status-ok{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.3);}
-.status-err{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.3);}
+/* CONTENT */
+.content { flex: 1; display: flex; gap: 0; }
+.content-main { flex: 1; padding: 24px; overflow-y: auto; }
+.content-sidebar { width: 280px; border-left: 1px solid var(--border); padding: 24px; flex-shrink: 0; }
+
+/* PAGE HEADER */
+.page-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px; }
+.page-header-icon {
+  width: 56px; height: 56px; background: rgba(59,130,246,.15); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0;
+}
+.page-header-title { font-size: 24px; font-weight: 800; color: var(--text); }
+.page-header-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+/* CARDS */
+.card {
+  background: rgba(255,255,255,.03); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+}
+.card + .card { margin-top: 16px; }
+.card-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+/* MONAT KARTEN */
+.monats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 12px; }
+.monat-card {
+  background: rgba(255,255,255,.04); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px; cursor: pointer; transition: all .15s;
+}
+.monat-card:hover { background: rgba(255,255,255,.08); border-color: rgba(59,130,246,.4); transform: translateY(-1px); }
+.monat-card.aktiv { background: rgba(59,130,246,.12); border-color: rgba(96,165,250,.5); }
+.monat-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.monat-name { font-size: 15px; font-weight: 700; color: var(--text); }
+.monat-count { font-size: 12px; color: var(--hint); background: rgba(255,255,255,.06); border-radius: 20px; padding: 2px 8px; }
+.monat-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+.ordner-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 500; }
+.badge-ang { background: rgba(59,130,246,.2); color: #93c5fd; }
+.badge-ab { background: rgba(99,102,241,.2); color: #c4b5fd; }
+.badge-ls { background: rgba(34,197,94,.15); color: #86efac; }
+.badge-rd { background: rgba(245,158,11,.15); color: #fcd34d; }
+.badge-rk { background: rgba(239,68,68,.15); color: #fca5a5; }
+.badge-abl { background: rgba(107,114,128,.2); color: #d1d5db; }
+.monat-actions { display: flex; gap: 6px; }
+.btn-xs {
+  font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border);
+  background: rgba(255,255,255,.06); color: var(--muted); cursor: pointer; font-family: var(--font);
+  transition: all .15s;
+}
+.btn-xs:hover { color: var(--text); border-color: rgba(255,255,255,.2); }
+.btn-xs.danger { border-color: rgba(239,68,68,.3); color: #fca5a5; background: rgba(239,68,68,.08); }
+.btn-xs.danger:hover { background: rgba(239,68,68,.15); }
+
+/* ALTE DATEIEN */
+.alte-dateien-bar {
+  display: none; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.25);
+  border-radius: 10px; margin-top: 12px;
+}
+.alte-dateien-bar.visible { display: flex; }
 
 /* DATEI LISTE */
-.filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-.filter-bar select,.filter-bar input{padding:9px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:rgba(255,255,255,.07);color:var(--text);font-size:13px;outline:none;font-family:var(--font);}
-.filter-bar select option{background:#1B2F6E;}
-.datei-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:1rem;}
-.datei-card{background:rgba(255,255,255,.04);border:1px solid var(--glass-brd);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:all .18s;}
-.datei-card:hover{background:rgba(255,255,255,.07);border-color:rgba(96,165,250,.3);}
-.datei-name{font-size:13px;font-weight:600;color:#fff;word-break:break-all;line-height:1.4;}
-.datei-meta{font-size:11px;color:var(--hint);}
-.datei-actions{display:flex;gap:6px;flex-wrap:wrap;}
-.empty{text-align:center;padding:3rem 1rem;color:var(--hint);font-size:13px;}
-.empty-icon{font-size:40px;margin-bottom:8px;}
+.datei-liste { display: flex; flex-direction: column; gap: 8px; }
+.datei-row {
+  display: flex; align-items: center; gap: 12px; padding: 12px;
+  background: rgba(255,255,255,.03); border: 1px solid var(--border);
+  border-radius: 8px; cursor: pointer; transition: all .15s;
+}
+.datei-row:hover { background: rgba(255,255,255,.07); }
+.datei-icon { font-size: 24px; flex-shrink: 0; }
+.datei-info { flex: 1; min-width: 0; }
+.datei-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.datei-meta { font-size: 11px; color: var(--hint); margin-top: 2px; }
+.datei-btns { display: flex; gap: 6px; flex-shrink: 0; }
 
-/* PROGRESS */
-.progress-bar{height:5px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;margin-top:8px;}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--blue),#6366f1);border-radius:3px;transition:width .3s;}
+/* KUNDE GRUPPE */
+.kunde-gruppe { margin-bottom: 20px; }
+.kunde-gruppe-header {
+  font-size: 12px; font-weight: 700; color: var(--muted);
+  padding: 6px 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* INFO SIDEBAR */
+.info-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+.stat-block { margin-bottom: 20px; }
+.stat-label { font-size: 11px; color: var(--hint); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.stat-value { font-size: 32px; font-weight: 800; color: var(--text); line-height: 1; }
+.stat-sub { font-size: 12px; color: var(--green); margin-top: 4px; }
+.storage-bar { height: 6px; background: rgba(255,255,255,.08); border-radius: 3px; overflow: hidden; margin: 8px 0; }
+.storage-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--blue), var(--indigo)); transition: width .5s; }
+.storage-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--hint); }
+.activity-list { display: flex; flex-direction: column; gap: 10px; }
+.activity-item { display: flex; align-items: flex-start; gap: 10px; }
+.activity-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.activity-dot.blue { background: var(--blue); }
+.activity-dot.green { background: var(--green); }
+.activity-dot.amber { background: var(--amber); }
+.activity-text { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.activity-time { font-size: 10px; color: var(--hint); }
+
+/* UPLOAD ZONE */
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  padding: 3rem 2rem; text-align: center; cursor: pointer; transition: all .2s;
+  background: rgba(255,255,255,.02);
+}
+.upload-zone:hover, .upload-zone.drag-over { border-color: rgba(96,165,250,.7); background: rgba(59,130,246,.08); }
+.camera-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.camera-btn { padding: 11px; border: 1px dashed var(--border); border-radius: 10px; background: rgba(255,255,255,.03); color: var(--muted); font-size: 13px; cursor: pointer; font-family: var(--font); transition: all .15s; }
+.camera-btn:hover { border-color: rgba(96,165,250,.4); color: var(--text); }
+
+/* ANALYSE CARD */
+.analyse-card { background: rgba(59,130,246,.08); border: 1px solid rgba(96,165,250,.25); border-radius: var(--radius); padding: 20px; display: none; }
+.spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,.15); border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* FORM */
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.field input, .field select, .field textarea { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: var(--text); font-size: 13px; outline: none; font-family: var(--font); }
+.field input:focus, .field select:focus { border-color: var(--blue); }
+.field select option { background: #1B2F6E; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media(max-width:600px) { .form-grid { grid-template-columns: 1fr; } }
+
+/* AUTOCOMPLETE */
+.autocomplete-wrap { position: relative; }
+.autocomplete-results { position: absolute; top: 100%; left: 0; right: 0; z-index: 50; background: #1a2744; border: 1px solid var(--border); border-radius: 8px; margin-top: 3px; max-height: 200px; overflow-y: auto; display: none; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.autocomplete-item { padding: 9px 14px; cursor: pointer; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,.05); }
+.autocomplete-item:hover { background: rgba(59,130,246,.15); }
+.autocomplete-item-name { font-weight: 600; color: var(--text); }
+.autocomplete-item-sub { font-size: 11px; color: var(--hint); }
+
+/* BUTTONS */
+.btn-primary { background: var(--blue); color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--font); }
+.btn-primary:hover { background: #2563eb; }
+.btn-secondary { background: rgba(255,255,255,.07); border: 1px solid var(--border); border-radius: 8px; padding: 9px 18px; font-size: 13px; color: var(--muted); cursor: pointer; font-family: var(--font); }
+.btn-secondary:hover { color: var(--text); }
+
+/* STATUS */
+.status-msg { font-size: 13px; padding: 10px 14px; border-radius: 8px; }
+.status-ok { background: rgba(34,197,94,.12); color: #86efac; border: 1px solid rgba(34,197,94,.3); }
+.status-err { background: rgba(239,68,68,.12); color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
 
 /* MODAL */
-.overlay{display:none;position:fixed;inset:0;background:rgba(5,10,28,.7);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
-.overlay.open{display:flex;}
-.modal{background:linear-gradient(160deg,rgba(30,45,95,.97),rgba(15,25,65,.99));border:1px solid var(--glass-brd);border-radius:var(--radius);padding:1.75rem;width:520px;max-width:95vw;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.5);}
-.modal h3{font-size:18px;font-weight:800;color:#fff;margin-bottom:1.25rem;}
-.modal-actions{display:flex;gap:10px;margin-top:1.25rem;justify-content:flex-end;}
+.overlay { display: none; position: fixed; inset: 0; background: rgba(5,10,28,.75); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.overlay.open { display: flex; }
+.modal { background: #151f38; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; width: 520px; max-width: 95vw; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.modal h3 { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
 
-@media(max-width:768px){.main{padding:1rem;}.header{padding:.75rem 1rem;}}
+/* VIEWER MODAL */
+#viewerModal .modal { width: 900px; max-width: 97vw; display: flex; flex-direction: column; }
+
+/* PROGRESS */
+.progress-bar { height: 4px; background: rgba(255,255,255,.08); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--indigo)); border-radius: 2px; transition: width .3s; }
+
+/* PREVIEW */
+.preview-img { max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 12px; }
+.preview-pdf { display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(255,255,255,.04); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 12px; }
+.ordner-vorschlag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+.ordner-badge-angebote { background: rgba(59,130,246,.2); border: 1px solid rgba(96,165,250,.4); color: #93c5fd; }
+.ordner-badge-auftragsbestaetigung { background: rgba(99,102,241,.2); border: 1px solid rgba(139,92,246,.4); color: #c4b5fd; }
+.ordner-badge-lieferscheine { background: rgba(34,197,94,.15); border: 1px solid rgba(34,197,94,.3); color: #86efac; }
+.ordner-badge-rechnungen-debi { background: rgba(245,158,11,.15); border: 1px solid rgba(245,158,11,.3); color: #fcd34d; }
+.ordner-badge-rechnungen-kredi { background: rgba(239,68,68,.15); border: 1px solid rgba(239,68,68,.3); color: #fca5a5; }
+.ordner-badge-ab-lieferanten { background: rgba(107,114,128,.2); border: 1px solid rgba(107,114,128,.4); color: #d1d5db; }
+
+.empty { text-align: center; padding: 3rem 1rem; color: var(--hint); font-size: 13px; }
+.empty-icon { font-size: 40px; margin-bottom: 8px; }
+
+@media(max-width:900px) {
+  .sidebar { display: none; }
+  .app-main { margin-left: 0; }
+  .content-sidebar { display: none; }
+}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div style="display:flex;align-items:center;gap:14px;">
-    <a href="index.html" class="back-btn">← Dashboard</a>
-    <div>
-      <div class="header-title">🗂 B+D Archiv</div>
-      <div class="header-sub">Intelligente Dokumentenverwaltung</div>
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">B</div>
+    <div class="sidebar-logo-text">B+D</div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-item">
+      <span class="nav-item-icon">⊞</span> Dashboard
+    </a>
+    <button class="nav-item" onclick="switchTab('upload')">
+      <span class="nav-item-icon">📤</span> Hochladen
+    </button>
+    <button class="nav-item active" id="nav-archiv" onclick="switchTab('archiv')">
+      <span class="nav-item-icon">📁</span> Archiv
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="avatar">MT</div>
+    <div class="avatar-info">
+      <div class="avatar-name">B+D Admin</div>
+      <div class="avatar-role">Administrator</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="app-main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-breadcrumb">
+      <a href="index.html">Dashboard</a>
+      <span class="topbar-breadcrumb-sep">›</span>
+      <span class="topbar-breadcrumb-cur" id="topbar-cur">B+D Archiv</span>
+    </div>
+    <div class="topbar-right">
+      <div class="search-box">
+        <span>🔍</span>
+        <input id="filterSuche" type="text" placeholder="Dokumente suchen..." oninput="renderDateiGrid()">
+      </div>
+      <button class="upload-btn" onclick="switchTab('upload')">
+        + Hochladen
+      </button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <div class="content-main">
+
+      <!-- TAB: HOCHLADEN -->
+      <div id="tab-upload" style="display:none;">
+        <div class="page-header">
+          <div class="page-header-icon">📤</div>
+          <div>
+            <div class="page-header-title">Dokument hochladen</div>
+            <div class="page-header-sub">Claude analysiert und klassifiziert automatisch</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="upload-zone" id="uploadZone"
+            ondragover="event.preventDefault();this.classList.add('drag-over')"
+            ondragleave="this.classList.remove('drag-over')"
+            ondrop="handleDrop(event)"
+            onclick="document.getElementById('fileInput').click()">
+            <div style="font-size:48px;margin-bottom:12px;">🤖</div>
+            <div style="font-size:16px;font-weight:600;color:var(--muted);">Datei hierher ziehen oder klicken</div>
+            <div style="font-size:12px;color:var(--hint);margin-top:6px;">Claude analysiert automatisch: Ordner, Kunde, Metadaten</div>
+          </div>
+          <div class="camera-btns">
+            <div class="camera-btn" onclick="document.getElementById('cameraInput').click()">📷 Kamera</div>
+            <div class="camera-btn" onclick="document.getElementById('galleryInput').click()">🖼 Galerie</div>
+          </div>
+          <input type="file" id="fileInput" style="display:none" onchange="handleFiles(this.files)">
+          <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFiles(this.files)">
+          <input type="file" id="galleryInput" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)">
+        </div>
+
+        <div class="analyse-card" id="analyseCard" style="margin-top:16px;">
+          <div class="analyse-loading" id="analyseLoading" style="display:flex;align-items:center;gap:12px;color:var(--muted);font-size:14px;">
+            <div class="spinner"></div>
+            <span>Claude analysiert die Datei...</span>
+          </div>
+          <div id="analyseResult" style="display:none;">
+            <div id="filePreview"></div>
+            <div style="margin-bottom:12px;">
+              <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Claude empfiehlt</div>
+              <div id="ordnerVorschlag"></div>
+            </div>
+            <div class="form-grid" style="margin-bottom:12px;">
+              <div class="field"><label>Ordner *</label>
+                <select id="fOrdner">
+                  <option value="angebote">📄 Angebote</option>
+                  <option value="auftragsbestaetigung">📋 Auftragsbestätigungen</option>
+                  <option value="lieferscheine">🚛 Lieferscheine signiert</option>
+                  <option value="rechnungen-debi">🧾 Rechnungen Debi</option>
+                  <option value="rechnungen-kredi">🧾 Rechnungen Kredi</option>
+                  <option value="ab-lieferanten">📦 AB Lieferanten</option>
+                </select>
+              </div>
+              <div class="field"><label>Dateiname *</label><input id="fName" type="text" placeholder="dateiname.pdf"></div>
+            </div>
+            <div class="form-grid" style="margin-bottom:12px;">
+              <div class="field"><label>Jahr *</label>
+                <select id="fJahr">
+                  <option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>
+                </select>
+              </div>
+              <div class="field"><label>Monat *</label>
+                <select id="fMonat">
+                  <option value="01">Januar</option><option value="02">Februar</option><option value="03">März</option>
+                  <option value="04">April</option><option value="05">Mai</option><option value="06">Juni</option>
+                  <option value="07">Juli</option><option value="08">August</option><option value="09">September</option>
+                  <option value="10">Oktober</option><option value="11">November</option><option value="12">Dezember</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-grid" style="margin-bottom:12px;">
+              <div class="field"><label>Kunde / Lieferant</label>
+                <div class="autocomplete-wrap">
+                  <input id="fKundeSearch" type="text" placeholder="Name oder Nr. suchen..." oninput="searchKunde(this.value)" autocomplete="off">
+                  <div class="autocomplete-results" id="kundeResults"></div>
+                </div>
+                <input type="hidden" id="fKundeNr">
+              </div>
+              <div class="field"><label>Betrag CHF</label><input id="fBetrag" type="number" step="0.01" placeholder="0.00"></div>
+            </div>
+            <div class="field" style="margin-bottom:4px;"><label>Referenz / Nr.</label><input id="fReferenz" type="text" placeholder="z.B. Rechnungsnummer"></div>
+            <textarea id="fBeschreibung" style="display:none;"></textarea>
+            <input id="fDatum" type="hidden">
+            <div id="uploadActionStatus" style="display:none;margin-top:12px;" class="status-msg"></div>
+            <div id="uploadProgress" style="display:none;margin-top:12px;">
+              <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+              <div style="font-size:12px;color:var(--hint);margin-top:4px;" id="progressText">Hochladen...</div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px;">
+              <button class="btn-primary" onclick="doUpload()">📤 Hochladen & archivieren</button>
+              <button class="btn-secondary" onclick="resetUpload()">Abbrechen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: ARCHIV - MONATSÜBERSICHT -->
+      <div id="tab-archiv">
+        <div class="page-header">
+          <div class="page-header-icon">📁</div>
+          <div>
+            <div class="page-header-title">B+D Archiv</div>
+            <div class="page-header-sub">Intelligente Dokumentenverwaltung</div>
+          </div>
+        </div>
+
+        <!-- MONATS ÜBERSICHT -->
+        <div id="monatsUebersichtCard" class="card">
+          <div class="card-title">📅 Monatsübersicht</div>
+          <div id="monatsUebersicht"><div class="empty"><div class="empty-icon">⏳</div>Lade...</div></div>
+        </div>
+
+        <!-- DATEI LISTE (wenn Monat gewählt) -->
+        <div id="dateiListeCard" style="display:none;" class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div class="card-title" id="dateiListeTitle" style="margin-bottom:0;">Dateien</div>
+            <button class="btn-xs" onclick="showMonatsUebersicht()">← Zurück</button>
+          </div>
+          <div id="dateiGrid"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT INFO SIDEBAR -->
+    <div class="content-sidebar">
+      <div class="info-title">📊 Archivübersicht</div>
+
+      <div class="stat-block">
+        <div class="stat-label">Gesamte Dateien</div>
+        <div class="stat-value" id="stat-total">–</div>
+        <div class="stat-sub" id="stat-monat">wird geladen...</div>
+      </div>
+
+      <div class="stat-block">
+        <div class="stat-label">Gesamter Speicher</div>
+        <div style="font-size:28px;font-weight:800;color:var(--text);" id="stat-size">– MB</div>
+        <div class="storage-bar">
+          <div class="storage-fill" id="storage-fill" style="width:0%"></div>
+        </div>
+        <div class="storage-labels">
+          <span id="storage-used">0 MB verwendet</span>
+          <span style="color:var(--hint);">von 1 GB</span>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border);margin:16px 0;"></div>
+
+      <div class="card-title" style="margin-bottom:12px;">Aktivität</div>
+      <div class="activity-list" id="activity-list">
+        <div style="font-size:12px;color:var(--hint);">Wird geladen...</div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <button class="btn-xs" onclick="loadMonatsUebersicht()" style="width:100%;justify-content:center;padding:8px;">↻ Aktualisieren</button>
+      </div>
     </div>
   </div>
 </div>
 
-<main class="main">
-
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('upload')">📤 Hochladen</button>
-      <button class="tab" onclick="switchTab('archiv')">📁 Archiv</button>
-    </div>
-  </div>
-
-  <!-- TAB: UPLOAD + CLAUDE ANALYSE -->
-  <div id="tab-upload">
-
-    <!-- DROPZONE -->
-    <div class="card">
-      <div class="upload-zone" id="uploadZone"
-        ondragover="event.preventDefault();this.classList.add('drag-over')"
-        ondragleave="this.classList.remove('drag-over')"
-        ondrop="handleDrop(event)"
-        onclick="document.getElementById('fileInput').click()">
-        <div class="upload-zone-icon">🤖</div>
-        <div class="upload-zone-text">Datei hierher ziehen oder klicken</div>
-        <div class="upload-zone-sub">Claude analysiert automatisch: Ordner, Kunde, Metadaten</div>
-      </div>
-      <div class="camera-btns">
-        <div class="camera-btn" onclick="document.getElementById('cameraInput').click()">📷 Kamera</div>
-        <div class="camera-btn" onclick="document.getElementById('galleryInput').click()">🖼 Galerie</div>
-      </div>
-      <input type="file" id="fileInput" style="display:none" onchange="handleFiles(this.files)">
-      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFiles(this.files)">
-      <input type="file" id="galleryInput" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)">
-    </div>
-
-    <!-- ANALYSE RESULT -->
-    <div class="analyse-card" id="analyseCard">
-      <div class="analyse-loading" id="analyseLoading">
-        <div class="spinner"></div>
-        <span>Claude analysiert die Datei...</span>
-      </div>
-
-      <div id="analyseResult" style="display:none;">
-        <!-- Vorschau -->
-        <div id="filePreview"></div>
-
-        <!-- Ordner Vorschlag -->
-        <div style="margin-bottom:1rem;">
-          <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Claude empfiehlt</div>
-          <div id="ordnerVorschlag"></div>
-        </div>
-
-        <!-- FELDER -->
-        <div class="form-grid" style="margin-bottom:1rem;">
-          <div class="field">
-            <label>Ordner *</label>
-            <select id="fOrdner">
-              <option value="angebote">📄 Angebote</option>
-              <option value="auftragsbestaetigung">📋 Auftragsbestätigungen</option>
-              <option value="lieferscheine">🚛 Lieferscheine signiert</option>
-              <option value="rechnungen-debi">🧾 Rechnungen Debi</option>
-              <option value="rechnungen-kredi">🧾 Rechnungen Kredi</option>
-              <option value="ab-lieferanten">📦 AB Lieferanten</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Dateiname *</label>
-            <input id="fName" type="text" placeholder="z.B. Rechnung_Lieferant.pdf">
-          </div>
-        </div>
-
-        <div class="form-grid" style="margin-bottom:1rem;">
-          <div class="field">
-            <label>Jahr *</label>
-            <select id="fJahr">
-              <option value="2026">2026</option>
-              <option value="2027">2027</option>
-              <option value="2028">2028</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Monat *</label>
-            <select id="fMonat">
-              <option value="01">Januar</option>
-              <option value="02">Februar</option>
-              <option value="03">März</option>
-              <option value="04">April</option>
-              <option value="05">Mai</option>
-              <option value="06">Juni</option>
-              <option value="07">Juli</option>
-              <option value="08">August</option>
-              <option value="09">September</option>
-              <option value="10">Oktober</option>
-              <option value="11">November</option>
-              <option value="12">Dezember</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-grid" style="margin-bottom:1rem;">
-          <div class="field">
-            <label>Kunde / Lieferant</label>
-            <div class="autocomplete-wrap">
-              <input id="fKundeSearch" type="text" placeholder="Name oder Nr. suchen..." oninput="searchKunde(this.value)" autocomplete="off">
-              <div class="autocomplete-results" id="kundeResults"></div>
-            </div>
-            <input type="hidden" id="fKundeNr">
-          </div>
-          <div class="field">
-            <label>Datum</label>
-            <input id="fDatum" type="date">
-          </div>
-        </div>
-
-        <div class="form-grid" style="margin-bottom:1rem;">
-          <div class="field">
-            <label>Betrag CHF</label>
-            <input id="fBetrag" type="number" step="0.01" placeholder="0.00">
-          </div>
-          <div class="field">
-            <label>Referenz / Nr.</label>
-            <input id="fReferenz" type="text" placeholder="z.B. Rechnungsnummer">
-          </div>
-        </div>
-
-        <textarea id="fBeschreibung" style="display:none;"></textarea>
-
-        <div id="uploadActionStatus" style="display:none;" class="status-msg" style="margin-bottom:1rem;"></div>
-        <div id="uploadProgress" style="display:none;margin-bottom:1rem;">
-          <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-          <div style="font-size:12px;color:var(--hint);margin-top:4px;" id="progressText">Hochladen...</div>
-        </div>
-
-        <div style="display:flex;gap:10px;">
-          <button class="btn-primary" onclick="doUpload()">📤 Jetzt hochladen & archivieren</button>
-          <button class="btn-secondary" onclick="resetUpload()">✕ Abbrechen</button>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- TAB: ARCHIV -->
-  <div id="tab-archiv" style="display:none;">
-
-    <!-- JAHRES/MONATS ÜBERSICHT -->
-    <div class="card" id="monatsUebersichtCard">
-      <div class="card-header">
-        <div class="card-title">📅 Jahres- & Monatsübersicht</div>
-        <div style="display:flex;gap:8px;">
-          <select id="filterJahr" onchange="loadMonatsUebersicht()" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.07);color:var(--text);font-size:13px;outline:none;font-family:var(--font);">
-            <option value="">Alle Jahre</option>
-            <option value="2026">2026</option>
-            <option value="2027">2027</option>
-            <option value="2028">2028</option>
-          </select>
-        </div>
-      </div>
-      <div id="monatsUebersicht"></div>
-    </div>
-
-    <!-- DATEILISTE (wenn Monat gewählt) -->
-    <div class="card" id="dateiListeCard" style="display:none;">
-      <div class="card-header">
-        <div>
-          <div class="card-title" id="dateiListeTitle">Dateien</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input id="filterSuche" type="text" placeholder="🔍 Suchen..." oninput="renderDateiGrid()" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.07);color:var(--text);font-size:13px;outline:none;font-family:var(--font);min-width:180px;">
-          <button class="btn-sm" onclick="showMonatsUebersicht()">← Zurück</button>
-        </div>
-      </div>
-      <div id="dateiGrid"></div>
-    </div>
-  </div>
-
-</main>
-
 <!-- VIEWER MODAL -->
 <div class="overlay" id="viewerModal">
   <div class="modal" style="width:900px;max-width:97vw;max-height:96vh;display:flex;flex-direction:column;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-      <h3 id="viewerTitle" style="font-size:15px;word-break:break-all;flex:1;margin:0;padding-right:12px;"></h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 id="viewerTitle" style="font-size:14px;word-break:break-all;flex:1;margin:0;padding-right:12px;"></h3>
       <div style="display:flex;gap:8px;flex-shrink:0;">
-        <button onclick="downloadCurrentViewer()" class="btn-sm btn-primary" style="color:#93c5fd;border-color:rgba(96,165,250,.4);">⬇ Download</button>
-        <button onclick="closeViewer()" class="btn-sm">✕ Schliessen</button>
+        <button onclick="downloadCurrentViewer()" class="btn-xs" style="color:#93c5fd;border-color:rgba(96,165,250,.3);">⬇ Download</button>
+        <button onclick="closeViewer()" class="btn-xs">✕</button>
       </div>
     </div>
-    <div id="viewerContent" style="flex:1;min-height:0;background:rgba(0,0,0,.3);border-radius:10px;overflow:auto;display:flex;align-items:center;justify-content:center;"></div>
+    <div id="viewerContent" style="flex:1;min-height:0;background:rgba(0,0,0,.3);border-radius:8px;overflow:auto;display:flex;align-items:center;justify-content:center;"></div>
   </div>
 </div>
 
@@ -350,8 +509,7 @@ body{
   <div class="modal">
     <h3>Datei bearbeiten</h3>
     <div class="field"><label>Dateiname</label><input id="editName" type="text"></div>
-    <div class="field">
-      <label>Ordner</label>
+    <div class="field"><label>Ordner</label>
       <select id="editOrdner">
         <option value="angebote">📄 Angebote</option>
         <option value="auftragsbestaetigung">📋 Auftragsbestätigungen</option>
@@ -361,8 +519,7 @@ body{
         <option value="ab-lieferanten">📦 AB Lieferanten</option>
       </select>
     </div>
-    <div class="field">
-      <label>Kunde / Lieferant</label>
+    <div class="field"><label>Kunde / Lieferant</label>
       <div class="autocomplete-wrap">
         <input id="editKundeSearch" type="text" placeholder="Name oder Nr. suchen..." oninput="searchKundeEdit(this.value)" autocomplete="off">
         <div class="autocomplete-results" id="editKundeResults"></div>
@@ -372,12 +529,13 @@ body{
     <div id="editModalStatus" style="display:none;" class="status-msg"></div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeEditModal()">Abbrechen</button>
-      <button class="btn-primary" style="padding:10px 22px;font-size:14px;" onclick="saveEdit()">Speichern</button>
+      <button class="btn-primary" onclick="saveEdit()">Speichern</button>
     </div>
   </div>
 </div>
 
 <script>
+
 var SUPA_URL='https://osxrgginjkzonvyyndpi.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zeHJnZ2luamt6b252eXluZHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMDExMjksImV4cCI6MjA5Njc3NzEyOX0.X-Ftee85CqLG0jvYVaUA1oYPr-v5svmguZuUNJAHnWo';
 var CC_FN='https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/cashctrl';
@@ -828,22 +986,19 @@ function loadMonatsUebersicht(){
 
 function renderMonatsUebersicht(monateData, jahre){
   var el = document.getElementById('monatsUebersicht');
-  var ORDNER_KURZ = {angebote:'Ang',auftragsbestaetigung:'AB',lieferscheine:'LS','rechnungen-debi':'RD','rechnungen-kredi':'RK','ab-lieferanten':'ABL'};
+  var BADGE = {angebote:'badge-ang Ang',auftragsbestaetigung:'badge-ab AB',lieferscheine:'badge-ls LS','rechnungen-debi':'badge-rd RD','rechnungen-kredi':'badge-rk RK','ab-lieferanten':'badge-abl ABL'};
 
-  // Alle Einträge mit Daten sammeln und nach Jahr/Monat sortieren (neueste zuerst)
-  var alleEintraege = [];
+  var eintraege = [];
   jahre.forEach(function(jahr){
     for(var m=1; m<=12; m++){
       var monat = String(m).padStart(2,'0');
       var key = jahr+'/'+monat;
       var data = monateData[key]||{};
       var total = Object.values(data).reduce(function(s,v){ return s+v; },0);
-      if(total > 0) alleEintraege.push({jahr:jahr, monat:monat, data:data, total:total});
+      if(total > 0) eintraege.push({jahr:jahr, monat:monat, data:data, total:total});
     }
   });
-
-  // Neueste zuerst
-  alleEintraege.sort(function(a,b){
+  eintraege.sort(function(a,b){
     if(a.jahr!==b.jahr) return parseInt(b.jahr)-parseInt(a.jahr);
     return parseInt(b.monat)-parseInt(a.monat);
   });
@@ -852,45 +1007,41 @@ function renderMonatsUebersicht(monateData, jahre){
   var aktJahr = String(heute.getFullYear());
   var aktMonat = String(heute.getMonth()+1).padStart(2,'0');
 
-  if(!alleEintraege.length){
-    el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div>Noch keine Dateien vorhanden.</div>'
-      +'<div id="alteDateienBereich" style="display:none;margin-top:.5rem;padding:12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;align-items:center;justify-content:space-between;gap:12px;">'
-        +'<div><div style="font-size:13px;font-weight:700;color:#fcd34d;">📂 Ältere Dateien</div><div id="alteDateienCount" style="font-size:11px;color:var(--hint);"></div></div>'
-        +'<button onclick="renderAlteDateien()" class="btn-sm" style="color:#fcd34d;border-color:rgba(245,158,11,.4);">Anzeigen</button>'
-      +'</div>';
+  var altBar = '<div class="alte-dateien-bar" id="alteDateienBereich"><div><div style="font-size:13px;font-weight:700;color:#fcd34d;">\u{1F4C2} \u00C4ltere Dateien</div><div id="alteDateienCount" style="font-size:11px;color:var(--hint);"></div></div><button onclick="renderAlteDateien()" class="btn-xs">Anzeigen</button></div>';
+
+  if(!eintraege.length){
+    el.innerHTML = '<div class="empty"><div class="empty-icon">\u{1F4ED}</div>Noch keine Dateien vorhanden.</div>' + altBar;
     return;
   }
 
-  var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:1rem;">';
-
-  alleEintraege.forEach(function(e){
+  var html = '<div class="monats-grid">';
+  eintraege.forEach(function(e){
     var istAkt = (e.jahr===aktJahr && e.monat===aktMonat);
     var badges = Object.keys(e.data).map(function(o){
-      return '<span style="font-size:9px;background:rgba(255,255,255,.12);border-radius:3px;padding:2px 5px;color:var(--muted);">'+ORDNER_KURZ[o]+': '+e.data[o]+'</span>';
-    }).join(' ');
-
-    html += '<div onclick="loadMonat(\''+e.jahr+'\',\''+e.monat+'\')" style="background:'+(istAkt?'rgba(59,130,246,.2)':'rgba(255,255,255,.05)')+';border:1px solid '+(istAkt?'rgba(96,165,250,.6)':'rgba(255,255,255,.12)')+';border-radius:12px;padding:14px;cursor:pointer;transition:all .15s;" onmouseover="this.style.background=\''+(istAkt?'rgba(59,130,246,.28)':'rgba(255,255,255,.09)')+'\'" onmouseout="this.style.background=\''+(istAkt?'rgba(59,130,246,.2)':'rgba(255,255,255,.05)')+'\'">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
-        +'<div style="font-size:14px;font-weight:800;color:#fff;">'+(istAkt?'🔵 ':'')+MONATSNAMEN[parseInt(e.monat)]+' '+e.jahr+'</div>'
-        +'<div style="font-size:11px;color:var(--hint);">'+e.total+' Dateien</div>'
-      +'</div>'
-      +'<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:10px;">'+badges+'</div>'
-      +'<div style="display:flex;gap:6px;" onclick="event.stopPropagation()">'
-        +'<button onclick="backupMonat(\''+e.jahr+'\',\''+e.monat+'\',this)" class="btn-sm" style="font-size:11px;color:#86efac;border-color:rgba(34,197,94,.3);">💾 Backup</button>'
-        +'<button onclick="deleteMonat(\''+e.jahr+'\',\''+e.monat+'\')" class="btn-sm btn-danger" style="font-size:11px;">🗑</button>'
-      +'</div>'
-    +'</div>';
+      var parts = (BADGE[o]||'badge-ang ?').split(' ');
+      var cls = parts[0];
+      var lbl = parts.slice(1).join(' ');
+      return '<span class="ordner-badge ' + cls + '">' + lbl + ': ' + e.data[o] + '</span>';
+    }).join('');
+    var cardClass = 'monat-card' + (istAkt ? ' aktiv' : '');
+    var prefix = istAkt ? '\uD83D\uDD35 ' : '';
+    html += '<div class="' + cardClass + '" onclick="loadMonat(\'' + e.jahr + '\',\'' + e.monat + '\')">';
+    html += '<div class="monat-card-header">';
+    html += '<div class="monat-name">' + prefix + MONATSNAMEN[parseInt(e.monat)] + ' ' + e.jahr + '</div>';
+    html += '<div class="monat-count">' + e.total + ' Dateien</div>';
+    html += '</div>';
+    html += '<div class="monat-badges">' + badges + '</div>';
+    html += '<div class="monat-actions" onclick="event.stopPropagation()">';
+    html += '<button onclick="backupMonat(\'' + e.jahr + '\',\'' + e.monat + '\',this)" class="btn-xs">💾 Backup</button>';
+    html += '<button onclick="deleteMonat(\'' + e.jahr + '\',\'' + e.monat + '\')" class="btn-xs danger">🗑</button>';
+    html += '</div>';
+    html += '</div>';
   });
-
   html += '</div>';
-  html += '<div id="alteDateienBereich" style="display:none;margin-top:.5rem;padding:12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;align-items:center;justify-content:space-between;gap:12px;">'
-    +'<div><div style="font-size:13px;font-weight:700;color:#fcd34d;">📂 Ältere Dateien</div><div id="alteDateienCount" style="font-size:11px;color:var(--hint);"></div></div>'
-    +'<button onclick="renderAlteDateien()" class="btn-sm" style="color:#fcd34d;border-color:rgba(245,158,11,.4);">Anzeigen</button>'
-  +'</div>';
-  el.innerHTML = html;
-}
 
-var alteDateien = [];
+  el.innerHTML = html + altBar;
+  ladeStatistiken(monateData);
+}
 
 function loadAlteDateien(){
   var alleOrdner = ['angebote','auftragsbestaetigung','lieferscheine','rechnungen-debi','rechnungen-kredi','ab-lieferanten'];
@@ -1065,138 +1216,57 @@ function loadDateien(){
 
 function renderDateiGrid(){
   var el=document.getElementById('dateiGrid');
-  // Falls Kunden noch nicht geladen: zuerst laden dann nochmal rendern
-  if(!allKunden.length){
-    loadKunden(function(){ renderDateiGrid(); });
-    return;
-  }
+  if(!allKunden.length){ loadKunden(function(){ renderDateiGrid(); }); return; }
   var q=document.getElementById('filterSuche').value.toLowerCase();
-  // Suche auch in Kundennamen
   var list=allDateien.filter(function(f){
     if(!q) return true;
     if(f.rawName.toLowerCase().includes(q)) return true;
-    // Kundennummer aus Name
-    var parts = f.rawName.split('_');
-    if(parts.length > 1 && /^\d+$/.test(parts[0])){
-      var k = allKunden.find(function(x){ return String(x.nr) === parts[0]; });
-      if(k){
-        var kname = k.company||(k.firstName+' '+k.lastName).trim()||k.name;
-        if(kname.toLowerCase().includes(q) || parts[0].includes(q)) return true;
-      }
+    var parts=f.rawName.split('_');
+    if(parts.length>1&&/^\d+$/.test(parts[0])){
+      var k=allKunden.find(function(x){ return String(x.nr)===parts[0]; });
+      if(k){ var kn=(k.company||(k.firstName&&k.lastName?(k.firstName+' '+k.lastName).trim():'')||k.name||'').toLowerCase(); if(kn.includes(q)||parts[0].includes(q)) return true; }
+      else if(parts[0].includes(q)) return true;
     }
     return false;
   });
   if(!list.length){ el.innerHTML='<div class="empty"><div class="empty-icon">📭</div>Keine Dateien gefunden.</div>'; return; }
-
   var FICONS={angebote:'📄',auftragsbestaetigung:'📋',lieferscheine:'🚛','rechnungen-debi':'🧾','rechnungen-kredi':'🧾','ab-lieferanten':'📦'};
-
-  // Dateien nach Kundennummer gruppieren
-  var gruppen = {};
+  var gruppen={};
   list.forEach(function(f){
-    var nameParts = f.rawName.split('_');
-    var kundeNr = '';
-    var kundeLabel = '📂 Kein Kunde';
-    if(nameParts.length > 1 && /^\d+$/.test(nameParts[0])){
-      kundeNr = nameParts[0];
-      var k = allKunden.find(function(x){ return String(x.nr) === String(kundeNr); });
-      var kname = '';
-      if(k) kname = k.company||(k.firstName&&k.lastName?(k.firstName+' '+k.lastName).trim():'')||k.name||'';
-      kundeLabel = '👤 '+kundeNr+(kname ? ' – '+kname : '');
+    var np=f.rawName.split('_'); var kundeNr=''; var kundeLabel='📂 Kein Kunde';
+    if(np.length>1&&/^\d+$/.test(np[0])){
+      kundeNr=np[0];
+      var k=allKunden.find(function(x){ return String(x.nr)===String(kundeNr); });
+      var kname=''; if(k) kname=k.company||(k.firstName&&k.lastName?(k.firstName+' '+k.lastName).trim():'')||k.name||'';
+      kundeLabel='👤 '+kundeNr+(kname?' – '+kname:'');
     }
-    if(!gruppen[kundeNr]) gruppen[kundeNr] = {label: kundeLabel, dateien: []};
+    if(!gruppen[kundeNr]) gruppen[kundeNr]={label:kundeLabel,dateien:[]};
     gruppen[kundeNr].dateien.push(f);
   });
-
-  var keys = Object.keys(gruppen).sort(function(a,b){
-    if(a===''&&b!=='') return 1;
-    if(b===''&&a!=='') return -1;
-    return parseInt(a)-parseInt(b);
-  });
-
-  el.innerHTML = keys.map(function(key){
-    var gruppe = gruppen[key];
-    var dateienHtml = gruppe.dateien.map(function(f){
+  var keys=Object.keys(gruppen).sort(function(a,b){ if(a===''&&b!=='') return 1; if(b===''&&a!=='') return -1; return parseInt(a)-parseInt(b); });
+  el.innerHTML=keys.map(function(key){
+    var g=gruppen[key];
+    var dh=g.dateien.map(function(f){
       var ext=(f.name||'').split('.').pop().toLowerCase();
       var icon=ext==='pdf'?'📄':ext==='xlsx'||ext==='xls'?'📊':ext==='docx'?'📝':['jpg','jpeg','png'].includes(ext)?'🖼':'📎';
       var size=f.size?(f.size>1048576?(f.size/1048576).toFixed(1)+'MB':(f.size/1024).toFixed(0)+'KB'):'';
       var date=f.created_at?new Date(f.created_at).toLocaleDateString('de-CH'):'';
       var fi=FICONS[f.folder]||'📁';
-      // Dateiname ohne Kundennummer-Prefix anzeigen
-      var displayName = f.rawName;
-      if(key && displayName.startsWith(key+'_')) displayName = displayName.substring((key+'_').length);
-      return '<div class="datei-card">'
-        +'<div style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;" onclick="openViewer(\''+f.path+'\',\''+f.rawName+'\')">'
-          +'<div style="font-size:26px;flex-shrink:0;">'+icon+'</div>'
-          +'<div style="flex:1;min-width:0;">'
-            +'<div class="datei-name" title="'+f.rawName+'">'+displayName+'</div>'
-            +'<div class="datei-meta">'+fi+' '+(f.folder||'')+(size?' · '+size:'')+(date?' · '+date:'')+'</div>'
-          +'</div>'
-        +'</div>'
-        +'<div class="datei-actions">'
-          +'<button class="btn-sm" style="color:#93c5fd;border-color:rgba(96,165,250,.3);" onclick="openViewer(\''+f.path+'\',\''+f.rawName+'\')">👁 Anzeigen</button>'
-          +'<button class="btn-sm" onclick="downloadDatei(\''+f.path+'\',\''+f.rawName+'\')">⬇ Download</button>'
-          +'<button class="btn-sm" onclick="openEditModal(\''+f.path+'\',\''+f.rawName+'\',\''+f.folder+'\')">✏</button>'
-          +'<button class="btn-sm btn-danger" onclick="deleteDatei(\''+f.path+'\')">🗑</button>'
+      var dn=f.rawName; if(key&&dn.startsWith(key+'_')) dn=dn.substring((key+'_').length);
+      var p=f.path.replace(/'/g,"\\'"); var rn=f.rawName.replace(/'/g,"\\'"); var fo=f.folder.replace(/'/g,"\\'");
+      return '<div class="datei-row" onclick="openViewer(\''+p+'\',\''+rn+'\')">'
+        +'<div class="datei-icon">'+icon+'</div>'
+        +'<div class="datei-info"><div class="datei-name">'+dn+'</div><div class="datei-meta">'+fi+' '+(f.folder||'')+(size?' · '+size:'')+(date?' · '+date:'')+'</div></div>'
+        +'<div class="datei-btns" onclick="event.stopPropagation()">'
+          +'<button class="btn-xs" style="color:#93c5fd" onclick="openViewer(\''+p+'\',\''+rn+'\')">👁</button>'
+          +'<button class="btn-xs" onclick="downloadDatei(\''+p+'\',\''+rn+'\')">⬇</button>'
+          +'<button class="btn-xs" onclick="openEditModal(\''+p+'\',\''+rn+'\',\''+fo+'\')">✏</button>'
+          +'<button class="btn-xs danger" onclick="deleteDatei(\''+p+'\')">🗑</button>'
         +'</div>'
       +'</div>';
     }).join('');
-
-    return '<div style="margin-bottom:1.5rem;">'
-      +'<div style="font-size:13px;font-weight:700;color:rgba(165,185,230,.9);padding:8px 4px 6px;border-bottom:1px solid var(--glass-brd);margin-bottom:10px;display:flex;align-items:center;gap:6px;">'
-        +gruppe.label
-        +'<span style="font-size:11px;color:var(--hint);font-weight:400;">('+gruppe.dateien.length+')</span>'
-      +'</div>'
-      +'<div class="datei-grid">'+dateienHtml+'</div>'
-    +'</div>';
+    return '<div class="kunde-gruppe"><div class="kunde-gruppe-header">'+g.label+' <span style="color:var(--hint);font-weight:400;font-size:11px;">('+g.dateien.length+')</span></div><div class="datei-liste">'+dh+'</div></div>';
   }).join('');
-}
-
-var currentViewerPath = null;
-var currentViewerName = null;
-
-function openViewer(path, name){
-  currentViewerPath = path;
-  currentViewerName = name;
-  var ext = name.split('.').pop().toLowerCase();
-  document.getElementById('viewerTitle').textContent = name;
-  var content = document.getElementById('viewerContent');
-  content.innerHTML = '<div style="color:var(--muted);font-size:13px;">⏳ Wird geladen...</div>';
-  document.getElementById('viewerModal').classList.add('open');
-
-  // Datei via authenticated fetch laden
-  var encodedPath = path.split('/').map(function(p){ return encodeURIComponent(p); }).join('/');
-  fetch(SUPA_ST+'/object/authenticated/'+encodeURIComponent(BUCKET)+'/'+encodedPath, {
-    headers: sh()
-  })
-  .then(function(r){
-    if(!r.ok) throw new Error('Status '+r.status);
-    return r.blob();
-  })
-  .then(function(blob){
-    var url = URL.createObjectURL(blob);
-    if(ext === 'pdf'){
-      content.innerHTML = '<iframe src="'+url+'" style="width:100%;height:70vh;border:none;border-radius:8px;"></iframe>';
-    } else if(['jpg','jpeg','png','gif','webp'].includes(ext)){
-      content.innerHTML = '<img src="'+url+'" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:8px;">';
-    } else {
-      content.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted);">📎 Vorschau nicht verfügbar<br><button onclick="downloadCurrentViewer()" class="btn-sm btn-primary" style="margin-top:1rem;color:#93c5fd;">⬇ Herunterladen</button></div>';
-    }
-    // Download-Link merken
-    content._blobUrl = url;
-  })
-  .catch(function(err){
-    content.innerHTML = '<div style="color:var(--red);font-size:13px;padding:1rem;">Fehler: '+err.message+'</div>';
-  });
-}
-
-function closeViewer(){
-  document.getElementById('viewerModal').classList.remove('open');
-  document.getElementById('viewerContent').innerHTML = '';
-}
-
-function downloadCurrentViewer(){
-  if(!currentViewerPath || !currentViewerName) return;
-  downloadDatei(currentViewerPath, currentViewerName);
 }
 
 function downloadDatei(path, name){
@@ -1393,6 +1463,7 @@ async function doBackup(){
     btn.textContent = '💾 Backup erstellen';
   }
 }
+
 </script>
 </body>
 </html>
