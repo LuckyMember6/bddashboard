@@ -11,271 +11,291 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #0d1526;
-  --sidebar: #111827;
-  --sidebar-w: 200px;
-  --blue: #3b82f6;
-  --blue2: #60a5fa;
-  --indigo: #6366f1;
-  --green: #22c55e;
-  --red: #ef4444;
-  --amber: #f59e0b;
-  --text: #f1f5f9;
-  --muted: #94a3b8;
-  --hint: #64748b;
-  --border: rgba(255,255,255,.08);
-  --card: rgba(255,255,255,.04);
-  --card-hover: rgba(255,255,255,.07);
-  --radius: 12px;
-  --font: 'Inter',-apple-system,'Segoe UI',sans-serif;
+:root{
+  --bg:#0d1526; --panel:#111827; --blue:#3b82f6; --blue2:#60a5fa;
+  --indigo:#6366f1; --green:#22c55e; --red:#ef4444; --amber:#f59e0b;
+  --text:#f1f5f9; --muted:#94a3b8; --hint:#64748b;
+  --border:rgba(255,255,255,.08); --card:rgba(255,255,255,.04);
+  --radius:12px; --font:'Inter',-apple-system,sans-serif;
+  --sidebar:220px;
 }
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;}
 
-/* SIDEBAR */
-.sidebar {
-  width: var(--sidebar-w); background: var(--sidebar); border-right: 1px solid var(--border);
-  display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 30;
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sidebar);background:var(--panel);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:40;
+  flex-shrink:0;
 }
-.sidebar-logo {
-  display: flex; align-items: center; gap: 10px; padding: 20px 16px;
-  border-bottom: 1px solid var(--border);
+.sidebar-logo{
+  display:flex;align-items:center;gap:10px;padding:18px 16px 14px;
+  border-bottom:1px solid var(--border);
 }
-.sidebar-logo-icon {
-  width: 32px; height: 32px; background: var(--blue); border-radius: 8px;
-  display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #fff;
+.logo-icon{
+  width:34px;height:34px;background:linear-gradient(135deg,var(--blue),var(--indigo));
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:800;color:#fff;flex-shrink:0;
 }
-.sidebar-logo-text { font-size: 15px; font-weight: 700; color: var(--text); }
-.sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
-.nav-item {
-  display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px;
-  font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer;
-  transition: all .15s; border: none; background: transparent; width: 100%; text-align: left;
-  text-decoration: none;
+.logo-text{font-size:15px;font-weight:700;color:var(--text);}
+.sidebar-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:2px;}
+.nav-link{
+  display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;
+  font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;
+  transition:all .15s;border:none;background:transparent;width:100%;
+  text-align:left;text-decoration:none;font-family:var(--font);
 }
-.nav-item:hover { background: rgba(255,255,255,.05); color: var(--text); }
-.nav-item.active { background: rgba(59,130,246,.15); color: var(--blue2); }
-.nav-item-icon { font-size: 16px; flex-shrink: 0; }
-.sidebar-footer {
-  padding: 12px; border-top: 1px solid var(--border);
-  display: flex; align-items: center; gap: 10px;
+.nav-link:hover{background:rgba(255,255,255,.05);color:var(--text);}
+.nav-link.active{background:rgba(59,130,246,.15);color:var(--blue2);}
+.sidebar-footer{
+  padding:12px;border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
 }
-.avatar {
-  width: 32px; height: 32px; background: linear-gradient(135deg,var(--blue),var(--indigo));
-  border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
-}
-.avatar-info { flex: 1; min-width: 0; }
-.avatar-name { font-size: 12px; font-weight: 600; color: var(--text); }
-.avatar-role { font-size: 10px; color: var(--hint); }
-
-/* MAIN LAYOUT */
-.app-main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
-
-/* TOPBAR */
-.topbar {
-  height: 60px; background: rgba(13,21,38,.8); border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(16px); display: flex; align-items: center; justify-content: space-between;
-  padding: 0 24px; position: sticky; top: 0; z-index: 20;
-}
-.topbar-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
-.topbar-breadcrumb a { color: var(--muted); text-decoration: none; }
-.topbar-breadcrumb a:hover { color: var(--text); }
-.topbar-breadcrumb-sep { color: var(--hint); }
-.topbar-breadcrumb-cur { color: var(--text); font-weight: 600; }
-.topbar-right { display: flex; align-items: center; gap: 12px; }
-.search-box {
-  display: flex; align-items: center; gap: 8px; padding: 8px 14px;
-  background: rgba(255,255,255,.06); border: 1px solid var(--border); border-radius: 8px;
-  color: var(--muted); font-size: 13px; cursor: text; min-width: 220px;
-}
-.search-box input { background: transparent; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: var(--font); }
-.search-box input::placeholder { color: var(--hint); }
-.upload-btn {
-  display: flex; align-items: center; gap: 8px; padding: 8px 16px;
-  background: var(--blue); border: none; border-radius: 8px;
-  color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font);
-}
-.upload-btn:hover { background: #2563eb; }
-
-/* CONTENT */
-.content { flex: 1; display: flex; gap: 0; }
-.content-main { flex: 1; padding: 24px; overflow-y: auto; }
-.content-sidebar { width: 280px; border-left: 1px solid var(--border); padding: 24px; flex-shrink: 0; }
-
-/* PAGE HEADER */
-.page-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px; }
-.page-header-icon {
-  width: 56px; height: 56px; background: rgba(59,130,246,.15); border-radius: 12px;
-  display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0;
-}
-.page-header-title { font-size: 24px; font-weight: 800; color: var(--text); }
-.page-header-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
-
-/* CARDS */
-.card {
-  background: rgba(255,255,255,.03); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 20px;
-}
-.card + .card { margin-top: 16px; }
-.card-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-
-/* MONAT KARTEN */
-.monats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 12px; }
-.monat-card {
-  background: rgba(255,255,255,.04); border: 1px solid var(--border);
-  border-radius: 10px; padding: 16px; cursor: pointer; transition: all .15s;
-}
-.monat-card:hover { background: rgba(255,255,255,.08); border-color: rgba(59,130,246,.4); transform: translateY(-1px); }
-.monat-card.aktiv { background: rgba(59,130,246,.12); border-color: rgba(96,165,250,.5); }
-.monat-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-.monat-name { font-size: 15px; font-weight: 700; color: var(--text); }
-.monat-count { font-size: 12px; color: var(--hint); background: rgba(255,255,255,.06); border-radius: 20px; padding: 2px 8px; }
-.monat-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
-.ordner-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 500; }
-.badge-ang { background: rgba(59,130,246,.2); color: #93c5fd; }
-.badge-ab { background: rgba(99,102,241,.2); color: #c4b5fd; }
-.badge-ls { background: rgba(34,197,94,.15); color: #86efac; }
-.badge-rd { background: rgba(245,158,11,.15); color: #fcd34d; }
-.badge-rk { background: rgba(239,68,68,.15); color: #fca5a5; }
-.badge-abl { background: rgba(107,114,128,.2); color: #d1d5db; }
-.monat-actions { display: flex; gap: 6px; }
-.btn-xs {
-  font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border);
-  background: rgba(255,255,255,.06); color: var(--muted); cursor: pointer; font-family: var(--font);
-  transition: all .15s;
-}
-.btn-xs:hover { color: var(--text); border-color: rgba(255,255,255,.2); }
-.btn-xs.danger { border-color: rgba(239,68,68,.3); color: #fca5a5; background: rgba(239,68,68,.08); }
-.btn-xs.danger:hover { background: rgba(239,68,68,.15); }
-
-/* ALTE DATEIEN */
-.alte-dateien-bar {
-  display: none; align-items: center; justify-content: space-between;
-  padding: 12px 16px; background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.25);
-  border-radius: 10px; margin-top: 12px;
-}
-.alte-dateien-bar.visible { display: flex; }
-
-/* DATEI LISTE */
-.datei-liste { display: flex; flex-direction: column; gap: 8px; }
-.datei-row {
-  display: flex; align-items: center; gap: 12px; padding: 12px;
-  background: rgba(255,255,255,.03); border: 1px solid var(--border);
-  border-radius: 8px; cursor: pointer; transition: all .15s;
-}
-.datei-row:hover { background: rgba(255,255,255,.07); }
-.datei-icon { font-size: 24px; flex-shrink: 0; }
-.datei-info { flex: 1; min-width: 0; }
-.datei-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.datei-meta { font-size: 11px; color: var(--hint); margin-top: 2px; }
-.datei-btns { display: flex; gap: 6px; flex-shrink: 0; }
-
-/* KUNDE GRUPPE */
-.kunde-gruppe { margin-bottom: 20px; }
-.kunde-gruppe-header {
-  font-size: 12px; font-weight: 700; color: var(--muted);
-  padding: 6px 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 8px;
-  display: flex; align-items: center; gap: 6px;
+.avatar{
+  width:32px;height:32px;
+  background:linear-gradient(135deg,var(--blue),var(--indigo));
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:#fff;flex-shrink:0;
 }
 
-/* INFO SIDEBAR */
-.info-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
-.stat-block { margin-bottom: 20px; }
-.stat-label { font-size: 11px; color: var(--hint); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
-.stat-value { font-size: 32px; font-weight: 800; color: var(--text); line-height: 1; }
-.stat-sub { font-size: 12px; color: var(--green); margin-top: 4px; }
-.storage-bar { height: 6px; background: rgba(255,255,255,.08); border-radius: 3px; overflow: hidden; margin: 8px 0; }
-.storage-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--blue), var(--indigo)); transition: width .5s; }
-.storage-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--hint); }
-.activity-list { display: flex; flex-direction: column; gap: 10px; }
-.activity-item { display: flex; align-items: flex-start; gap: 10px; }
-.activity-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
-.activity-dot.blue { background: var(--blue); }
-.activity-dot.green { background: var(--green); }
-.activity-dot.amber { background: var(--amber); }
-.activity-text { font-size: 12px; color: var(--muted); line-height: 1.5; }
-.activity-time { font-size: 10px; color: var(--hint); }
+/* ── APP SHELL ── */
+.app{margin-left:var(--sidebar);display:flex;flex-direction:column;min-height:100vh;flex:1;}
 
-/* UPLOAD ZONE */
-.upload-zone {
-  border: 2px dashed var(--border); border-radius: var(--radius);
-  padding: 3rem 2rem; text-align: center; cursor: pointer; transition: all .2s;
-  background: rgba(255,255,255,.02);
+/* ── TOPBAR ── */
+.topbar{
+  height:56px;background:rgba(13,21,38,.9);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(16px);display:flex;align-items:center;
+  justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:20;
 }
-.upload-zone:hover, .upload-zone.drag-over { border-color: rgba(96,165,250,.7); background: rgba(59,130,246,.08); }
-.camera-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
-.camera-btn { padding: 11px; border: 1px dashed var(--border); border-radius: 10px; background: rgba(255,255,255,.03); color: var(--muted); font-size: 13px; cursor: pointer; font-family: var(--font); transition: all .15s; }
-.camera-btn:hover { border-color: rgba(96,165,250,.4); color: var(--text); }
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);}
+.breadcrumb a{color:var(--muted);text-decoration:none;}
+.breadcrumb a:hover{color:var(--text);}
+.breadcrumb-sep{color:var(--hint);}
+.breadcrumb-cur{color:var(--text);font-weight:600;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.search-wrap{
+  display:flex;align-items:center;gap:8px;padding:7px 14px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  border-radius:8px;min-width:200px;
+}
+.search-wrap input{
+  background:transparent;border:none;outline:none;color:var(--text);
+  font-size:13px;width:100%;font-family:var(--font);
+}
+.search-wrap input::placeholder{color:var(--hint);}
+.btn-upload{
+  display:flex;align-items:center;gap:6px;padding:8px 16px;
+  background:var(--blue);border:none;border-radius:8px;color:#fff;
+  font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap;
+}
+.btn-upload:hover{background:#2563eb;}
 
-/* ANALYSE CARD */
-.analyse-card { background: rgba(59,130,246,.08); border: 1px solid rgba(96,165,250,.25); border-radius: var(--radius); padding: 20px; display: none; }
-.spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,.15); border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; flex-shrink: 0; }
-@keyframes spin { to { transform: rotate(360deg); } }
+/* ── LAYOUT ── */
+.content-wrap{display:flex;flex:1;}
+.main-area{flex:1;padding:24px;overflow-y:auto;min-width:0;}
+.right-panel{
+  width:260px;border-left:1px solid var(--border);padding:20px;
+  flex-shrink:0;background:rgba(255,255,255,.01);
+}
 
-/* FORM */
-.field { margin-bottom: 12px; }
-.field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
-.field input, .field select, .field textarea { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: var(--text); font-size: 13px; outline: none; font-family: var(--font); }
-.field input:focus, .field select:focus { border-color: var(--blue); }
-.field select option { background: #1B2F6E; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media(max-width:600px) { .form-grid { grid-template-columns: 1fr; } }
+/* ── PAGE HEADER ── */
+.page-hdr{display:flex;align-items:center;gap:16px;margin-bottom:20px;}
+.page-hdr-icon{
+  width:52px;height:52px;background:rgba(59,130,246,.15);border-radius:12px;
+  display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;
+}
+.page-hdr-title{font-size:22px;font-weight:800;}
+.page-hdr-sub{font-size:13px;color:var(--muted);margin-top:3px;}
 
-/* AUTOCOMPLETE */
-.autocomplete-wrap { position: relative; }
-.autocomplete-results { position: absolute; top: 100%; left: 0; right: 0; z-index: 50; background: #1a2744; border: 1px solid var(--border); border-radius: 8px; margin-top: 3px; max-height: 200px; overflow-y: auto; display: none; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
-.autocomplete-item { padding: 9px 14px; cursor: pointer; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,.05); }
-.autocomplete-item:hover { background: rgba(59,130,246,.15); }
-.autocomplete-item-name { font-weight: 600; color: var(--text); }
-.autocomplete-item-sub { font-size: 11px; color: var(--hint); }
+/* ── CARDS ── */
+.card{
+  background:rgba(255,255,255,.03);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px;
+}
+.card-label{
+  font-size:11px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.08em;
+  display:flex;align-items:center;gap:6px;margin-bottom:16px;
+}
 
-/* BUTTONS */
-.btn-primary { background: var(--blue); color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--font); }
-.btn-primary:hover { background: #2563eb; }
-.btn-secondary { background: rgba(255,255,255,.07); border: 1px solid var(--border); border-radius: 8px; padding: 9px 18px; font-size: 13px; color: var(--muted); cursor: pointer; font-family: var(--font); }
-.btn-secondary:hover { color: var(--text); }
+/* ── MONATS GRID ── */
+.monats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.monat-card{
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  border-radius:10px;padding:15px;cursor:pointer;transition:all .15s;
+  display:flex;flex-direction:column;gap:8px;
+}
+.monat-card:hover{background:rgba(255,255,255,.08);border-color:rgba(59,130,246,.4);transform:translateY(-1px);}
+.monat-card.aktiv{background:rgba(59,130,246,.12);border-color:rgba(96,165,250,.5);}
+.monat-header{display:flex;justify-content:space-between;align-items:center;}
+.monat-name{font-size:14px;font-weight:700;}
+.monat-count{font-size:11px;color:var(--hint);background:rgba(255,255,255,.07);border-radius:20px;padding:2px 7px;}
+.monat-badges{display:flex;flex-wrap:wrap;gap:3px;}
+.badge{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:500;}
+.b-ang{background:rgba(59,130,246,.2);color:#93c5fd;}
+.b-ab{background:rgba(99,102,241,.2);color:#c4b5fd;}
+.b-ls{background:rgba(34,197,94,.15);color:#86efac;}
+.b-rd{background:rgba(245,158,11,.15);color:#fcd34d;}
+.b-rk{background:rgba(239,68,68,.15);color:#fca5a5;}
+.b-abl{background:rgba(107,114,128,.2);color:#d1d5db;}
+.monat-btns{display:flex;gap:5px;margin-top:2px;}
+.btn-xs{
+  font-size:11px;padding:4px 9px;border-radius:6px;
+  border:1px solid var(--border);background:rgba(255,255,255,.05);
+  color:var(--muted);cursor:pointer;font-family:var(--font);transition:all .15s;
+}
+.btn-xs:hover{color:var(--text);border-color:rgba(255,255,255,.2);}
+.btn-xs.danger{border-color:rgba(239,68,68,.3);color:#fca5a5;background:rgba(239,68,68,.08);}
 
-/* STATUS */
-.status-msg { font-size: 13px; padding: 10px 14px; border-radius: 8px; }
-.status-ok { background: rgba(34,197,94,.12); color: #86efac; border: 1px solid rgba(34,197,94,.3); }
-.status-err { background: rgba(239,68,68,.12); color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
+/* ── DATEI LISTE ── */
+.kunde-header{
+  font-size:12px;font-weight:700;color:var(--muted);
+  padding:8px 0 10px;border-bottom:1px solid var(--border);margin-bottom:8px;
+  display:flex;align-items:center;gap:6px;
+}
+.datei-row{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  background:rgba(255,255,255,.03);border:1px solid var(--border);
+  border-radius:8px;cursor:pointer;transition:all .15s;margin-bottom:6px;
+}
+.datei-row:hover{background:rgba(255,255,255,.07);}
+.datei-icon-sm{font-size:22px;flex-shrink:0;}
+.datei-info{flex:1;min-width:0;}
+.datei-nm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.datei-mt{font-size:11px;color:var(--hint);margin-top:2px;}
+.datei-acts{display:flex;gap:5px;flex-shrink:0;}
 
-/* MODAL */
-.overlay { display: none; position: fixed; inset: 0; background: rgba(5,10,28,.75); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-.overlay.open { display: flex; }
-.modal { background: #151f38; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; width: 520px; max-width: 95vw; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
-.modal h3 { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 20px; }
-.modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+/* ── ALTE DATEIEN ── */
+.alte-bar{
+  display:none;align-items:center;justify-content:space-between;
+  padding:10px 14px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);
+  border-radius:8px;margin-top:10px;
+}
+.alte-bar.show{display:flex;}
 
-/* VIEWER MODAL */
-#viewerModal .modal { width: 900px; max-width: 97vw; display: flex; flex-direction: column; }
+/* ── RIGHT PANEL ── */
+.rp-title{font-size:14px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:6px;}
+.stat-lbl{font-size:10px;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.stat-val{font-size:28px;font-weight:800;line-height:1;}
+.stat-sub{font-size:11px;color:var(--green);margin-top:3px;}
+.storage-bar{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;margin:8px 0 4px;}
+.storage-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--blue),var(--indigo));transition:width .6s;}
+.storage-lbr{display:flex;justify-content:space-between;font-size:10px;color:var(--hint);}
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
+.act-list{display:flex;flex-direction:column;gap:10px;}
+.act-item{display:flex;align-items:flex-start;gap:8px;}
+.act-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+.act-txt{font-size:12px;color:var(--muted);line-height:1.4;}
+.act-time{font-size:10px;color:var(--hint);}
 
-/* PROGRESS */
-.progress-bar { height: 4px; background: rgba(255,255,255,.08); border-radius: 2px; overflow: hidden; margin-top: 8px; }
-.progress-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--indigo)); border-radius: 2px; transition: width .3s; }
+/* ── UPLOAD SECTION ── */
+.upload-zone{
+  border:2px dashed var(--border);border-radius:var(--radius);
+  padding:2.5rem 2rem;text-align:center;cursor:pointer;transition:all .2s;
+  background:rgba(255,255,255,.02);
+}
+.upload-zone:hover,.upload-zone.drag-over{border-color:rgba(96,165,250,.6);background:rgba(59,130,246,.07);}
+.cam-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.cam-btn{
+  padding:10px;border:1px dashed var(--border);border-radius:8px;
+  background:rgba(255,255,255,.03);color:var(--muted);font-size:13px;
+  cursor:pointer;font-family:var(--font);transition:all .15s;
+}
+.cam-btn:hover{border-color:rgba(96,165,250,.4);color:var(--text);}
 
-/* PREVIEW */
-.preview-img { max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 12px; }
-.preview-pdf { display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(255,255,255,.04); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 12px; }
-.ordner-vorschlag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
-.ordner-badge-angebote { background: rgba(59,130,246,.2); border: 1px solid rgba(96,165,250,.4); color: #93c5fd; }
-.ordner-badge-auftragsbestaetigung { background: rgba(99,102,241,.2); border: 1px solid rgba(139,92,246,.4); color: #c4b5fd; }
-.ordner-badge-lieferscheine { background: rgba(34,197,94,.15); border: 1px solid rgba(34,197,94,.3); color: #86efac; }
-.ordner-badge-rechnungen-debi { background: rgba(245,158,11,.15); border: 1px solid rgba(245,158,11,.3); color: #fcd34d; }
-.ordner-badge-rechnungen-kredi { background: rgba(239,68,68,.15); border: 1px solid rgba(239,68,68,.3); color: #fca5a5; }
-.ordner-badge-ab-lieferanten { background: rgba(107,114,128,.2); border: 1px solid rgba(107,114,128,.4); color: #d1d5db; }
+/* ── ANALYSE ── */
+.analyse-card{
+  background:rgba(59,130,246,.07);border:1px solid rgba(96,165,250,.2);
+  border-radius:var(--radius);padding:18px;display:none;margin-top:14px;
+}
+.spinner{
+  width:18px;height:18px;border:2px solid rgba(255,255,255,.12);
+  border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.preview-img{max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;}
+.preview-pdf{display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.04);border-radius:8px;border:1px solid var(--border);margin-bottom:10px;}
 
-.empty { text-align: center; padding: 3rem 1rem; color: var(--hint); font-size: 13px; }
-.empty-icon { font-size: 40px; margin-bottom: 8px; }
+/* ── FORM ── */
+.field{margin-bottom:10px;}
+.field label{display:block;font-size:10px;color:var(--muted);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;}
+.field input,.field select,.field textarea{
+  width:100%;padding:8px 10px;border-radius:7px;border:1px solid var(--border);
+  background:rgba(255,255,255,.05);color:var(--text);font-size:13px;outline:none;font-family:var(--font);
+}
+.field input:focus,.field select:focus{border-color:var(--blue);}
+.field select option{background:#1B2F6E;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
-@media(max-width:900px) {
-  .sidebar { display: none; }
-  .app-main { margin-left: 0; }
-  .content-sidebar { display: none; }
+/* ── AUTOCOMPLETE ── */
+.autocomplete-wrap{position:relative;}
+.autocomplete-results{
+  position:absolute;top:100%;left:0;right:0;z-index:50;
+  background:#1a2744;border:1px solid var(--border);border-radius:8px;
+  margin-top:2px;max-height:180px;overflow-y:auto;display:none;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+.autocomplete-item{padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid rgba(255,255,255,.05);}
+.autocomplete-item:hover{background:rgba(59,130,246,.15);}
+.autocomplete-item-name{font-weight:600;color:var(--text);}
+.autocomplete-item-sub{font-size:10px;color:var(--hint);}
+
+/* ── BUTTONS ── */
+.btn-prim{
+  background:var(--blue);color:#fff;border:none;border-radius:7px;
+  padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);
+}
+.btn-prim:hover{background:#2563eb;}
+.btn-sec{
+  background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:7px;
+  padding:8px 16px;font-size:13px;color:var(--muted);cursor:pointer;font-family:var(--font);
+}
+.btn-sec:hover{color:var(--text);}
+
+/* ── STATUS ── */
+.status-msg{font-size:13px;padding:9px 12px;border-radius:7px;}
+.status-ok{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.3);}
+.status-err{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.3);}
+.progress-bar{height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-top:8px;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--indigo));border-radius:2px;transition:width .3s;}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(5,10,28,.75);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.overlay.open{display:flex;}
+.modal{
+  background:#151f38;border:1px solid var(--border);border-radius:var(--radius);
+  padding:22px;width:520px;max-width:95vw;max-height:92vh;overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:18px;}
+.modal-actions{display:flex;gap:8px;margin-top:18px;justify-content:flex-end;}
+
+/* ── ORDNER BADGES (analyse) ── */
+.ordner-vorschlag{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:16px;font-size:12px;font-weight:600;margin-bottom:10px;}
+.ordner-badge-angebote{background:rgba(59,130,246,.2);border:1px solid rgba(96,165,250,.4);color:#93c5fd;}
+.ordner-badge-auftragsbestaetigung{background:rgba(99,102,241,.2);border:1px solid rgba(139,92,246,.4);color:#c4b5fd;}
+.ordner-badge-lieferscheine{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac;}
+.ordner-badge-rechnungen-debi{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:#fcd34d;}
+.ordner-badge-rechnungen-kredi{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
+.ordner-badge-ab-lieferanten{background:rgba(107,114,128,.2);border:1px solid rgba(107,114,128,.4);color:#d1d5db;}
+.empty{text-align:center;padding:2.5rem 1rem;color:var(--hint);font-size:13px;}
+.empty-icon{font-size:36px;margin-bottom:8px;}
+
+/* ── MOBILE ── */
+@media(max-width:768px){
+  .sidebar,.right-panel{display:none;}
+  .app{margin-left:0;}
+  .topbar{padding:0 14px;}
+  .main-area{padding:14px;}
+  .search-wrap{min-width:120px;}
+  .monats-grid{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:480px){
+  .monats-grid{grid-template-columns:1fr;}
+  .form-grid{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -284,95 +304,87 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <div class="sidebar-logo-icon">B</div>
-    <div class="sidebar-logo-text">B+D</div>
+    <div class="logo-icon">B</div>
+    <div class="logo-text">B+D</div>
   </div>
   <nav class="sidebar-nav">
-    <a href="index.html" class="nav-item">
-      <span class="nav-item-icon">⊞</span> Dashboard
-    </a>
-    <button class="nav-item" onclick="switchTab('upload')">
-      <span class="nav-item-icon">📤</span> Hochladen
-    </button>
-    <button class="nav-item active" id="nav-archiv" onclick="switchTab('archiv')">
-      <span class="nav-item-icon">📁</span> Archiv
-    </button>
+    <a href="index.html" class="nav-link">⊞ &nbsp;Dashboard</a>
+    <button class="nav-link" onclick="switchTab('upload')">📤 &nbsp;Hochladen</button>
+    <button class="nav-link active" id="navArchiv" onclick="switchTab('archiv')">📁 &nbsp;Archiv</button>
   </nav>
   <div class="sidebar-footer">
-    <div class="avatar">MT</div>
-    <div class="avatar-info">
-      <div class="avatar-name">B+D Admin</div>
-      <div class="avatar-role">Administrator</div>
+    <div class="avatar">BD</div>
+    <div>
+      <div style="font-size:12px;font-weight:600;">B+D Admin</div>
+      <div style="font-size:10px;color:var(--hint);">Administrator</div>
     </div>
   </div>
 </aside>
 
-<!-- MAIN -->
-<div class="app-main">
+<!-- MAIN APP -->
+<div class="app">
 
   <!-- TOPBAR -->
   <div class="topbar">
-    <div class="topbar-breadcrumb">
+    <div class="breadcrumb">
       <a href="index.html">Dashboard</a>
-      <span class="topbar-breadcrumb-sep">›</span>
-      <span class="topbar-breadcrumb-cur" id="topbar-cur">B+D Archiv</span>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-cur" id="topbarCur">B+D Archiv</span>
     </div>
     <div class="topbar-right">
-      <div class="search-box">
-        <span>🔍</span>
+      <div class="search-wrap">
+        <span style="font-size:14px;color:var(--hint);">🔍</span>
         <input id="filterSuche" type="text" placeholder="Dokumente suchen..." oninput="renderDateiGrid()">
       </div>
-      <button class="upload-btn" onclick="switchTab('upload')">
-        + Hochladen
-      </button>
+      <button class="btn-upload" onclick="switchTab('upload')">+ Hochladen</button>
     </div>
   </div>
 
   <!-- CONTENT -->
-  <div class="content">
-    <div class="content-main">
+  <div class="content-wrap">
 
-      <!-- TAB: HOCHLADEN -->
+    <!-- MAIN AREA -->
+    <div class="main-area">
+
+      <!-- TAB: UPLOAD -->
       <div id="tab-upload" style="display:none;">
-        <div class="page-header">
-          <div class="page-header-icon">📤</div>
+        <div class="page-hdr">
+          <div class="page-hdr-icon">📤</div>
           <div>
-            <div class="page-header-title">Dokument hochladen</div>
-            <div class="page-header-sub">Claude analysiert und klassifiziert automatisch</div>
+            <div class="page-hdr-title">Dokument hochladen</div>
+            <div class="page-hdr-sub">Claude analysiert und klassifiziert automatisch</div>
           </div>
         </div>
-
         <div class="card">
           <div class="upload-zone" id="uploadZone"
             ondragover="event.preventDefault();this.classList.add('drag-over')"
             ondragleave="this.classList.remove('drag-over')"
             ondrop="handleDrop(event)"
             onclick="document.getElementById('fileInput').click()">
-            <div style="font-size:48px;margin-bottom:12px;">🤖</div>
-            <div style="font-size:16px;font-weight:600;color:var(--muted);">Datei hierher ziehen oder klicken</div>
-            <div style="font-size:12px;color:var(--hint);margin-top:6px;">Claude analysiert automatisch: Ordner, Kunde, Metadaten</div>
+            <div style="font-size:44px;margin-bottom:10px;">🤖</div>
+            <div style="font-size:15px;font-weight:600;color:var(--muted);">Datei hierher ziehen oder klicken</div>
+            <div style="font-size:12px;color:var(--hint);margin-top:5px;">Claude analysiert: Ordner, Kunde, Metadaten</div>
           </div>
-          <div class="camera-btns">
-            <div class="camera-btn" onclick="document.getElementById('cameraInput').click()">📷 Kamera</div>
-            <div class="camera-btn" onclick="document.getElementById('galleryInput').click()">🖼 Galerie</div>
+          <div class="cam-btns">
+            <div class="cam-btn" onclick="document.getElementById('cameraInput').click()">📷 Kamera</div>
+            <div class="cam-btn" onclick="document.getElementById('galleryInput').click()">🖼 Galerie</div>
           </div>
-          <input type="file" id="fileInput" style="display:none" onchange="handleFiles(this.files)">
-          <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFiles(this.files)">
-          <input type="file" id="galleryInput" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)">
         </div>
+        <input type="file" id="fileInput" style="display:none" onchange="handleFiles(this.files)">
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFiles(this.files)">
+        <input type="file" id="galleryInput" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)">
 
-        <div class="analyse-card" id="analyseCard" style="margin-top:16px;">
-          <div class="analyse-loading" id="analyseLoading" style="display:flex;align-items:center;gap:12px;color:var(--muted);font-size:14px;">
-            <div class="spinner"></div>
-            <span>Claude analysiert die Datei...</span>
+        <div class="analyse-card" id="analyseCard">
+          <div id="analyseLoading" style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px;">
+            <div class="spinner"></div><span>Claude analysiert...</span>
           </div>
           <div id="analyseResult" style="display:none;">
             <div id="filePreview"></div>
-            <div style="margin-bottom:12px;">
-              <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Claude empfiehlt</div>
+            <div style="margin-bottom:10px;">
+              <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Claude empfiehlt</div>
               <div id="ordnerVorschlag"></div>
             </div>
-            <div class="form-grid" style="margin-bottom:12px;">
+            <div class="form-grid" style="margin-bottom:10px;">
               <div class="field"><label>Ordner *</label>
                 <select id="fOrdner">
                   <option value="angebote">📄 Angebote</option>
@@ -385,11 +397,9 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
               </div>
               <div class="field"><label>Dateiname *</label><input id="fName" type="text" placeholder="dateiname.pdf"></div>
             </div>
-            <div class="form-grid" style="margin-bottom:12px;">
+            <div class="form-grid" style="margin-bottom:10px;">
               <div class="field"><label>Jahr *</label>
-                <select id="fJahr">
-                  <option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>
-                </select>
+                <select id="fJahr"><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option></select>
               </div>
               <div class="field"><label>Monat *</label>
                 <select id="fMonat">
@@ -400,52 +410,50 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
                 </select>
               </div>
             </div>
-            <div class="form-grid" style="margin-bottom:12px;">
+            <div class="form-grid" style="margin-bottom:10px;">
               <div class="field"><label>Kunde / Lieferant</label>
                 <div class="autocomplete-wrap">
-                  <input id="fKundeSearch" type="text" placeholder="Name oder Nr. suchen..." oninput="searchKunde(this.value)" autocomplete="off">
+                  <input id="fKundeSearch" type="text" placeholder="Suchen..." oninput="searchKunde(this.value)" autocomplete="off">
                   <div class="autocomplete-results" id="kundeResults"></div>
                 </div>
                 <input type="hidden" id="fKundeNr">
               </div>
               <div class="field"><label>Betrag CHF</label><input id="fBetrag" type="number" step="0.01" placeholder="0.00"></div>
             </div>
-            <div class="field" style="margin-bottom:4px;"><label>Referenz / Nr.</label><input id="fReferenz" type="text" placeholder="z.B. Rechnungsnummer"></div>
+            <div class="field"><label>Referenz / Nr.</label><input id="fReferenz" type="text"></div>
             <textarea id="fBeschreibung" style="display:none;"></textarea>
             <input id="fDatum" type="hidden">
-            <div id="uploadActionStatus" style="display:none;margin-top:12px;" class="status-msg"></div>
-            <div id="uploadProgress" style="display:none;margin-top:12px;">
+            <div id="uploadActionStatus" style="display:none;margin-top:10px;" class="status-msg"></div>
+            <div id="uploadProgress" style="display:none;margin-top:10px;">
               <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-              <div style="font-size:12px;color:var(--hint);margin-top:4px;" id="progressText">Hochladen...</div>
+              <div style="font-size:11px;color:var(--hint);margin-top:4px;" id="progressText"></div>
             </div>
-            <div style="display:flex;gap:10px;margin-top:16px;">
-              <button class="btn-primary" onclick="doUpload()">📤 Hochladen & archivieren</button>
-              <button class="btn-secondary" onclick="resetUpload()">Abbrechen</button>
+            <div style="display:flex;gap:8px;margin-top:14px;">
+              <button class="btn-prim" onclick="doUpload()">📤 Archivieren</button>
+              <button class="btn-sec" onclick="resetUpload()">Abbrechen</button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- TAB: ARCHIV - MONATSÜBERSICHT -->
+      <!-- TAB: ARCHIV -->
       <div id="tab-archiv">
-        <div class="page-header">
-          <div class="page-header-icon">📁</div>
+        <div class="page-hdr">
+          <div class="page-hdr-icon">📁</div>
           <div>
-            <div class="page-header-title">B+D Archiv</div>
-            <div class="page-header-sub">Intelligente Dokumentenverwaltung</div>
+            <div class="page-hdr-title">B+D Archiv</div>
+            <div class="page-hdr-sub">Intelligente Dokumentenverwaltung</div>
           </div>
         </div>
 
-        <!-- MONATS ÜBERSICHT -->
         <div id="monatsUebersichtCard" class="card">
-          <div class="card-title">📅 Monatsübersicht</div>
+          <div class="card-label">📅 Monatsübersicht</div>
           <div id="monatsUebersicht"><div class="empty"><div class="empty-icon">⏳</div>Lade...</div></div>
         </div>
 
-        <!-- DATEI LISTE (wenn Monat gewählt) -->
         <div id="dateiListeCard" style="display:none;" class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-            <div class="card-title" id="dateiListeTitle" style="margin-bottom:0;">Dateien</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div class="card-label" id="dateiListeTitle" style="margin-bottom:0;"></div>
             <button class="btn-xs" onclick="showMonatsUebersicht()">← Zurück</button>
           </div>
           <div id="dateiGrid"></div>
@@ -454,53 +462,52 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 
     </div>
 
-    <!-- RIGHT INFO SIDEBAR -->
-    <div class="content-sidebar">
-      <div class="info-title">📊 Archivübersicht</div>
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+      <div class="rp-title">📊 Archivübersicht</div>
 
-      <div class="stat-block">
-        <div class="stat-label">Gesamte Dateien</div>
-        <div class="stat-value" id="stat-total">–</div>
-        <div class="stat-sub" id="stat-monat">wird geladen...</div>
+      <div style="margin-bottom:18px;">
+        <div class="stat-lbl">Gesamte Dateien</div>
+        <div class="stat-val" id="statTotal">–</div>
+        <div class="stat-sub" id="statMonat">wird geladen...</div>
       </div>
 
-      <div class="stat-block">
-        <div class="stat-label">Gesamter Speicher</div>
-        <div style="font-size:28px;font-weight:800;color:var(--text);" id="stat-size">– MB</div>
-        <div class="storage-bar">
-          <div class="storage-fill" id="storage-fill" style="width:0%"></div>
-        </div>
-        <div class="storage-labels">
-          <span id="storage-used">0 MB verwendet</span>
-          <span style="color:var(--hint);">von 1 GB</span>
+      <div style="margin-bottom:18px;">
+        <div class="stat-lbl">Gesamter Speicher</div>
+        <div style="font-size:26px;font-weight:800;" id="statSize">– MB</div>
+        <div class="storage-bar"><div class="storage-fill" id="storageFill" style="width:0%"></div></div>
+        <div class="storage-lbr">
+          <span id="storageUsed">0 MB verwendet</span>
+          <span>von 1 GB</span>
         </div>
       </div>
 
-      <div style="border-top:1px solid var(--border);margin:16px 0;"></div>
+      <hr class="divider">
 
-      <div class="card-title" style="margin-bottom:12px;">Aktivität</div>
-      <div class="activity-list" id="activity-list">
+      <div class="card-label" style="margin-bottom:10px;">Aktivität</div>
+      <div class="act-list" id="actList">
         <div style="font-size:12px;color:var(--hint);">Wird geladen...</div>
       </div>
 
-      <div style="margin-top:16px;">
-        <button class="btn-xs" onclick="loadMonatsUebersicht()" style="width:100%;justify-content:center;padding:8px;">↻ Aktualisieren</button>
+      <div style="margin-top:14px;">
+        <button class="btn-xs" onclick="loadMonatsUebersicht()" style="width:100%;padding:8px;text-align:center;">↻ Aktualisieren</button>
       </div>
     </div>
+
   </div>
 </div>
 
 <!-- VIEWER MODAL -->
 <div class="overlay" id="viewerModal">
-  <div class="modal" style="width:900px;max-width:97vw;max-height:96vh;display:flex;flex-direction:column;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <h3 id="viewerTitle" style="font-size:14px;word-break:break-all;flex:1;margin:0;padding-right:12px;"></h3>
-      <div style="display:flex;gap:8px;flex-shrink:0;">
+  <div class="modal" style="width:880px;max-height:96vh;display:flex;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <h3 id="viewerTitle" style="font-size:13px;margin:0;word-break:break-all;flex:1;padding-right:10px;"></h3>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
         <button onclick="downloadCurrentViewer()" class="btn-xs" style="color:#93c5fd;border-color:rgba(96,165,250,.3);">⬇ Download</button>
         <button onclick="closeViewer()" class="btn-xs">✕</button>
       </div>
     </div>
-    <div id="viewerContent" style="flex:1;min-height:0;background:rgba(0,0,0,.3);border-radius:8px;overflow:auto;display:flex;align-items:center;justify-content:center;"></div>
+    <div id="viewerContent" style="flex:1;min-height:400px;background:rgba(0,0,0,.3);border-radius:8px;overflow:auto;display:flex;align-items:center;justify-content:center;"></div>
   </div>
 </div>
 
@@ -519,17 +526,17 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
         <option value="ab-lieferanten">📦 AB Lieferanten</option>
       </select>
     </div>
-    <div class="field"><label>Kunde / Lieferant</label>
+    <div class="field"><label>Kunde</label>
       <div class="autocomplete-wrap">
-        <input id="editKundeSearch" type="text" placeholder="Name oder Nr. suchen..." oninput="searchKundeEdit(this.value)" autocomplete="off">
+        <input id="editKundeSearch" type="text" placeholder="Name suchen..." oninput="searchKundeEdit(this.value)" autocomplete="off">
         <div class="autocomplete-results" id="editKundeResults"></div>
       </div>
       <input type="hidden" id="editKundeNr">
     </div>
     <div id="editModalStatus" style="display:none;" class="status-msg"></div>
     <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeEditModal()">Abbrechen</button>
-      <button class="btn-primary" onclick="saveEdit()">Speichern</button>
+      <button class="btn-sec" onclick="closeEditModal()">Abbrechen</button>
+      <button class="btn-prim" onclick="saveEdit()">Speichern</button>
     </div>
   </div>
 </div>
@@ -552,9 +559,12 @@ function bp(path){ return SUPA_ST+'/object/'+encodeURIComponent(BUCKET)+'/'+path
 
 // ── TABS
 function switchTab(t){
-  document.getElementById('tab-upload').style.display=t==='upload'?'':'none';
-  document.getElementById('tab-archiv').style.display=t==='archiv'?'':'none';
-  document.querySelectorAll('.tab').forEach(function(b,i){ b.classList.toggle('active',(i===0&&t==='upload')||(i===1&&t==='archiv')); });
+  document.getElementById('tab-upload').style.display = t==='upload' ? '' : 'none';
+  document.getElementById('tab-archiv').style.display = t==='archiv' ? '' : 'none';
+  // Sidebar nav
+  document.querySelectorAll('.nav-link').forEach(function(b){ b.classList.remove('active'); });
+  var navEl = document.getElementById('navArchiv');
+  if(navEl && t==='archiv') navEl.classList.add('active');
   if(t==='archiv') loadMonatsUebersicht();
 }
 
@@ -986,7 +996,11 @@ function loadMonatsUebersicht(){
 
 function renderMonatsUebersicht(monateData, jahre){
   var el = document.getElementById('monatsUebersicht');
-  var BADGE = {angebote:'badge-ang Ang',auftragsbestaetigung:'badge-ab AB',lieferscheine:'badge-ls LS','rechnungen-debi':'badge-rd RD','rechnungen-kredi':'badge-rk RK','ab-lieferanten':'badge-abl ABL'};
+  var BADGE_MAP = {
+    angebote: ['b-ang','Ang'], auftragsbestaetigung: ['b-ab','AB'],
+    lieferscheine: ['b-ls','LS'], 'rechnungen-debi': ['b-rd','RD'],
+    'rechnungen-kredi': ['b-rk','RK'], 'ab-lieferanten': ['b-abl','ABL']
+  };
 
   var eintraege = [];
   jahre.forEach(function(jahr){
@@ -999,18 +1013,20 @@ function renderMonatsUebersicht(monateData, jahre){
     }
   });
   eintraege.sort(function(a,b){
-    if(a.jahr!==b.jahr) return parseInt(b.jahr)-parseInt(a.jahr);
-    return parseInt(b.monat)-parseInt(a.monat);
+    return a.jahr!==b.jahr ? parseInt(b.jahr)-parseInt(a.jahr) : parseInt(b.monat)-parseInt(a.monat);
   });
 
   var heute = new Date();
   var aktJahr = String(heute.getFullYear());
   var aktMonat = String(heute.getMonth()+1).padStart(2,'0');
 
-  var altBar = '<div class="alte-dateien-bar" id="alteDateienBereich"><div><div style="font-size:13px;font-weight:700;color:#fcd34d;">\u{1F4C2} \u00C4ltere Dateien</div><div id="alteDateienCount" style="font-size:11px;color:var(--hint);"></div></div><button onclick="renderAlteDateien()" class="btn-xs">Anzeigen</button></div>';
+  var altBar = '<div class="alte-bar" id="alteDateienBereich">'
+    +'<div><div style="font-size:13px;font-weight:700;color:#fcd34d;">📂 Ältere Dateien</div>'
+    +'<div id="alteDateienCount" style="font-size:11px;color:var(--hint);"></div></div>'
+    +'<button onclick="renderAlteDateien()" class="btn-xs">Anzeigen</button></div>';
 
   if(!eintraege.length){
-    el.innerHTML = '<div class="empty"><div class="empty-icon">\u{1F4ED}</div>Noch keine Dateien vorhanden.</div>' + altBar;
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div>Noch keine Dateien vorhanden.</div>' + altBar;
     return;
   }
 
@@ -1018,30 +1034,28 @@ function renderMonatsUebersicht(monateData, jahre){
   eintraege.forEach(function(e){
     var istAkt = (e.jahr===aktJahr && e.monat===aktMonat);
     var badges = Object.keys(e.data).map(function(o){
-      var parts = (BADGE[o]||'badge-ang ?').split(' ');
-      var cls = parts[0];
-      var lbl = parts.slice(1).join(' ');
-      return '<span class="ordner-badge ' + cls + '">' + lbl + ': ' + e.data[o] + '</span>';
+      var bm = BADGE_MAP[o]||['b-ang','?'];
+      return '<span class="badge '+bm[0]+'">'+bm[1]+': '+e.data[o]+'</span>';
     }).join('');
-    var cardClass = 'monat-card' + (istAkt ? ' aktiv' : '');
-    var prefix = istAkt ? '\uD83D\uDD35 ' : '';
-    html += '<div class="' + cardClass + '" onclick="loadMonat(\'' + e.jahr + '\',\'' + e.monat + '\')">';
-    html += '<div class="monat-card-header">';
-    html += '<div class="monat-name">' + prefix + MONATSNAMEN[parseInt(e.monat)] + ' ' + e.jahr + '</div>';
-    html += '<div class="monat-count">' + e.total + ' Dateien</div>';
-    html += '</div>';
-    html += '<div class="monat-badges">' + badges + '</div>';
-    html += '<div class="monat-actions" onclick="event.stopPropagation()">';
-    html += '<button onclick="backupMonat(\'' + e.jahr + '\',\'' + e.monat + '\',this)" class="btn-xs">💾 Backup</button>';
-    html += '<button onclick="deleteMonat(\'' + e.jahr + '\',\'' + e.monat + '\')" class="btn-xs danger">🗑</button>';
-    html += '</div>';
-    html += '</div>';
+    html += '<div class="monat-card' + (istAkt?' aktiv':'') + '" onclick="loadMonat(\'' + e.jahr + '\',\'' + e.monat + '\')">'
+      + '<div class="monat-header">'
+        + '<div class="monat-name">' + (istAkt?'🔵 ':'') + MONATSNAMEN[parseInt(e.monat)] + ' ' + e.jahr + '</div>'
+        + '<div class="monat-count">' + e.total + '</div>'
+      + '</div>'
+      + '<div class="monat-badges">' + badges + '</div>'
+      + '<div class="monat-btns" onclick="event.stopPropagation()">'
+        + '<button onclick="backupMonat(\'' + e.jahr + '\',\'' + e.monat + '\',this)" class="btn-xs">💾</button>'
+        + '<button onclick="deleteMonat(\'' + e.jahr + '\',\'' + e.monat + '\')" class="btn-xs danger">🗑</button>'
+      + '</div>'
+    + '</div>';
   });
-  html += '</div>';
-
-  el.innerHTML = html + altBar;
+  html += '</div>' + altBar;
+  el.innerHTML = html;
   ladeStatistiken(monateData);
 }
+
+
+var alteDateien = [];
 
 function loadAlteDateien(){
   var alleOrdner = ['angebote','auftragsbestaetigung','lieferscheine','rechnungen-debi','rechnungen-kredi','ab-lieferanten'];
@@ -1215,49 +1229,52 @@ function loadDateien(){
 }
 
 function renderDateiGrid(){
-  var el=document.getElementById('dateiGrid');
+  var el = document.getElementById('dateiGrid');
   if(!allKunden.length){ loadKunden(function(){ renderDateiGrid(); }); return; }
-  var q=document.getElementById('filterSuche').value.toLowerCase();
-  var list=allDateien.filter(function(f){
+  var q = document.getElementById('filterSuche').value.toLowerCase();
+  var list = allDateien.filter(function(f){
     if(!q) return true;
     if(f.rawName.toLowerCase().includes(q)) return true;
-    var parts=f.rawName.split('_');
-    if(parts.length>1&&/^\d+$/.test(parts[0])){
-      var k=allKunden.find(function(x){ return String(x.nr)===parts[0]; });
-      if(k){ var kn=(k.company||(k.firstName&&k.lastName?(k.firstName+' '+k.lastName).trim():'')||k.name||'').toLowerCase(); if(kn.includes(q)||parts[0].includes(q)) return true; }
-      else if(parts[0].includes(q)) return true;
+    var parts = f.rawName.split('_');
+    if(parts.length>1 && /^\d+$/.test(parts[0])){
+      var k = allKunden.find(function(x){ return String(x.nr)===parts[0]; });
+      if(k){
+        var kn = (k.company||(k.firstName&&k.lastName?(k.firstName+' '+k.lastName).trim():'')||k.name||'').toLowerCase();
+        if(kn.includes(q)||parts[0].includes(q)) return true;
+      } else if(parts[0].includes(q)) return true;
     }
     return false;
   });
   if(!list.length){ el.innerHTML='<div class="empty"><div class="empty-icon">📭</div>Keine Dateien gefunden.</div>'; return; }
-  var FICONS={angebote:'📄',auftragsbestaetigung:'📋',lieferscheine:'🚛','rechnungen-debi':'🧾','rechnungen-kredi':'🧾','ab-lieferanten':'📦'};
-  var gruppen={};
+  var FICONS = {angebote:'📄',auftragsbestaetigung:'📋',lieferscheine:'🚛','rechnungen-debi':'🧾','rechnungen-kredi':'🧾','ab-lieferanten':'📦'};
+  var gruppen = {};
   list.forEach(function(f){
-    var np=f.rawName.split('_'); var kundeNr=''; var kundeLabel='📂 Kein Kunde';
-    if(np.length>1&&/^\d+$/.test(np[0])){
-      kundeNr=np[0];
-      var k=allKunden.find(function(x){ return String(x.nr)===String(kundeNr); });
-      var kname=''; if(k) kname=k.company||(k.firstName&&k.lastName?(k.firstName+' '+k.lastName).trim():'')||k.name||'';
-      kundeLabel='👤 '+kundeNr+(kname?' – '+kname:'');
+    var np = f.rawName.split('_'); var nr = ''; var lbl = '📂 Kein Kunde';
+    if(np.length>1 && /^\d+$/.test(np[0])){
+      nr = np[0];
+      var k = allKunden.find(function(x){ return String(x.nr)===nr; });
+      var kn = k ? (k.company||(k.firstName&&k.lastName?(k.firstName+' '+k.lastName).trim():'')||k.name||'') : '';
+      lbl = '👤 '+nr+(kn?' – '+kn:'');
     }
-    if(!gruppen[kundeNr]) gruppen[kundeNr]={label:kundeLabel,dateien:[]};
-    gruppen[kundeNr].dateien.push(f);
+    if(!gruppen[nr]) gruppen[nr] = {label:lbl, dateien:[]};
+    gruppen[nr].dateien.push(f);
   });
-  var keys=Object.keys(gruppen).sort(function(a,b){ if(a===''&&b!=='') return 1; if(b===''&&a!=='') return -1; return parseInt(a)-parseInt(b); });
-  el.innerHTML=keys.map(function(key){
-    var g=gruppen[key];
-    var dh=g.dateien.map(function(f){
-      var ext=(f.name||'').split('.').pop().toLowerCase();
-      var icon=ext==='pdf'?'📄':ext==='xlsx'||ext==='xls'?'📊':ext==='docx'?'📝':['jpg','jpeg','png'].includes(ext)?'🖼':'📎';
-      var size=f.size?(f.size>1048576?(f.size/1048576).toFixed(1)+'MB':(f.size/1024).toFixed(0)+'KB'):'';
-      var date=f.created_at?new Date(f.created_at).toLocaleDateString('de-CH'):'';
-      var fi=FICONS[f.folder]||'📁';
-      var dn=f.rawName; if(key&&dn.startsWith(key+'_')) dn=dn.substring((key+'_').length);
-      var p=f.path.replace(/'/g,"\\'"); var rn=f.rawName.replace(/'/g,"\\'"); var fo=f.folder.replace(/'/g,"\\'");
+  var keys = Object.keys(gruppen).sort(function(a,b){ if(a===''&&b!=='') return 1; if(b===''&&a!=='') return -1; return parseInt(a)-parseInt(b); });
+  el.innerHTML = keys.map(function(key){
+    var g = gruppen[key];
+    var rows = g.dateien.map(function(f){
+      var ext = (f.rawName||'').split('.').pop().toLowerCase();
+      var icon = ext==='pdf'?'📄':ext==='xlsx'||ext==='xls'?'📊':ext==='docx'?'📝':['jpg','jpeg','png'].includes(ext)?'🖼':'📎';
+      var size = f.size ? (f.size>1048576?(f.size/1048576).toFixed(1)+'MB':(f.size/1024).toFixed(0)+'KB') : '';
+      var date = f.created_at ? new Date(f.created_at).toLocaleDateString('de-CH') : '';
+      var dn = f.rawName; if(key && dn.startsWith(key+'_')) dn = dn.substring((key+'_').length);
+      var p = f.path.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      var rn = f.rawName.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      var fo = f.folder.replace(/'/g,"\\'");
       return '<div class="datei-row" onclick="openViewer(\''+p+'\',\''+rn+'\')">'
-        +'<div class="datei-icon">'+icon+'</div>'
-        +'<div class="datei-info"><div class="datei-name">'+dn+'</div><div class="datei-meta">'+fi+' '+(f.folder||'')+(size?' · '+size:'')+(date?' · '+date:'')+'</div></div>'
-        +'<div class="datei-btns" onclick="event.stopPropagation()">'
+        +'<div class="datei-icon-sm">'+icon+'</div>'
+        +'<div class="datei-info"><div class="datei-nm">'+dn+'</div><div class="datei-mt">'+FICONS[f.folder]+' '+f.folder+(size?' · '+size:'')+(date?' · '+date:'')+'</div></div>'
+        +'<div class="datei-acts" onclick="event.stopPropagation()">'
           +'<button class="btn-xs" style="color:#93c5fd" onclick="openViewer(\''+p+'\',\''+rn+'\')">👁</button>'
           +'<button class="btn-xs" onclick="downloadDatei(\''+p+'\',\''+rn+'\')">⬇</button>'
           +'<button class="btn-xs" onclick="openEditModal(\''+p+'\',\''+rn+'\',\''+fo+'\')">✏</button>'
@@ -1265,8 +1282,60 @@ function renderDateiGrid(){
         +'</div>'
       +'</div>';
     }).join('');
-    return '<div class="kunde-gruppe"><div class="kunde-gruppe-header">'+g.label+' <span style="color:var(--hint);font-weight:400;font-size:11px;">('+g.dateien.length+')</span></div><div class="datei-liste">'+dh+'</div></div>';
+    return '<div style="margin-bottom:16px;">'
+      +'<div class="kunde-header">'+g.label+' <span style="color:var(--hint);font-weight:400;">('+g.dateien.length+')</span></div>'
+      +rows
+    +'</div>';
   }).join('');
+}
+
+
+var currentViewerPath = null;
+var currentViewerName = null;
+
+function openViewer(path, name){
+  currentViewerPath = path;
+  currentViewerName = name;
+  var ext = name.split('.').pop().toLowerCase();
+  document.getElementById('viewerTitle').textContent = name;
+  var content = document.getElementById('viewerContent');
+  content.innerHTML = '<div style="color:var(--muted);font-size:13px;">⏳ Wird geladen...</div>';
+  document.getElementById('viewerModal').classList.add('open');
+
+  // Datei via authenticated fetch laden
+  var encodedPath = path.split('/').map(function(p){ return encodeURIComponent(p); }).join('/');
+  fetch(SUPA_ST+'/object/authenticated/'+encodeURIComponent(BUCKET)+'/'+encodedPath, {
+    headers: sh()
+  })
+  .then(function(r){
+    if(!r.ok) throw new Error('Status '+r.status);
+    return r.blob();
+  })
+  .then(function(blob){
+    var url = URL.createObjectURL(blob);
+    if(ext === 'pdf'){
+      content.innerHTML = '<iframe src="'+url+'" style="width:100%;height:70vh;border:none;border-radius:8px;"></iframe>';
+    } else if(['jpg','jpeg','png','gif','webp'].includes(ext)){
+      content.innerHTML = '<img src="'+url+'" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:8px;">';
+    } else {
+      content.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted);">📎 Vorschau nicht verfügbar<br><button onclick="downloadCurrentViewer()" class="btn-sm btn-primary" style="margin-top:1rem;color:#93c5fd;">⬇ Herunterladen</button></div>';
+    }
+    // Download-Link merken
+    content._blobUrl = url;
+  })
+  .catch(function(err){
+    content.innerHTML = '<div style="color:var(--red);font-size:13px;padding:1rem;">Fehler: '+err.message+'</div>';
+  });
+}
+
+function closeViewer(){
+  document.getElementById('viewerModal').classList.remove('open');
+  document.getElementById('viewerContent').innerHTML = '';
+}
+
+function downloadCurrentViewer(){
+  if(!currentViewerPath || !currentViewerName) return;
+  downloadDatei(currentViewerPath, currentViewerName);
 }
 
 function downloadDatei(path, name){
@@ -1463,6 +1532,48 @@ async function doBackup(){
     btn.textContent = '💾 Backup erstellen';
   }
 }
+
+
+function ladeStatistiken(monateData){
+  var total = 0;
+  Object.values(monateData).forEach(function(data){ Object.values(data).forEach(function(v){ total+=v; }); });
+  document.getElementById('statTotal').textContent = total;
+  var heute = new Date();
+  var aktKey = String(heute.getFullYear())+'/'+String(heute.getMonth()+1).padStart(2,'0');
+  var aktTotal = Object.values(monateData[aktKey]||{}).reduce(function(s,v){ return s+v; },0);
+  document.getElementById('statMonat').textContent = (aktTotal>0?'+'+aktTotal+' ':'')+' diesen Monat';
+  var estMB = Math.round(total * 280 / 1024); // ~280KB pro Datei
+  var pct = Math.min(estMB / 1024 * 100, 100).toFixed(1);
+  var sizeStr = estMB >= 1024 ? (estMB/1024).toFixed(2)+' GB' : estMB+' MB';
+  document.getElementById('statSize').textContent = sizeStr;
+  document.getElementById('storageFill').style.width = pct+'%';
+  document.getElementById('storageUsed').textContent = sizeStr+' verwendet';
+  // Aktivitätsliste
+  var actEl = document.getElementById('actList');
+  if(allDateien && allDateien.length>0){
+    var recent = allDateien.slice(0,4);
+    var cols = ['blue','green','amber','blue'];
+    var dotColors = {blue:'var(--blue)',green:'var(--green)',amber:'var(--amber)'};
+    actEl.innerHTML = recent.map(function(f,i){
+      var date = f.created_at ? new Date(f.created_at).toLocaleDateString('de-CH') : '';
+      var nm = f.rawName.substring(0,28)+(f.rawName.length>28?'...':'');
+      var col = cols[i%4];
+      return '<div class="act-item">'
+        +'<div class="act-dot" style="background:'+dotColors[col]+';"></div>'
+        +'<div><div class="act-txt">'+nm+'</div><div class="act-time">'+date+'</div></div>'
+      +'</div>';
+    }).join('');
+  } else {
+    actEl.innerHTML = '<div style="font-size:12px;color:var(--hint);">Noch keine Aktivität</div>';
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+var heute = new Date();
+document.getElementById('fJahr').value = String(heute.getFullYear());
+document.getElementById('fMonat').value = String(heute.getMonth()+1).padStart(2,'0');
+loadKunden();
+loadMonatsUebersicht();
 
 </script>
 </body>
