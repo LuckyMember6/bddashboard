@@ -163,13 +163,6 @@ body{
       <button class="tab active" onclick="switchTab('upload')">📤 Hochladen</button>
       <button class="tab" onclick="switchTab('archiv')">📁 Archiv</button>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <button onclick="doBackup()" id="backupBtn"
-        style="background:linear-gradient(135deg,rgba(34,197,94,.25),rgba(16,185,129,.15));border:1px solid rgba(34,197,94,.4);border-radius:var(--radius-sm);padding:9px 18px;font-size:13px;font-weight:700;color:#86efac;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px;">
-        💾 Backup erstellen
-      </button>
-      <div id="globalStatus"></div>
-    </div>
   </div>
 
   <!-- TAB: UPLOAD + CLAUDE ANALYSE -->
@@ -743,7 +736,8 @@ function loadMonatsUebersicht(){
   var alleOrdner = ['angebote','auftragsbestaetigung','lieferscheine','rechnungen-debi','rechnungen-kredi','ab-lieferanten'];
   var jahre = filterJahr ? [filterJahr] : ['2026','2027','2028'];
   var monateData = {};
-  var pending = alleOrdner.length * jahre.length;
+  // pending: neue Struktur + alte Struktur pro Ordner
+  var pending = alleOrdner.length * jahre.length + alleOrdner.length;
 
   function onDone(){
     renderMonatsUebersicht(monateData, jahre);
@@ -752,6 +746,7 @@ function loadMonatsUebersicht(){
 
   if(pending===0){ onDone(); return; }
 
+  // Neue Struktur: ordner/jahr/monat/
   alleOrdner.forEach(function(ord){
     jahre.forEach(function(jahr){
       fetch(SUPA_ST+'/object/list/'+encodeURIComponent(BUCKET),{
@@ -761,20 +756,72 @@ function loadMonatsUebersicht(){
       })
       .then(function(r){ return r.json(); })
       .then(function(files){
-        (files||[]).filter(function(f){ return f.name&&f.id; }).forEach(function(f){
-          var parts = f.name.split('/');
-          var monat = parts[0];
+        (files||[]).forEach(function(f){
+          // Supabase gibt bei list() Unterordner als {name:'06/', id:null} zurück
+          var name = f.name || '';
+          var monat = name.replace('/','');
           if(/^\d{2}$/.test(monat)){
+            // Monat-Unterordner gefunden – wir wissen es gibt Dateien drin
+            // Anzahl aus weiteren Requests oder einfach 1+ setzen
             var key = jahr+'/'+monat;
             if(!monateData[key]) monateData[key]={};
-            monateData[key][ord] = (monateData[key][ord]||0)+1;
+            // Wenn f.id vorhanden = direkte Datei im Jahr-Ordner (selten)
+            if(f.id){
+              monateData[key][ord] = (monateData[key][ord]||0)+1;
+            } else {
+              // Unterordner = mindestens 1 Datei vorhanden, Anzahl folgt
+              if(!monateData[key][ord]) monateData[key][ord] = 0;
+            }
           }
         });
-        pending--;
-        if(pending===0) onDone();
+        // Jetzt für jeden Monat die echte Anzahl laden
+        var monateImJahr = (files||[]).map(function(f){ return (f.name||'').replace('/',''); }).filter(function(m){ return /^\d{2}$/.test(m); });
+        var subPending = monateImJahr.length || 1;
+        if(!monateImJahr.length){ pending--; if(pending===0) onDone(); return; }
+        monateImJahr.forEach(function(monat){
+          fetch(SUPA_ST+'/object/list/'+encodeURIComponent(BUCKET),{
+            method:'POST', headers:{...sh(),'Content-Type':'application/json'},
+            body:JSON.stringify({prefix:ord+'/'+jahr+'/'+monat+'/',limit:500})
+          })
+          .then(function(r){ return r.json(); })
+          .then(function(subFiles){
+            var count = (subFiles||[]).filter(function(f){ return f.name&&f.id; }).length;
+            var key = jahr+'/'+monat;
+            if(!monateData[key]) monateData[key]={};
+            monateData[key][ord] = count;
+            subPending--;
+            if(subPending===0){ pending--; if(pending===0) onDone(); }
+          })
+          .catch(function(){ subPending--; if(subPending===0){ pending--; if(pending===0) onDone(); } });
+        });
       })
       .catch(function(){ pending--; if(pending===0) onDone(); });
     });
+
+    // Alte Struktur: ordner/dateiname (kein Jahr-Unterordner)
+    fetch(SUPA_ST+'/object/list/'+encodeURIComponent(BUCKET),{
+      method:'POST',
+      headers:{...sh(),'Content-Type':'application/json'},
+      body:JSON.stringify({prefix:ord+'/',limit:500})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(files){
+      (files||[]).filter(function(f){ return f.name&&f.id&&!f.name.includes('/'); }).forEach(function(f){
+        var d = f.created_at ? new Date(f.created_at) : null;
+        if(d){
+          var fJahr = String(d.getFullYear());
+          var fMonat = String(d.getMonth()+1).padStart(2,'0');
+          if(jahre.includes(fJahr)){
+            var key = fJahr+'/'+fMonat;
+            if(!monateData[key]) monateData[key]={};
+            monateData[key][ord] = (monateData[key][ord]||0)+1;
+          }
+        }
+      });
+      pending--;
+      if(pending===0) onDone();
+    })
+    .catch(function(){ pending--; if(pending===0) onDone(); });
   });
 }
 
@@ -875,29 +922,43 @@ function loadMonat(jahr, monat){
 
   var alleOrdner = ['angebote','auftragsbestaetigung','lieferscheine','rechnungen-debi','rechnungen-kredi','ab-lieferanten'];
   var allResults = [];
-  var pending = alleOrdner.length;
+  // Für jeden Ordner: mit UND ohne Jahres-Unterordner laden
+  var pending = alleOrdner.length * 2;
 
   alleOrdner.forEach(function(ord){
+    // NEU: mit Jahr/Monat Struktur
     fetch(SUPA_ST+'/object/list/'+encodeURIComponent(BUCKET),{
-      method:'POST',
-      headers:{...sh(),'Content-Type':'application/json'},
+      method:'POST', headers:{...sh(),'Content-Type':'application/json'},
       body:JSON.stringify({prefix:ord+'/'+jahr+'/'+monat+'/',limit:500,sortBy:{column:'created_at',order:'desc'}})
     })
     .then(function(r){ return r.json(); })
     .then(function(files){
       (files||[]).filter(function(f){ return f.name&&f.id; }).forEach(function(f){
-        allResults.push({
-          path: ord+'/'+jahr+'/'+monat+'/'+f.name,
-          folder: ord, jahr: jahr, monat: monat,
-          name: f.name, rawName: f.name,
-          size: f.metadata?.size||0, created_at: f.created_at
-        });
+        allResults.push({path:ord+'/'+jahr+'/'+monat+'/'+f.name,folder:ord,jahr:jahr,monat:monat,name:f.name,rawName:f.name,size:f.metadata?.size||0,created_at:f.created_at});
       });
       pending--;
-      if(pending===0){
-        allDateien = allResults.sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
-        renderDateiGrid();
-      }
+      if(pending===0){ allDateien=allResults.sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); }); renderDateiGrid(); }
+    })
+    .catch(function(){ pending--; if(pending===0){ allDateien=allResults; renderDateiGrid(); } });
+
+    // ALT: direkt im Ordner (kein Jahr/Monat)
+    fetch(SUPA_ST+'/object/list/'+encodeURIComponent(BUCKET),{
+      method:'POST', headers:{...sh(),'Content-Type':'application/json'},
+      body:JSON.stringify({prefix:ord+'/',limit:500,sortBy:{column:'created_at',order:'desc'}})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(files){
+      (files||[]).filter(function(f){ return f.name&&f.id&&!f.name.includes('/'); }).forEach(function(f){
+        // Datum aus created_at prüfen ob es zum gewählten Monat passt
+        var d = f.created_at ? new Date(f.created_at) : null;
+        var fJahr = d ? String(d.getFullYear()) : '';
+        var fMonat = d ? String(d.getMonth()+1).padStart(2,'0') : '';
+        if(fJahr===jahr && fMonat===monat){
+          allResults.push({path:ord+'/'+f.name,folder:ord,rawName:f.name,name:f.name,size:f.metadata?.size||0,created_at:f.created_at});
+        }
+      });
+      pending--;
+      if(pending===0){ allDateien=allResults.sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); }); renderDateiGrid(); }
     })
     .catch(function(){ pending--; if(pending===0){ allDateien=allResults; renderDateiGrid(); } });
   });
