@@ -227,7 +227,35 @@ body{
           </div>
           <div class="field">
             <label>Dateiname *</label>
-            <input id="fName" type="text" placeholder="z.B. 2026-06-17_Rechnung_Lieferant.pdf">
+            <input id="fName" type="text" placeholder="z.B. Rechnung_Lieferant.pdf">
+          </div>
+        </div>
+
+        <div class="form-grid" style="margin-bottom:1rem;">
+          <div class="field">
+            <label>Jahr *</label>
+            <select id="fJahr">
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
+              <option value="2028">2028</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Monat *</label>
+            <select id="fMonat">
+              <option value="01">Januar</option>
+              <option value="02">Februar</option>
+              <option value="03">März</option>
+              <option value="04">April</option>
+              <option value="05">Mai</option>
+              <option value="06">Juni</option>
+              <option value="07">Juli</option>
+              <option value="08">August</option>
+              <option value="09">September</option>
+              <option value="10">Oktober</option>
+              <option value="11">November</option>
+              <option value="12">Dezember</option>
+            </select>
           </div>
         </div>
 
@@ -276,21 +304,35 @@ body{
 
   <!-- TAB: ARCHIV -->
   <div id="tab-archiv" style="display:none;">
-    <div class="card">
-      <div class="filter-bar">
-        <select id="filterOrdner" onchange="loadDateien()" style="min-width:200px;">
-          <option value="">Alle Ordner</option>
-          <option value="angebote">📄 Angebote</option>
-          <option value="auftragsbestaetigung">📋 Auftragsbestätigungen</option>
-          <option value="lieferscheine">🚛 Lieferscheine signiert</option>
-          <option value="rechnungen-debi">🧾 Rechnungen Debi</option>
-          <option value="rechnungen-kredi">🧾 Rechnungen Kredi</option>
-          <option value="ab-lieferanten">📦 AB Lieferanten</option>
-        </select>
-        <input id="filterSuche" type="text" placeholder="🔍 Dateiname suchen..." oninput="renderDateiGrid()" style="flex:1;min-width:180px;">
-        <button class="btn-sm" onclick="loadDateien()">↻</button>
+
+    <!-- JAHRES/MONATS ÜBERSICHT -->
+    <div class="card" id="monatsUebersichtCard">
+      <div class="card-header">
+        <div class="card-title">📅 Jahres- & Monatsübersicht</div>
+        <div style="display:flex;gap:8px;">
+          <select id="filterJahr" onchange="loadMonatsUebersicht()" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.07);color:var(--text);font-size:13px;outline:none;font-family:var(--font);">
+            <option value="">Alle Jahre</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+          </select>
+        </div>
       </div>
-      <div id="dateiGrid"><div class="empty"><div class="empty-icon">📂</div>Wähle einen Ordner oder lade eine Datei hoch.</div></div>
+      <div id="monatsUebersicht"></div>
+    </div>
+
+    <!-- DATEILISTE (wenn Monat gewählt) -->
+    <div class="card" id="dateiListeCard" style="display:none;">
+      <div class="card-header">
+        <div>
+          <div class="card-title" id="dateiListeTitle">Dateien</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="filterSuche" type="text" placeholder="🔍 Suchen..." oninput="renderDateiGrid()" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.07);color:var(--text);font-size:13px;outline:none;font-family:var(--font);min-width:180px;">
+          <button class="btn-sm" onclick="showMonatsUebersicht()">← Zurück</button>
+        </div>
+      </div>
+      <div id="dateiGrid"></div>
     </div>
   </div>
 
@@ -362,7 +404,7 @@ function switchTab(t){
   document.getElementById('tab-upload').style.display=t==='upload'?'':'none';
   document.getElementById('tab-archiv').style.display=t==='archiv'?'':'none';
   document.querySelectorAll('.tab').forEach(function(b,i){ b.classList.toggle('active',(i===0&&t==='upload')||(i===1&&t==='archiv')); });
-  if(t==='archiv') loadDateien();
+  if(t==='archiv') loadMonatsUebersicht();
 }
 
 // ── KUNDEN
@@ -560,7 +602,12 @@ function fillAnalyseForm(data){
   if(data.betrag) document.getElementById('fBetrag').value=data.betrag;
   if(data.referenz) document.getElementById('fReferenz').value=data.referenz;
   if(data.beschreibung) document.getElementById('fBeschreibung').value=data.beschreibung;
-  document.getElementById('fDatum').value = new Date().toISOString().split('T')[0];
+
+  // Jahr/Monat aus Upload-Datum (immer heute)
+  var heute = new Date();
+  document.getElementById('fJahr').value = String(heute.getFullYear());
+  document.getElementById('fMonat').value = String(heute.getMonth()+1).padStart(2,'0');
+  document.getElementById('fDatum').value = heute.toISOString().split('T')[0];
 
   // Kundennummer direkt aus Claude übernehmen falls vorhanden
   if(data.kunde_nr && data.kunde_nr.trim()){
@@ -623,23 +670,29 @@ function resetUpload(){
   document.getElementById('fKundeSearch').value='';
   document.getElementById('fKundeNr').value='';
   ['fName','fDatum','fBetrag','fReferenz','fBeschreibung'].forEach(function(id){ document.getElementById(id).value=''; });
+  // Jahr/Monat auf heute zurücksetzen
+  var heute = new Date();
+  document.getElementById('fJahr').value = String(heute.getFullYear());
+  document.getElementById('fMonat').value = String(heute.getMonth()+1).padStart(2,'0');
   ['fileInput','cameraInput','galleryInput'].forEach(function(id){ document.getElementById(id).value=''; });
 }
 
 // ── UPLOAD
 function doUpload(){
   if(!currentFile){ alert('Keine Datei ausgewählt.'); return; }
-  var ordner=document.getElementById('fOrdner').value;
-  var name=document.getElementById('fName').value.trim();
-  var kundeNr=document.getElementById('fKundeNr').value.trim();
+  var ordner = document.getElementById('fOrdner').value;
+  var name = document.getElementById('fName').value.trim();
+  var kundeNr = document.getElementById('fKundeNr').value.trim();
+  var jahr = document.getElementById('fJahr').value;
+  var monat = document.getElementById('fMonat').value;
   if(!name){ alert('Bitte einen Dateinamen eingeben.'); return; }
 
-  // Kundennummer als Prefix falls vorhanden
-  var fileName=kundeNr?kundeNr+'_'+name:name;
-  var path=ordner+'/'+fileName;
+  // Pfad: ordner/jahr/monat/kundennr_dateiname
+  var fileName = kundeNr ? kundeNr+'_'+name : name;
+  var path = ordner+'/'+jahr+'/'+monat+'/'+fileName;
 
-  var statusEl=document.getElementById('uploadActionStatus');
-  var prog=document.getElementById('uploadProgress');
+  var statusEl = document.getElementById('uploadActionStatus');
+  var prog = document.getElementById('uploadProgress');
   statusEl.style.display='none';
   prog.style.display='block';
   document.getElementById('progressFill').style.width='30%';
@@ -660,7 +713,8 @@ function doUpload(){
     prog.style.display='none';
     statusEl.style.display='block';
     statusEl.className='status-msg status-ok';
-    statusEl.textContent='✅ "'+fileName+'" erfolgreich in "'+ORDNER_LABELS[ordner]+'" archiviert!';
+    var MONATSNAMEN=['','Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+    statusEl.textContent='✅ "'+fileName+'" in '+ORDNER_LABELS[ordner]+' / '+jahr+' / '+MONATSNAMEN[parseInt(monat)]+' archiviert!';
     setTimeout(function(){ resetUpload(); },2500);
   })
   .catch(function(err){
@@ -671,13 +725,107 @@ function doUpload(){
   });
 }
 
-// ── ARCHIV
-function loadDateien(){
-  var ordner=document.getElementById('filterOrdner').value;
-  var el=document.getElementById('dateiGrid');
-  el.innerHTML='<div class="empty"><div class="empty-icon">⏳</div>Lade Dateien...</div>';
+// ── ARCHIV - JAHRES/MONATS STRUKTUR ─────────────────────────────
+var MONATSNAMEN = ['','Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+var currentMonatPfad = null; // z.B. 'rechnungen-debi/2026/06'
 
-  var alleOrdner = ordner ? [ordner] : ['angebote','auftragsbestaetigung','lieferscheine','rechnungen-debi','rechnungen-kredi','ab-lieferanten'];
+function showMonatsUebersicht(){
+  document.getElementById('monatsUebersichtCard').style.display='';
+  document.getElementById('dateiListeCard').style.display='none';
+  currentMonatPfad = null;
+}
+
+function loadMonatsUebersicht(){
+  switchTab('archiv');
+  var filterJahr = document.getElementById('filterJahr')?.value || '';
+  var el = document.getElementById('monatsUebersicht');
+  el.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Lade Übersicht...</div>';
+
+  var alleOrdner = ['angebote','auftragsbestaetigung','lieferscheine','rechnungen-debi','rechnungen-kredi','ab-lieferanten'];
+  var jahre = filterJahr ? [filterJahr] : ['2026','2027','2028'];
+  var monateData = {}; // { 'ordner/jahr/monat': anzahl }
+  var pending = alleOrdner.length * jahre.length;
+
+  if(pending === 0){ renderMonatsUebersicht(monateData, jahre); return; }
+
+  alleOrdner.forEach(function(ord){
+    jahre.forEach(function(jahr){
+      fetch(SUPA_ST+'/object/list/'+encodeURIComponent(BUCKET),{
+        method:'POST',
+        headers:{...sh(),'Content-Type':'application/json'},
+        body:JSON.stringify({prefix:ord+'/'+jahr+'/',limit:1000})
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(files){
+        // Dateien nach Monat gruppieren
+        (files||[]).filter(function(f){ return f.name&&f.id; }).forEach(function(f){
+          // Pfad: monat/kundennr_datei.pdf → monat ist erster Teil
+          var parts = f.name.split('/');
+          var monat = parts[0]; // z.B. "06"
+          if(/^\d{2}$/.test(monat)){
+            var key = ord+'/'+jahr+'/'+monat;
+            monateData[key] = (monateData[key]||0)+1;
+          }
+        });
+        pending--;
+        if(pending===0) renderMonatsUebersicht(monateData, jahre);
+      })
+      .catch(function(){ pending--; if(pending===0) renderMonatsUebersicht(monateData, jahre); });
+    });
+  });
+}
+
+function renderMonatsUebersicht(monateData, jahre){
+  var el = document.getElementById('monatsUebersicht');
+  var ORDNER_LABELS_KURZ = {angebote:'Angebote',auftragsbestaetigung:'Auftragsbestät.',lieferscheine:'Lieferscheine','rechnungen-debi':'Rech. Debi','rechnungen-kredi':'Rech. Kredi','ab-lieferanten':'AB Lieferant'};
+  var alleOrdner = ['angebote','auftragsbestaetigung','lieferscheine','rechnungen-debi','rechnungen-kredi','ab-lieferanten'];
+
+  // Nur Jahre mit Daten anzeigen
+  var html = '';
+  jahre.forEach(function(jahr){
+    var hasDaten = Object.keys(monateData).some(function(k){ return k.includes('/'+jahr+'/'); });
+    if(!hasDaten && Object.keys(monateData).length>0) return;
+
+    html += '<div style="margin-bottom:1.5rem;">'
+      +'<div style="font-size:16px;font-weight:800;color:#fff;padding:8px 0 10px;border-bottom:1px solid var(--glass-brd);margin-bottom:12px;">📅 '+jahr+'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">';
+
+    for(var m=1; m<=12; m++){
+      var monat = String(m).padStart(2,'0');
+      // Alle Dateien dieses Monats zählen
+      var total = 0;
+      var ordnerInfo = [];
+      alleOrdner.forEach(function(ord){
+        var key = ord+'/'+jahr+'/'+monat;
+        var count = monateData[key]||0;
+        if(count>0){ total+=count; ordnerInfo.push(ORDNER_LABELS_KURZ[ord]+': '+count); }
+      });
+
+      html += '<div style="background:rgba(255,255,255,.04);border:1px solid var(--glass-brd);border-radius:12px;padding:14px;">'
+        +'<div style="font-size:14px;font-weight:700;color:'+(total>0?'#fff':'var(--hint)')+';">'+MONATSNAMEN[m]+'</div>'
+        +(total>0?'<div style="font-size:11px;color:var(--hint);margin-top:2px;">'+ordnerInfo.join(' · ')+'</div>':'<div style="font-size:11px;color:var(--hint);margin-top:2px;">Keine Dateien</div>')
+        +'<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">'
+          +(total>0?'<button onclick="loadMonat(\''+jahr+'\',\''+monat+'\')" class="btn-sm" style="color:#93c5fd;border-color:rgba(96,165,250,.3);">📂 Anzeigen</button>':'')
+          +(total>0?'<button onclick="backupMonat(\''+jahr+'\',\''+monat+'\')" class="btn-sm btn-green" style="color:#86efac;border-color:rgba(34,197,94,.4);">💾 Backup</button>':'')
+          +(total>0?'<button onclick="deleteMonat(\''+jahr+'\',\''+monat+'\')" class="btn-sm btn-danger">🗑 Löschen</button>':'')
+        +'</div>'
+      +'</div>';
+    }
+    html += '</div></div>';
+  });
+
+  if(!html) html = '<div class="empty"><div class="empty-icon">📭</div>Noch keine Dateien vorhanden.</div>';
+  el.innerHTML = html;
+}
+
+function loadMonat(jahr, monat){
+  document.getElementById('monatsUebersichtCard').style.display='none';
+  document.getElementById('dateiListeCard').style.display='';
+  document.getElementById('dateiListeTitle').textContent = MONATSNAMEN[parseInt(monat)]+' '+jahr;
+  var el = document.getElementById('dateiGrid');
+  el.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Lade Dateien...</div>';
+
+  var alleOrdner = ['angebote','auftragsbestaetigung','lieferscheine','rechnungen-debi','rechnungen-kredi','ab-lieferanten'];
   var allResults = [];
   var pending = alleOrdner.length;
 
@@ -685,31 +833,110 @@ function loadDateien(){
     fetch(SUPA_ST+'/object/list/'+encodeURIComponent(BUCKET),{
       method:'POST',
       headers:{...sh(),'Content-Type':'application/json'},
-      body:JSON.stringify({prefix:ord+'/',limit:500,sortBy:{column:'created_at',order:'desc'}})
+      body:JSON.stringify({prefix:ord+'/'+jahr+'/'+monat+'/',limit:500,sortBy:{column:'created_at',order:'desc'}})
     })
     .then(function(r){ return r.json(); })
     .then(function(files){
       (files||[]).filter(function(f){ return f.name&&f.id; }).forEach(function(f){
         allResults.push({
-          path: ord+'/'+f.name,
-          folder: ord,
-          name: f.name,
-          rawName: f.name,
-          size: f.metadata?.size||0,
-          created_at: f.created_at
+          path: ord+'/'+jahr+'/'+monat+'/'+f.name,
+          folder: ord, jahr: jahr, monat: monat,
+          name: f.name, rawName: f.name,
+          size: f.metadata?.size||0, created_at: f.created_at
         });
       });
       pending--;
-      if(pending === 0){
+      if(pending===0){
         allDateien = allResults.sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
         renderDateiGrid();
       }
     })
-    .catch(function(){
-      pending--;
-      if(pending === 0){ allDateien=allResults; renderDateiGrid(); }
-    });
+    .catch(function(){ pending--; if(pending===0){ allDateien=allResults; renderDateiGrid(); } });
   });
+}
+
+async function backupMonat(jahr, monat){
+  var btn = event.target;
+  btn.disabled=true; btn.textContent='⏳...';
+  var zip = new JSZip();
+  var MONAT_NAME = MONATSNAMEN[parseInt(monat)];
+  var root = zip.folder(jahr+'-'+MONAT_NAME);
+  var alleOrdner = ['angebote','auftragsbestaetigung','lieferscheine','rechnungen-debi','rechnungen-kredi','ab-lieferanten'];
+  var allFiles = [];
+
+  for(var i=0; i<alleOrdner.length; i++){
+    try{
+      var r = await fetch(SUPA_ST+'/object/list/'+encodeURIComponent(BUCKET),{
+        method:'POST', headers:{...sh(),'Content-Type':'application/json'},
+        body:JSON.stringify({prefix:alleOrdner[i]+'/'+jahr+'/'+monat+'/',limit:500})
+      });
+      var files = await r.json();
+      (files||[]).filter(function(f){ return f.name&&f.id; }).forEach(function(f){
+        allFiles.push({path:alleOrdner[i]+'/'+jahr+'/'+monat+'/'+f.name, ordner:alleOrdner[i], name:f.name});
+      });
+    }catch(e){}
+  }
+
+  if(!allFiles.length){ alert('Keine Dateien in diesem Monat.'); btn.disabled=false; btn.textContent='💾 Backup'; return; }
+
+  for(var j=0; j<allFiles.length; j++){
+    try{
+      var enc = allFiles[j].path.split('/').map(function(p){ return encodeURIComponent(p); }).join('/');
+      var res = await fetch(SUPA_ST+'/object/authenticated/'+encodeURIComponent(BUCKET)+'/'+enc,{headers:sh()});
+      if(res.ok){
+        var buf = await res.arrayBuffer();
+        root.file(allFiles[j].ordner+'/'+allFiles[j].name, buf);
+      }
+    }catch(e){}
+    btn.textContent='⏳ '+( j+1)+'/'+allFiles.length;
+  }
+
+  var blob = await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href=url; a.download='BD_'+jahr+'_'+MONAT_NAME+'.zip'; a.click();
+  URL.revokeObjectURL(url);
+  btn.disabled=false; btn.textContent='💾 Backup';
+}
+
+async function deleteMonat(jahr, monat){
+  var MONAT_NAME = MONATSNAMEN[parseInt(monat)];
+  var ok = confirm('⚠️ ACHTUNG: Alle Dateien von '+MONAT_NAME+' '+jahr+' werden gelöscht!\n\nBitte erstellen Sie zuerst ein Backup!\n\nTrotzdem löschen?');
+  if(!ok) return;
+  var ok2 = confirm('Wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.');
+  if(!ok2) return;
+
+  var alleOrdner = ['angebote','auftragsbestaetigung','lieferscheine','rechnungen-debi','rechnungen-kredi','ab-lieferanten'];
+  var allFiles = [];
+  for(var i=0; i<alleOrdner.length; i++){
+    try{
+      var r = await fetch(SUPA_ST+'/object/list/'+encodeURIComponent(BUCKET),{
+        method:'POST', headers:{...sh(),'Content-Type':'application/json'},
+        body:JSON.stringify({prefix:alleOrdner[i]+'/'+jahr+'/'+monat+'/',limit:500})
+      });
+      var files = await r.json();
+      (files||[]).filter(function(f){ return f.name&&f.id; }).forEach(function(f){
+        allFiles.push(alleOrdner[i]+'/'+jahr+'/'+monat+'/'+f.name);
+      });
+    }catch(e){}
+  }
+
+  if(!allFiles.length){ alert('Keine Dateien gefunden.'); return; }
+
+  // Bulk delete
+  var res = await fetch(SUPA_ST+'/object/'+encodeURIComponent(BUCKET),{
+    method:'DELETE', headers:{...sh(),'Content-Type':'application/json'},
+    body:JSON.stringify({prefixes:allFiles})
+  });
+  if(res.ok){
+    alert('✅ '+allFiles.length+' Dateien von '+MONAT_NAME+' '+jahr+' wurden gelöscht.');
+    loadMonatsUebersicht();
+  } else {
+    alert('Fehler beim Löschen.');
+  }
+}
+
+function loadDateien(){
+  loadMonatsUebersicht();
 }
 
 function renderDateiGrid(){
