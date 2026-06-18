@@ -257,10 +257,7 @@ body{
           </div>
         </div>
 
-        <div class="field" style="margin-bottom:1.5rem;">
-          <label>Beschreibung / Notiz</label>
-          <textarea id="fBeschreibung" rows="3" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;font-size:13px;outline:none;font-family:var(--font);resize:vertical;"></textarea>
-        </div>
+        <textarea id="fBeschreibung" style="display:none;"></textarea>
 
         <div id="uploadActionStatus" style="display:none;" class="status-msg" style="margin-bottom:1rem;"></div>
         <div id="uploadProgress" style="display:none;margin-bottom:1rem;">
@@ -718,13 +715,27 @@ function loadDateien(){
 function renderDateiGrid(){
   var el=document.getElementById('dateiGrid');
   var q=document.getElementById('filterSuche').value.toLowerCase();
-  var list=allDateien.filter(function(f){ return !q||f.name.toLowerCase().includes(q); });
+  // Suche auch in Kundennamen
+  var list=allDateien.filter(function(f){
+    if(!q) return true;
+    if(f.rawName.toLowerCase().includes(q)) return true;
+    // Kundennummer aus Name
+    var parts = f.rawName.split('_');
+    if(parts.length > 1 && /^\d+$/.test(parts[0])){
+      var k = allKunden.find(function(x){ return String(x.nr) === parts[0]; });
+      if(k){
+        var kname = k.company||(k.firstName+' '+k.lastName).trim()||k.name;
+        if(kname.toLowerCase().includes(q) || parts[0].includes(q)) return true;
+      }
+    }
+    return false;
+  });
   if(!list.length){ el.innerHTML='<div class="empty"><div class="empty-icon">📭</div>Keine Dateien gefunden.</div>'; return; }
 
   var FICONS={angebote:'📄',auftragsbestaetigung:'📋',lieferscheine:'🚛','rechnungen-debi':'🧾','rechnungen-kredi':'🧾','ab-lieferanten':'📦'};
 
   // Dateien nach Kundennummer gruppieren
-  var gruppen = {}; // { 'KUNDENNR': {label, dateien} } oder { '': {label:'Kein Kunde', dateien} }
+  var gruppen = {};
   list.forEach(function(f){
     var nameParts = f.rawName.split('_');
     var kundeNr = '';
@@ -732,14 +743,14 @@ function renderDateiGrid(){
     if(nameParts.length > 1 && /^\d+$/.test(nameParts[0])){
       kundeNr = nameParts[0];
       var k = allKunden.find(function(x){ return String(x.nr) === kundeNr; });
-      var kname = k ? (k.company||(k.firstName+' '+k.lastName).trim()||k.name) : kundeNr;
-      kundeLabel = '👤 '+kundeNr+' – '+kname;
+      // Label: nur Kundenname (nicht doppelte Nummer)
+      var kname = k ? (k.company||(k.firstName+' '+k.lastName).trim()||k.name) : '';
+      kundeLabel = '👤 '+kundeNr+(kname ? ' – '+kname : '');
     }
     if(!gruppen[kundeNr]) gruppen[kundeNr] = {label: kundeLabel, dateien: []};
     gruppen[kundeNr].dateien.push(f);
   });
 
-  // Sortiert: Kunden alphabetisch, "kein Kunde" zuletzt
   var keys = Object.keys(gruppen).sort(function(a,b){
     if(a===''&&b!=='') return 1;
     if(b===''&&a!=='') return -1;
