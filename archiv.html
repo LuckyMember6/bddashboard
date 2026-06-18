@@ -495,7 +495,16 @@ function renderPdfToJpeg(pdfUrl, fileName){
   });
 }
 
+function buildKundenListe(){
+  // Kompakte Kundenliste für Claude (max 80 Kunden um Token zu sparen)
+  return allKunden.slice(0,80).map(function(k){
+    var name = k.company||(k.firstName+' '+k.lastName).trim()||k.name;
+    return k.nr+':'+name;
+  }).join(', ');
+}
+
 function claudeAnalyse(base64, mime, fileName){
+  var kundenListe = buildKundenListe();
   fetch('https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/smart-api',{
     method:'POST',
     headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zeHJnZ2luamt6b252eXluZHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMDExMjksImV4cCI6MjA5Njc3NzEyOX0.X-Ftee85CqLG0jvYVaUA1oYPr-v5svmguZuUNJAHnWo'},
@@ -506,7 +515,7 @@ function claudeAnalyse(base64, mime, fileName){
         role:'user',
         content:[
           {type:'image',source:{type:'base64',media_type:mime,data:base64}},
-          {type:'text',text:'Analysiere dieses Dokument für Bärtsch+Dobal AG (Schweizer Büromöbel-Händler).\nOrdner-Regeln:\n- Lieferschein → lieferscheine\n- Rechnung AN Kunden (Debitor) → rechnungen-debi\n- Rechnung VON Lieferant (Kreditor) → rechnungen-kredi\n- Offerte/Angebot → angebote\n- Auftragsbestätigung an Kunden → auftragsbestaetigung\n- Bestellung/AB an Lieferant → ab-lieferanten\nAntworte NUR mit JSON:\n{"ordner":"angebote|auftragsbestaetigung|lieferscheine|rechnungen-debi|rechnungen-kredi|ab-lieferanten","ordner_grund":"kurze Begründung","dateiname":"vorgeschlagener-dateiname.pdf","kunde_lieferant":"Name falls erkennbar","datum":"YYYY-MM-DD oder leer","betrag":0,"referenz":"Nummer falls sichtbar","beschreibung":"kurze Zusammenfassung"}'}
+          {type:'text',text:'Analysiere dieses Dokument für Bärtsch+Dobal AG (Schweizer Büromöbel-Händler).\n\nKundenliste (Nr:Name): '+kundenListe+'\n\nOrdner-Regeln:\n- Lieferschein → lieferscheine\n- Rechnung AN Kunden → rechnungen-debi\n- Rechnung VON Lieferant → rechnungen-kredi\n- Offerte/Angebot → angebote\n- Auftragsbestätigung an Kunden → auftragsbestaetigung\n- Bestellung an Lieferant → ab-lieferanten\n\nDateiname-Regel: Beginne mit Kundennummer aus der Liste falls erkennbar (z.B. "10437_Lieferschein-LS2606151.pdf"). Kein Datum im Namen.\n\nAntworte NUR mit JSON:\n{"ordner":"angebote|auftragsbestaetigung|lieferscheine|rechnungen-debi|rechnungen-kredi|ab-lieferanten","ordner_grund":"kurze Begründung","dateiname":"KUNDENNR_name.pdf","kunde_nr":"Kundennummer aus Liste oder leer","kunde_lieferant":"Name falls erkennbar","betrag":0,"referenz":"Dokumentnummer","beschreibung":"kurze Zusammenfassung"}'}
         ]
       }]
     })
@@ -516,6 +525,10 @@ function claudeAnalyse(base64, mime, fileName){
     var text=(res.content||[]).map(function(c){ return c.text||''; }).join('');
     try{
       var data=JSON.parse(text.replace(/```json|```/g,'').trim());
+      // Kundennummer direkt aus Claude-Antwort übernehmen
+      if(data.kunde_nr && !data.dateiname.startsWith(data.kunde_nr)){
+        data.dateiname = data.kunde_nr+'_'+data.dateiname;
+      }
       fillAnalyseForm(data);
     }catch(e){ showAnalyseResult(); }
   })
@@ -523,13 +536,14 @@ function claudeAnalyse(base64, mime, fileName){
 }
 
 function claudeAnalyseText(fileName){
+  var kundenListe = buildKundenListe();
   fetch('https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/smart-api',{
     method:'POST',
     headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zeHJnZ2luamt6b252eXluZHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMDExMjksImV4cCI6MjA5Njc3NzEyOX0.X-Ftee85CqLG0jvYVaUA1oYPr-v5svmguZuUNJAHnWo'},
     body:JSON.stringify({
       model:'claude-sonnet-4-6',
       max_tokens:400,
-      messages:[{role:'user',content:'Dateiname: "'+fileName+'"\n\nRegeln für Ordnerzuordnung:\n- "lieferschein" oder "ls-" im Name → lieferscheine\n- "rechnung" oder "re-" oder "inv" im Name → rechnungen-debi (falls Kunde) oder rechnungen-kredi (falls Lieferant)\n- "offerte" oder "angebot" oder "an-" im Name → angebote\n- "auftrag" oder "ab-" oder "auftragsbestätigung" → auftragsbestaetigung\n- "lieferant" oder Lieferantenname → ab-lieferanten\n- sonst → angebote\n\nAntworte NUR mit JSON:\n{"ordner":"angebote|auftragsbestaetigung|lieferscheine|rechnungen-debi|rechnungen-kredi|ab-lieferanten","ordner_grund":"Begründung","dateiname":"'+fileName+'","beschreibung":""}'}]
+      messages:[{role:'user',content:'Dateiname: "'+fileName+'"\nKundenliste: '+kundenListe+'\n\nOrdnerzuordnung nach Dateiname:\n- "lieferschein/ls-" → lieferscheine\n- "rechnung/re-/inv" → rechnungen-debi oder rechnungen-kredi\n- "offerte/angebot/an-" → angebote\n- "auftrag/ab-" → auftragsbestaetigung\n- sonst → angebote\n\nAntworte NUR mit JSON:\n{"ordner":"angebote|auftragsbestaetigung|lieferscheine|rechnungen-debi|rechnungen-kredi|ab-lieferanten","ordner_grund":"Begründung","dateiname":"'+fileName+'","kunde_nr":"","beschreibung":""}'}]
     })
   })
   .then(function(r){ return r.json(); })
@@ -546,36 +560,45 @@ function claudeAnalyseText(fileName){
 function fillAnalyseForm(data){
   if(data.ordner) document.getElementById('fOrdner').value=data.ordner;
   if(data.dateiname) document.getElementById('fName').value=data.dateiname;
-  if(data.datum) document.getElementById('fDatum').value=data.datum;
   if(data.betrag) document.getElementById('fBetrag').value=data.betrag;
   if(data.referenz) document.getElementById('fReferenz').value=data.referenz;
   if(data.beschreibung) document.getElementById('fBeschreibung').value=data.beschreibung;
+  document.getElementById('fDatum').value = new Date().toISOString().split('T')[0];
 
-  // Kunde/Lieferant automatisch suchen mit Fuzzy-Matching
+  // Kundennummer direkt aus Claude übernehmen falls vorhanden
+  if(data.kunde_nr && data.kunde_nr.trim()){
+    var k = allKunden.find(function(x){ return String(x.nr) === String(data.kunde_nr).trim(); });
+    if(k){
+      var kname = k.company||(k.firstName+' '+k.lastName).trim()||k.name;
+      document.getElementById('fKundeSearch').value = k.nr+' – '+kname;
+      document.getElementById('fKundeNr').value = k.nr;
+      // Dateiname mit Kundennummer prefixen falls noch nicht
+      var fn = document.getElementById('fName').value;
+      if(fn && !fn.startsWith(k.nr+'_')) document.getElementById('fName').value = k.nr+'_'+fn;
+      showAnalyseResult();
+      return;
+    }
+  }
+
+  // Fallback: Fuzzy-Suche nach Namen
   if(data.kunde_lieferant && data.kunde_lieferant.trim()){
     var searchTerm = data.kunde_lieferant.trim();
     document.getElementById('fKundeSearch').value = searchTerm;
-
     function normalize(s){ return s.toLowerCase().replace(/\s+ag$|\s+gmbh$|\s+sarl$|\s+sa$|\s+kg$|\s+ltd$/,'').replace(/[^a-z0-9äöüß]/g,' ').trim(); }
     var lq = normalize(searchTerm);
     var words = lq.split(' ').filter(function(w){ return w.length > 2; });
-
     var hit = allKunden.find(function(k){
       var name = k.company||(k.firstName+' '+k.lastName).trim()||k.name;
       var kn = normalize(name);
       if(kn === lq) return true;
       return words.length > 0 && words.every(function(w){ return kn.includes(w); });
     });
-
     if(hit){
       var name = hit.company||(hit.firstName+' '+hit.lastName).trim()||hit.name;
       document.getElementById('fKundeSearch').value = hit.nr+' – '+name;
       document.getElementById('fKundeNr').value = hit.nr;
-      // Dateiname automatisch mit Kundennummer prefixen
-      var currentName = document.getElementById('fName').value;
-      if(currentName && !currentName.startsWith(hit.nr+'_')){
-        document.getElementById('fName').value = hit.nr+'_'+currentName;
-      }
+      var fn2 = document.getElementById('fName').value;
+      if(fn2 && !fn2.startsWith(hit.nr+'_')) document.getElementById('fName').value = hit.nr+'_'+fn2;
     } else {
       searchKunde(searchTerm);
     }
@@ -945,19 +968,11 @@ async function doBackup(){
     for(var j = 0; j < allFiles.length; j++){
       var file = allFiles[j];
       try {
-        // Signed URL holen
-        var signRes = await fetch(SUPA_ST+'/object/sign/'+encodeURIComponent(BUCKET)+'/'+file.path, {
-          method: 'POST',
-          headers: {...sh(), 'Content-Type': 'application/json'},
-          body: JSON.stringify({expiresIn: 300})
+        // Direkt via authenticated fetch herunterladen
+        var encodedPath = file.path.split('/').map(function(p){ return encodeURIComponent(p); }).join('/');
+        var fileRes = await fetch(SUPA_ST+'/object/authenticated/'+encodeURIComponent(BUCKET)+'/'+encodedPath, {
+          headers: sh()
         });
-        var signData = await signRes.json();
-        var url = signData.signedURL || signData.signedUrl;
-        if(!url) continue;
-        if(!url.startsWith('http')) url = SUPA_URL + url;
-
-        // Datei herunterladen
-        var fileRes = await fetch(url);
         var blob = await fileRes.blob();
         var arrayBuf = await blob.arrayBuffer();
 
