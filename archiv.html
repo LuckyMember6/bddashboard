@@ -736,17 +736,21 @@ function showMonatsUebersicht(){
 }
 
 function loadMonatsUebersicht(){
-  switchTab('archiv');
   var filterJahr = document.getElementById('filterJahr')?.value || '';
   var el = document.getElementById('monatsUebersicht');
   el.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Lade Übersicht...</div>';
 
   var alleOrdner = ['angebote','auftragsbestaetigung','lieferscheine','rechnungen-debi','rechnungen-kredi','ab-lieferanten'];
   var jahre = filterJahr ? [filterJahr] : ['2026','2027','2028'];
-  var monateData = {}; // { 'ordner/jahr/monat': anzahl }
+  var monateData = {};
   var pending = alleOrdner.length * jahre.length;
 
-  if(pending === 0){ renderMonatsUebersicht(monateData, jahre); return; }
+  function onDone(){
+    renderMonatsUebersicht(monateData, jahre);
+    loadAlteDateien();
+  }
+
+  if(pending===0){ onDone(); return; }
 
   alleOrdner.forEach(function(ord){
     jahre.forEach(function(jahr){
@@ -757,71 +761,72 @@ function loadMonatsUebersicht(){
       })
       .then(function(r){ return r.json(); })
       .then(function(files){
-        // Dateien nach Monat gruppieren
         (files||[]).filter(function(f){ return f.name&&f.id; }).forEach(function(f){
-          // Pfad: monat/kundennr_datei.pdf → monat ist erster Teil
           var parts = f.name.split('/');
-          var monat = parts[0]; // z.B. "06"
+          var monat = parts[0];
           if(/^\d{2}$/.test(monat)){
-            var key = ord+'/'+jahr+'/'+monat;
-            monateData[key] = (monateData[key]||0)+1;
+            var key = jahr+'/'+monat;
+            if(!monateData[key]) monateData[key]={};
+            monateData[key][ord] = (monateData[key][ord]||0)+1;
           }
         });
         pending--;
-        if(pending===0) renderMonatsUebersicht(monateData, jahre);
+        if(pending===0) onDone();
       })
-      .catch(function(){ pending--; if(pending===0) renderMonatsUebersicht(monateData, jahre); });
+      .catch(function(){ pending--; if(pending===0) onDone(); });
     });
   });
 }
 
 function renderMonatsUebersicht(monateData, jahre){
   var el = document.getElementById('monatsUebersicht');
-  var ORDNER_LABELS_KURZ = {angebote:'Angebote',auftragsbestaetigung:'Auftragsbestät.',lieferscheine:'Lieferscheine','rechnungen-debi':'Rech. Debi','rechnungen-kredi':'Rech. Kredi','ab-lieferanten':'AB Lieferant'};
-  var alleOrdner = ['angebote','auftragsbestaetigung','lieferscheine','rechnungen-debi','rechnungen-kredi','ab-lieferanten'];
+  var ORDNER_KURZ = {angebote:'Ang',auftragsbestaetigung:'AB',lieferscheine:'LS','rechnungen-debi':'RD','rechnungen-kredi':'RK','ab-lieferanten':'ABL'};
+  var heute = new Date();
+  var aktJahr = String(heute.getFullYear());
+  var aktMonat = String(heute.getMonth()+1).padStart(2,'0');
 
-  // Nur Jahre mit Daten anzeigen
   var html = '';
   jahre.forEach(function(jahr){
-    var hasDaten = Object.keys(monateData).some(function(k){ return k.includes('/'+jahr+'/'); });
-    if(!hasDaten && Object.keys(monateData).length>0) return;
+    var jahrTotal = 0;
+    Object.keys(monateData).forEach(function(k){
+      if(k.startsWith(jahr+'/')) Object.values(monateData[k]).forEach(function(v){ jahrTotal+=v; });
+    });
+    var jahrHat = jahrTotal > 0;
 
-    html += '<div style="margin-bottom:1.5rem;">'
-      +'<div style="font-size:16px;font-weight:800;color:#fff;padding:8px 0 10px;border-bottom:1px solid var(--glass-brd);margin-bottom:12px;">📅 '+jahr+'</div>'
-      +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">';
+    html += '<div style="margin-bottom:2rem;">'
+      +'<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:'+(jahrHat?'rgba(59,130,246,.12)':'rgba(255,255,255,.03)')+';border:1px solid '+(jahrHat?'rgba(96,165,250,.3)':'rgba(255,255,255,.07)')+';border-radius:12px;margin-bottom:12px;">'
+        +'<div style="font-size:17px;font-weight:800;color:'+(jahrHat?'#fff':'var(--hint)')+';">📅 '+jahr+'</div>'
+        +(jahrHat?'<div style="font-size:12px;color:var(--hint);">'+jahrTotal+' Datei(en)</div>':'<div style="font-size:12px;color:rgba(255,255,255,.2);">Leer</div>')
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:8px;">';
 
     for(var m=1; m<=12; m++){
       var monat = String(m).padStart(2,'0');
-      // Alle Dateien dieses Monats zählen
-      var total = 0;
-      var ordnerInfo = [];
-      alleOrdner.forEach(function(ord){
-        var key = ord+'/'+jahr+'/'+monat;
-        var count = monateData[key]||0;
-        if(count>0){ total+=count; ordnerInfo.push(ORDNER_LABELS_KURZ[ord]+': '+count); }
-      });
+      var key = jahr+'/'+monat;
+      var data = monateData[key]||{};
+      var total = Object.values(data).reduce(function(s,v){ return s+v; },0);
+      var istAkt = (jahr===aktJahr && monat===aktMonat);
+      var hat = total > 0;
+      var badges = hat ? Object.keys(data).map(function(o){ return '<span style="font-size:9px;background:rgba(255,255,255,.1);border-radius:3px;padding:1px 4px;color:var(--muted);">'+ORDNER_KURZ[o]+':'+data[o]+'</span>'; }).join(' ') : '';
 
-      html += '<div style="background:rgba(255,255,255,.04);border:1px solid var(--glass-brd);border-radius:12px;padding:14px;">'
-        +'<div style="font-size:14px;font-weight:700;color:'+(total>0?'#fff':'var(--hint)')+';">'+MONATSNAMEN[m]+'</div>'
-        +(total>0?'<div style="font-size:11px;color:var(--hint);margin-top:2px;">'+ordnerInfo.join(' · ')+'</div>':'<div style="font-size:11px;color:var(--hint);margin-top:2px;">Keine Dateien</div>')
-        +'<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">'
-          +(total>0?'<button onclick="loadMonat(\''+jahr+'\',\''+monat+'\')" class="btn-sm" style="color:#93c5fd;border-color:rgba(96,165,250,.3);">📂 Anzeigen</button>':'')
-          +(total>0?'<button onclick="backupMonat(\''+jahr+'\',\''+monat+'\',this)" class="btn-sm btn-green" style="color:#86efac;border-color:rgba(34,197,94,.4);">💾 Backup</button>':'')
-          +(total>0?'<button onclick="deleteMonat(\''+jahr+'\',\''+monat+'\')" class="btn-sm btn-danger">🗑 Löschen</button>':'')
+      html += '<div style="background:'+(istAkt?'rgba(59,130,246,.18)':hat?'rgba(255,255,255,.05)':'rgba(255,255,255,.015)')+';border:1px solid '+(istAkt?'rgba(96,165,250,.55)':hat?'rgba(255,255,255,.1)':'rgba(255,255,255,.04)')+';border-radius:10px;padding:11px;">'
+        +'<div style="font-size:13px;font-weight:700;color:'+(hat?'#fff':istAkt?'rgba(255,255,255,.4)':'rgba(255,255,255,.2)')+';">'+(istAkt?'🔵 ':'')+MONATSNAMEN[m]+'</div>'
+        +(hat?'<div style="display:flex;flex-wrap:wrap;gap:3px;margin:5px 0;">'+badges+'</div>':'<div style="height:20px;"></div>')
+        +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">'
+          +'<button onclick="loadMonat(\''+jahr+'\',\''+monat+'\')" class="btn-sm" style="font-size:10px;padding:3px 7px;'+(hat?'color:#93c5fd;border-color:rgba(96,165,250,.3);':'color:rgba(255,255,255,.15);border-color:rgba(255,255,255,.06);')+'">📂</button>'
+          +(hat?'<button onclick="backupMonat(\''+jahr+'\',\''+monat+'\',this)" class="btn-sm" style="font-size:10px;padding:3px 7px;color:#86efac;border-color:rgba(34,197,94,.3);">💾</button>':'')
+          +(hat?'<button onclick="deleteMonat(\''+jahr+'\',\''+monat+'\')" class="btn-sm btn-danger" style="font-size:10px;padding:3px 7px;">🗑</button>':'')
         +'</div>'
       +'</div>';
     }
     html += '</div></div>';
   });
 
-  if(!html) html = '';
-  // Button für alte Dateien ohne Jahresstruktur
-  html += '<div id="alteDateienBereich" style="display:none;margin-top:1rem;padding:12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;">'
-    +'<div><div style="font-size:13px;font-weight:700;color:#fcd34d;">📂 Ältere Dateien</div><div id="alteDateienCount" style="font-size:11px;color:var(--hint);margin-top:2px;"></div></div>'
+  html += '<div id="alteDateienBereich" style="display:none;margin-top:.5rem;padding:12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;align-items:center;justify-content:space-between;gap:12px;">'
+    +'<div><div style="font-size:13px;font-weight:700;color:#fcd34d;">📂 Ältere Dateien</div><div id="alteDateienCount" style="font-size:11px;color:var(--hint);"></div></div>'
     +'<button onclick="renderAlteDateien()" class="btn-sm" style="color:#fcd34d;border-color:rgba(245,158,11,.4);">Anzeigen</button>'
   +'</div>';
   el.innerHTML = html;
-  loadAlteDateien(); // alte Dateien parallel laden
 }
 
 var alteDateien = [];
