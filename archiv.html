@@ -986,15 +986,16 @@ async function backupMonat(jahr, monat, btnEl){
   var alleOrdner = ['angebote','auftragsbestaetigung','lieferscheine','rechnungen-debi','rechnungen-kredi','ab-lieferanten'];
   var allFiles = [];
 
-  for(var i=0; i<alleOrdner.length; i++){
+  for(let i=0; i<alleOrdner.length; i++){
     try{
       var r = await fetch(SUPA_ST+'/object/list/'+encodeURIComponent(BUCKET),{
         method:'POST', headers:{...sh(),'Content-Type':'application/json'},
         body:JSON.stringify({prefix:alleOrdner[i]+'/'+jahr+'/'+monat+'/',limit:500})
       });
       var files = await r.json();
+      const ord = alleOrdner[i];
       (files||[]).filter(function(f){ return f.name&&f.id; }).forEach(function(f){
-        allFiles.push({path:alleOrdner[i]+'/'+jahr+'/'+monat+'/'+f.name, ordner:alleOrdner[i], name:f.name});
+        allFiles.push({path:ord+'/'+jahr+'/'+monat+'/'+f.name, ordner:ord, name:f.name});
       });
     }catch(e){}
   }
@@ -1013,7 +1014,7 @@ async function backupMonat(jahr, monat, btnEl){
     if(btn) btn.textContent='⏳ '+(j+1)+'/'+allFiles.length;
   }
 
-  var blob = await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+  var blob = await zip.generateAsync({type:'blob', compression:'STORE'});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a'); a.href=url; a.download='BD_'+jahr+'_'+MONAT_NAME+'.zip'; a.click();
   URL.revokeObjectURL(url);
@@ -1029,15 +1030,16 @@ async function deleteMonat(jahr, monat){
 
   var alleOrdner = ['angebote','auftragsbestaetigung','lieferscheine','rechnungen-debi','rechnungen-kredi','ab-lieferanten'];
   var allFiles = [];
-  for(var i=0; i<alleOrdner.length; i++){
+  for(let i=0; i<alleOrdner.length; i++){
     try{
       var r = await fetch(SUPA_ST+'/object/list/'+encodeURIComponent(BUCKET),{
         method:'POST', headers:{...sh(),'Content-Type':'application/json'},
         body:JSON.stringify({prefix:alleOrdner[i]+'/'+jahr+'/'+monat+'/',limit:500})
       });
       var files = await r.json();
+      const ord = alleOrdner[i];
       (files||[]).filter(function(f){ return f.name&&f.id; }).forEach(function(f){
-        allFiles.push(alleOrdner[i]+'/'+jahr+'/'+monat+'/'+f.name);
+        allFiles.push(ord+'/'+jahr+'/'+monat+'/'+f.name);
       });
     }catch(e){}
   }
@@ -1369,7 +1371,7 @@ async function doBackup(){
 
     // ZIP generieren und herunterladen
     btn.textContent = '⏳ ZIP wird erstellt...';
-    var zipBlob = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
+    var zipBlob = await zip.generateAsync({type:'blob', compression:'STORE'});
     var zipUrl = URL.createObjectURL(zipBlob);
     var a = document.createElement('a');
     a.href = zipUrl;
