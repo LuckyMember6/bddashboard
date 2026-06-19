@@ -480,6 +480,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
           <span id="storageUsed">0 MB verwendet</span>
           <span>von 1 GB</span>
         </div>
+        <a href="https://supabase.com/dashboard/org/rjbbiugzauzlkdggfxip/usage" target="_blank" rel="noopener"
+          style="display:flex;align-items:center;gap:5px;margin-top:8px;font-size:11px;color:var(--blue2);text-decoration:none;">
+          📊 Supabase Quota ansehen →
+        </a>
       </div>
 
       <hr class="divider">
@@ -548,6 +552,7 @@ var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 var CC_FN='https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/cashctrl';
 var BUCKET='Dashboard BD';
 var SUPA_ST=SUPA_URL+'/storage/v1';
+var totalBytesUsed = 0; // Echte Speichernutzung in Bytes (gesammelt beim Laden)
 
 var allKunden=[];
 var allDateien=[];
@@ -902,6 +907,7 @@ function loadMonatsUebersicht(){
   var el = document.getElementById('monatsUebersicht');
   el.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Lade Übersicht...</div>';
 
+  totalBytesUsed = 0; // Speicher-Zähler zurücksetzen
   var alleOrdner = ['angebote','auftragsbestaetigung','lieferscheine','rechnungen-debi','rechnungen-kredi','ab-lieferanten'];
   var jahre = filterJahr ? [filterJahr] : ['2026','2027','2028'];
   var monateData = {};
@@ -954,7 +960,12 @@ function loadMonatsUebersicht(){
           })
           .then(function(r){ return r.json(); })
           .then(function(subFiles){
-            var count = (subFiles||[]).filter(function(f){ return f.name&&f.id; }).length;
+            var validFiles = (subFiles||[]).filter(function(f){ return f.name&&f.id; });
+            var count = validFiles.length;
+            // Echte Bytes summieren für Speicher-Statistik
+            validFiles.forEach(function(f){
+              if(f.metadata && f.metadata.size) totalBytesUsed += f.metadata.size;
+            });
             var key = jahr+'/'+monat;
             if(!monateData[key]) monateData[key]={};
             monateData[key][ord] = count;
@@ -976,6 +987,7 @@ function loadMonatsUebersicht(){
     .then(function(r){ return r.json(); })
     .then(function(files){
       (files||[]).filter(function(f){ return f.name&&f.id&&!f.name.includes('/'); }).forEach(function(f){
+        if(f.metadata && f.metadata.size) totalBytesUsed += f.metadata.size;
         var d = f.created_at ? new Date(f.created_at) : null;
         if(d){
           var fJahr = String(d.getFullYear());
@@ -1542,9 +1554,10 @@ function ladeStatistiken(monateData){
   var aktKey = String(heute.getFullYear())+'/'+String(heute.getMonth()+1).padStart(2,'0');
   var aktTotal = Object.values(monateData[aktKey]||{}).reduce(function(s,v){ return s+v; },0);
   document.getElementById('statMonat').textContent = (aktTotal>0?'+'+aktTotal+' ':'')+' diesen Monat';
-  var estMB = Math.round(total * 280 / 1024); // ~280KB pro Datei
-  var pct = Math.min(estMB / 1024 * 100, 100).toFixed(1);
-  var sizeStr = estMB >= 1024 ? (estMB/1024).toFixed(2)+' GB' : estMB+' MB';
+  // Echte Speichernutzung aus gesammelten Dateigrössen (Supabase Free Tier: 1GB)
+  var usedMB = totalBytesUsed / (1024*1024);
+  var pct = Math.min(usedMB / 1024 * 100, 100).toFixed(1);
+  var sizeStr = usedMB >= 1024 ? (usedMB/1024).toFixed(2)+' GB' : usedMB.toFixed(1)+' MB';
   document.getElementById('statSize').textContent = sizeStr;
   document.getElementById('storageFill').style.width = pct+'%';
   document.getElementById('storageUsed').textContent = sizeStr+' verwendet';
