@@ -381,9 +381,16 @@ body{
 }
 .hero-date-icon{font-size:15px;}
 .hero-card-img{
-  width:340px;height:160px;object-fit:cover;border-radius:18px;
-  flex-shrink:0;box-shadow:0 8px 28px rgba(0,0,0,.35);
-  border:1px solid var(--glass-brd);
+  width:340px;height:160px;flex-shrink:0;border-radius:18px;
+  background-size:cover;background-position:center;
+  -webkit-mask-image:linear-gradient(to right, transparent 0%, #000 28%);
+  mask-image:linear-gradient(to right, transparent 0%, #000 28%);
+  position:relative;
+}
+.hero-card-img::after{
+  content:'';position:absolute;inset:0;border-radius:18px;
+  box-shadow:inset 0 0 50px rgba(11,20,48,.25);
+  pointer-events:none;
 }
 
 /* AUFGABENÜBERSICHT DONUT */
@@ -402,7 +409,11 @@ body{
 
 @media(max-width:900px){
   .hero-card{flex-direction:column-reverse;align-items:stretch;gap:1rem;}
-  .hero-card-img{width:100%;height:170px;}
+  .hero-card-img{
+    width:100%;height:170px;
+    -webkit-mask-image:linear-gradient(to bottom, transparent 0%, #000 30%);
+    mask-image:linear-gradient(to bottom, transparent 0%, #000 30%);
+  }
   .hero-card-text .greeting{font-size:30px;}
   .donut-wrap{flex-direction:column;align-items:flex-start;gap:1rem;}
   .mobile-only-flex{display:flex!important;flex-direction:column;}
@@ -526,7 +537,7 @@ body{
       <span id="dateBadge">–</span>
     </div>
   </div>
-  <img src="hero-mobile.jpg" alt="" class="hero-card-img">
+  <div class="hero-card-img" style="background-image:url('hero-mobile.jpg');"></div>
 </div>
 
 <!-- DASHBOARD -->
