@@ -369,9 +369,30 @@ body{
 .cc-btn:hover{background:rgba(59,130,246,.3);}
 .cc-btn:disabled{opacity:.5;cursor:not-allowed;}
 
+.quick-actions{display:none;}
+
 @media(max-width:900px){
   .metrics{grid-template-columns:1fr;}
   .two-col{grid-template-columns:1fr;}
+  .quick-actions{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+    margin-bottom:1.25rem;
+  }
+  .quick-action{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+    padding:14px 6px;border-radius:16px;border:1px solid var(--glass-brd);
+    background:var(--glass);backdrop-filter:blur(10px);
+    color:var(--text);cursor:pointer;font-family:var(--font);
+    transition:all .15s;
+  }
+  .quick-action:active{
+    background:linear-gradient(135deg, rgba(59,130,246,.3), rgba(99,102,241,.18));
+    border-color:rgba(96,165,250,.5);
+  }
+  .quick-action-icon{font-size:24px;}
+  .quick-action span:not(.quick-action-icon){
+    font-size:11px;font-weight:600;text-align:center;line-height:1.2;
+  }
   .topnav{
     padding:.6rem .5rem;gap:6px;overflow-x:auto;flex-wrap:nowrap;
     -webkit-overflow-scrolling:touch;scrollbar-width:none;
@@ -467,6 +488,28 @@ body{
 <!-- DASHBOARD -->
 <section id="page-overview" class="page-section active">
   <div class="metrics" id="metricCards"></div>
+
+  <!-- MOBILE SCHNELLAUSWAHL -->
+  <div class="quick-actions">
+    <button class="quick-action" onclick="showPage('lieferscheine')">
+      <span class="quick-action-icon">🚛</span><span>Lieferscheine</span>
+    </button>
+    <button class="quick-action" onclick="window.location.href='archiv.html'">
+      <span class="quick-action-icon">🗃️</span><span>Archiv</span>
+    </button>
+    <button class="quick-action" onclick="showPage('kunden')">
+      <span class="quick-action-icon">👥</span><span>Kunden</span>
+    </button>
+    <button class="quick-action" onclick="showPage('lager')">
+      <span class="quick-action-icon">📦</span><span>Lagerbestand</span>
+    </button>
+    <button class="quick-action" onclick="showPage('wixshop')">
+      <span class="quick-action-icon">🛍️</span><span>Wix Produkt</span>
+    </button>
+    <button class="quick-action" onclick="showPage('aufgaben')">
+      <span class="quick-action-icon">✅</span><span>Aufgaben</span>
+    </button>
+  </div>
 
   <!-- AUFGABEN (links) + LAGERBESTAND (rechts) -->
   <div class="two-col">
@@ -1096,7 +1139,7 @@ function showPage(id){
   });
   renderAll();
   if(id==='auftraege') loadCcOrders('auftraege', 3);
-  if(id==='overview') loadCcOrders('auftraege', 3);
+  if(id==='overview') { loadCcOrders('auftraege', 3); loadCcOrders('offerten', 2); }
   if(id==='offerten') loadCcOrders('offerten', 2);
   if(id==='lieferscheine') { loadCcOrders('lieferscheine', 6); loadSignedDocs(); }
   if(id==='dateien') { selectFolder(currentFolder); }
@@ -1465,8 +1508,9 @@ function loadCcOrders(listKey, catId){
       var badge = document.getElementById('badge-'+listKey);
       var open = ccLists[listKey].filter(function(o){ return !o.isClosed; });
       if(badge) badge.textContent = open.length;
-      // Home-Widget aktualisieren falls Aufträge geladen wurden
+      // Home-Widget & Kennzahlen aktualisieren falls Aufträge/Offerten geladen wurden
       if(listKey==='auftraege') renderHomeAuftraege();
+      if(listKey==='auftraege' || listKey==='offerten') renderMetrics();
     })
     .catch(function(err){ if(el) el.innerHTML='<p style="color:var(--red);font-size:13px;">Fehler: '+err.message+'</p>'; });
 }
@@ -2347,8 +2391,8 @@ function sortByDate(items){
 }
 
 function renderMetrics(){
-  var auf=state.auftraege.filter(function(a){return a.status!=='erledigt';});
-  var off=state.offerten.filter(function(a){return a.status!=='erledigt';});
+  var auf=(ccLists.auftraege||[]).filter(function(a){return !a.isClosed;});
+  var off=(ccLists.offerten||[]).filter(function(a){return !a.isClosed;});
   var lief=state.lieferungen.filter(function(a){return a.status!=='erledigt';});
   var auf2=state.tasks.filter(function(t){return !t.done;});
   var auf2sorted=auf2.slice().sort(function(a,b){
@@ -2356,9 +2400,13 @@ function renderMetrics(){
     var db=b.due?new Date(b.due):new Date('9999');
     return da-db;
   }).map(function(t){return {title:t.label,termin:t.due};});
+  var aufSorted=auf.slice().sort(function(a,b){ return new Date(b.date||0)-new Date(a.date||0); })
+    .map(function(o){ return {title:(o.nr||'#'+o.id)+' — '+(o.associateName||''), termin:o.date}; });
+  var offSorted=off.slice().sort(function(a,b){ return new Date(b.date||0)-new Date(a.date||0); })
+    .map(function(o){ return {title:(o.nr||'#'+o.id)+' — '+(o.associateName||''), termin:o.date}; });
   document.getElementById('metricCards').innerHTML=
-    metric(auf.length,'Offene Aufträge',sortByDate(auf),'📋','auftraege')
-    +metric(off.length,'Offene Offerten',sortByDate(off),'📄','offerten')
+    metric(auf.length,'Offene Aufträge',aufSorted,'📋','auftraege')
+    +metric(off.length,'Offene Offerten',offSorted,'📄','offerten')
     +metric(lief.length,'Lieferungen',sortByDate(lief),'🚚','lieferungen')
     +metric(auf2.length,'Aufgaben',auf2sorted,'✅','aufgaben');
   renderHomeAufgaben();
