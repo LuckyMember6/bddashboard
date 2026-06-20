@@ -372,6 +372,7 @@ body{
 .quick-actions{display:none;}
 
 @media(max-width:900px){
+  .mobile-hide{display:none!important;}
   .metrics{grid-template-columns:1fr;}
   .two-col{grid-template-columns:1fr;}
   .quick-actions{
@@ -487,10 +488,10 @@ body{
 
 <!-- DASHBOARD -->
 <section id="page-overview" class="page-section active">
-  <div class="metrics" id="metricCards"></div>
+  <div class="metrics mobile-hide" id="metricCards"></div>
 
   <!-- MOBILE SCHNELLAUSWAHL -->
-  <div class="quick-actions">
+  <div class="quick-actions mobile-hide">
     <button class="quick-action" onclick="showPage('lieferscheine')">
       <span class="quick-action-icon">🚛</span><span>Lieferscheine</span>
     </button>
@@ -520,7 +521,7 @@ body{
       </div>
       <div id="homeAufgabenList"></div>
     </div>
-    <div class="card">
+    <div class="card mobile-hide">
       <div class="card-header">
         <div class="card-title">📦 Lagerübersicht</div>
         <button class="card-action" onclick="showPage('lager')">Zum Lager</button>
@@ -530,7 +531,7 @@ body{
   </div>
 
   <!-- OFFENE AUFTRÄGE (volle Breite) -->
-  <div class="card">
+  <div class="card mobile-hide">
     <div class="card-header">
       <div class="card-title">📋 Offene Aufträge</div>
       <button class="card-action" onclick="showPage('auftraege')">Alle anzeigen</button>
@@ -539,7 +540,7 @@ body{
   </div>
 
   <!-- Kunden-Widget -->
-  <div class="card" style="max-width:100%;">
+  <div class="card mobile-hide" style="max-width:100%;">
     <div class="card-header">
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="font-size:22px;">👥</span>
@@ -559,7 +560,7 @@ body{
     <div id="kundenPreview"></div>
   </div>
   <div class="two-col">
-    <div class="card">
+    <div class="card mobile-hide">
       <div class="card-header"><div class="card-title">Fälligkeiten</div></div>
       <div id="dashFaellig"></div>
     </div>
