@@ -369,32 +369,50 @@ body{
 .cc-btn:hover{background:rgba(59,130,246,.3);}
 .cc-btn:disabled{opacity:.5;cursor:not-allowed;}
 
-.quick-actions{display:none;}
-.hero-header{display:none;}
+/* HERO CARD - Begrüssung + Bild */
+.hero-card{
+  display:flex;align-items:center;justify-content:space-between;gap:1.5rem;
+  margin-bottom:1.25rem;
+}
+.hero-card-text{flex:1;min-width:0;}
+.hero-date-row{
+  display:flex;align-items:center;gap:8px;margin-top:6px;
+  font-size:15px;color:var(--muted);font-weight:500;
+}
+.hero-date-icon{font-size:15px;}
+.hero-card-img{
+  width:340px;height:160px;object-fit:cover;border-radius:18px;
+  flex-shrink:0;box-shadow:0 8px 28px rgba(0,0,0,.35);
+  border:1px solid var(--glass-brd);
+}
+
+/* AUFGABENÜBERSICHT DONUT */
+.aufgaben-donut-card{display:flex;flex-direction:column;}
+.donut-wrap{display:flex;align-items:center;gap:1.5rem;padding:.5rem 0;}
+.donut-svg{flex-shrink:0;}
+.donut-center-num{font-size:34px;font-weight:800;fill:#fff;}
+.donut-center-label{font-size:12px;fill:var(--hint);}
+.donut-legend{display:flex;flex-direction:column;gap:10px;flex:1;}
+.donut-legend-item{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--text);}
+.donut-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.donut-dot.red{background:#ef4444;}
+.donut-dot.amber{background:#f59e0b;}
+.donut-dot.green{background:#22c55e;}
+.mobile-only-flex{display:none;}
+
+@media(max-width:900px){
+  .hero-card{flex-direction:column-reverse;align-items:stretch;gap:1rem;}
+  .hero-card-img{width:100%;height:170px;}
+  .hero-card-text .greeting{font-size:30px;}
+  .donut-wrap{flex-direction:column;align-items:flex-start;gap:1rem;}
+  .mobile-only-flex{display:flex!important;flex-direction:column;}
+}
+@media(max-width:480px){
+  .hero-card-img{height:140px;border-radius:16px;}
+}
 
 @media(max-width:900px){
   .mobile-hide{display:none!important;}
-  .hero-header{
-    display:block;position:relative;width:100%;height:200px;
-    overflow:hidden;margin-bottom:1rem;
-  }
-  .hero-img{
-    width:100%;height:100%;object-fit:cover;object-position:center 65%;
-    display:block;
-  }
-  .hero-overlay{
-    position:absolute;inset:0;
-    display:flex;align-items:flex-start;justify-content:flex-start;
-    padding:18px 20px;
-    background:linear-gradient(180deg, rgba(0,0,0,.05) 0%, rgba(0,0,0,0) 35%, rgba(11,20,48,.15) 75%, rgba(11,20,48,.55) 100%);
-  }
-  .hero-greeting{
-    font-size:22px;font-weight:800;color:#0a0a0a;
-    text-shadow:0 1px 2px rgba(255,255,255,.25);
-    letter-spacing:-.01em;
-  }
-  .greeting{display:none;}
-  .header-row{padding:.25rem 0;justify-content:flex-end;}
   .metrics{grid-template-columns:1fr;}
   .two-col{grid-template-columns:1fr;}
   .quick-actions{
@@ -499,21 +517,16 @@ body{
 
 <main class="main">
 
-<!-- MOBILE HERO HEADER -->
-<div class="hero-header mobile-only">
-  <img src="hero-mobile.jpg" alt="" class="hero-img">
-  <div class="hero-overlay">
-    <div class="hero-greeting" id="heroGreeting">Guten Tag!</div>
+<!-- HERO CARD: Begrüssung links, Bild rechts -->
+<div class="hero-card">
+  <div class="hero-card-text">
+    <div class="greeting" id="greetingTitle">Guten Tag!</div>
+    <div class="hero-date-row">
+      <span class="hero-date-icon">📅</span>
+      <span id="dateBadge">–</span>
+    </div>
   </div>
-</div>
-
-<!-- HEADER -->
-<div class="header-row">
-  <div class="greeting" id="greetingTitle">Guten Tag!</div>
-  <div class="header-right">
-    <div class="sync-status" id="syncStatus"></div>
-    <div class="date-badge" id="dateBadge">–</div>
-  </div>
+  <img src="hero-mobile.jpg" alt="" class="hero-card-img">
 </div>
 
 <!-- DASHBOARD -->
@@ -540,6 +553,15 @@ body{
     <button class="quick-action" onclick="showPage('aufgaben')">
       <span class="quick-action-icon">✅</span><span>Aufgaben</span>
     </button>
+  </div>
+
+  <!-- AUFGABENÜBERSICHT DONUT (mobile) -->
+  <div class="card mobile-only-flex aufgaben-donut-card">
+    <div class="card-title">Aufgabenübersicht</div>
+    <div class="donut-wrap">
+      <svg class="donut-svg" id="aufgabenDonut" width="140" height="140" viewBox="0 0 140 140"></svg>
+      <div class="donut-legend" id="aufgabenLegend"></div>
+    </div>
   </div>
 
   <!-- AUFGABEN (links) + LAGERBESTAND (rechts) -->
@@ -2459,6 +2481,54 @@ function renderHomeAufgaben(){
       +'<div class="task-meta">'+(t.due?dueBadge(t.due):'')+'</div></div>'
       +'<div class="task-check" onclick="toggleTask('+idx+')"></div></div>';
   }).join('');
+  renderAufgabenDonut(open);
+}
+
+function renderAufgabenDonut(openTasks){
+  var svg = document.getElementById('aufgabenDonut');
+  var legendEl = document.getElementById('aufgabenLegend');
+  if(!svg || !legendEl) return;
+
+  var today = new Date(); today.setHours(0,0,0,0);
+  var ueberfaellig=0, bald=0, spaeter=0;
+  openTasks.forEach(function(t){
+    if(!t.due){ spaeter++; return; }
+    var d = new Date(t.due); d.setHours(0,0,0,0);
+    var diffDays = Math.round((d-today)/86400000);
+    if(diffDays < 0) ueberfaellig++;
+    else if(diffDays <= 2) bald++;
+    else spaeter++;
+  });
+
+  var total = openTasks.length;
+  var cx=70, cy=70, r=54, sw=16;
+  var circumference = 2*Math.PI*r;
+
+  function seg(value, offset, color){
+    if(value<=0) return '';
+    var frac = value/Math.max(total,1);
+    var dash = frac*circumference;
+    return '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="'+sw+'" '
+      +'stroke-dasharray="'+dash+' '+circumference+'" stroke-dashoffset="'+(-offset)+'" '
+      +'transform="rotate(-90 '+cx+' '+cy+')" stroke-linecap="butt"/>';
+  }
+
+  var off1 = 0;
+  var off2 = (ueberfaellig/Math.max(total,1))*circumference;
+  var off3 = off2 + (bald/Math.max(total,1))*circumference;
+
+  var circles = total>0
+    ? seg(ueberfaellig, off1, '#ef4444') + seg(bald, off2, '#f59e0b') + seg(spaeter, off3, '#22c55e')
+    : '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="'+sw+'"/>';
+
+  svg.innerHTML = circles
+    + '<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" class="donut-center-num">'+total+'</text>'
+    + '<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" class="donut-center-label">offene</text>';
+
+  legendEl.innerHTML =
+    '<div class="donut-legend-item"><span class="donut-dot red"></span>'+ueberfaellig+' Überfällig</div>'
+    +'<div class="donut-legend-item"><span class="donut-dot amber"></span>'+bald+' Fällig in 2 Tagen</div>'
+    +'<div class="donut-legend-item"><span class="donut-dot green"></span>'+spaeter+' Fällig in 3+ Tagen</div>';
 }
 
 function renderHomeAuftraege(){
@@ -2975,7 +3045,6 @@ function applyCurrentUser(){
   var avatarEl = document.getElementById('sidebarAvatar');
   var nameEl = document.getElementById('sidebarUserName');
   var greetEl = document.getElementById('greetingTitle');
-  var heroGreetEl = document.getElementById('heroGreeting');
   var h = new Date().getHours();
   var greetWord = (h<12?'Guten Morgen':h<18?'Guten Tag':'Guten Abend');
   var fullGreet = name ? greetWord+', '+name.split(' ')[0]+'!' : greetWord+'!';
@@ -2987,7 +3056,6 @@ function applyCurrentUser(){
     if(nameEl) nameEl.textContent = 'Wer bist du?';
   }
   if(greetEl) greetEl.textContent = fullGreet;
-  if(heroGreetEl) heroGreetEl.textContent = fullGreet;
 }
 
 function openUserSwitcher(){
