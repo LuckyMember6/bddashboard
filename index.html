@@ -480,6 +480,37 @@ body{
 </head>
 <body>
 
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 15% 0%,rgba(59,130,246,.25),transparent 40%),
+    radial-gradient(circle at 85% 30%,rgba(99,102,241,.18),transparent 45%),
+    linear-gradient(155deg,#0B1430 0%,#16235A 45%,#0E1A45 100%);">
+  <div style="width:100%;max-width:360px;padding:2rem;">
+    <div style="text-align:center;margin-bottom:2rem;">
+      <img src="icon-192.png" alt="Bärtsch + Dobal" style="width:64px;height:64px;border-radius:16px;margin-bottom:1rem;box-shadow:0 8px 24px rgba(0,0,0,.3);">
+      <div style="font-size:24px;font-weight:800;color:#fff;">Bärtsch + Dobal</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px;">Dashboard Login</div>
+    </div>
+    <div style="background:var(--glass);border:1px solid var(--glass-brd);border-radius:18px;padding:1.75rem;backdrop-filter:blur(14px);">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Benutzer</label>
+      <select id="loginUser" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;font-size:15px;outline:none;font-family:var(--font);margin-bottom:14px;box-sizing:border-box;">
+        <option value="">Bitte wählen...</option>
+        <option value="Marcel">Marcel</option>
+        <option value="Miriam">Miriam</option>
+        <option value="Koni">Koni</option>
+      </select>
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Passwort</label>
+      <input id="loginPassword" type="password" placeholder="Passwort eingeben" autocomplete="current-password"
+        style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;font-size:15px;outline:none;font-family:var(--font);box-sizing:border-box;">
+      <div id="loginError" style="display:none;color:#fca5a5;font-size:13px;margin-top:10px;text-align:center;">Falsches Passwort. Bitte erneut versuchen.</div>
+      <button onclick="attemptLogin()" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font);">
+        Anmelden
+      </button>
+      <div style="font-size:11px;color:var(--hint);text-align:center;margin-top:14px;">Wird auf diesem Gerät gespeichert</div>
+    </div>
+  </div>
+</div>
+
 <!-- SIDEBAR (Desktop) -->
 <aside class="sidebar">
   <div class="sidebar-logo">
@@ -499,7 +530,7 @@ body{
     <button class="nav-item" onclick="window.location.href='archiv.html'"><span class="nav-icon">🗃️</span><span>Archiv</span></button>
     <button class="nav-item" onclick="showPage('wixshop')"><span class="nav-icon">🛍️</span><span>Wix Shop</span></button>
   </nav>
-  <div class="sidebar-footer" onclick="openUserSwitcher()" id="sidebarFooter">
+  <div class="sidebar-footer" onclick="if(confirm('Abmelden?')) logoutUser();" id="sidebarFooter">
     <div class="sidebar-avatar" id="sidebarAvatar">?</div>
     <div>
       <div class="sidebar-user-name" id="sidebarUserName">Wer bist du?</div>
@@ -874,26 +905,6 @@ body{
     <div class="modal-actions">
       <button class="btn-sm" onclick="closeOrderModal()">Abbrechen</button>
       <button id="orderSaveBtn" onclick="saveOrder()" style="background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-size:14px;font-weight:700;cursor:pointer;">Erstellen in CashCtrl</button>
-    </div>
-  </div>
-</div>
-
-<!-- USER SWITCHER MODAL -->
-<div class="overlay" id="userSwitcherOverlay" style="display:none;">
-  <div class="modal" onclick="event.stopPropagation()" style="max-width:380px;">
-    <h3>Wer bist du?</h3>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:1.25rem;">Wird auf diesem Gerät gespeichert.</p>
-    <div id="userSwitcherList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:1.25rem;"></div>
-    <div style="border-top:1px solid var(--glass-brd);padding-top:1rem;">
-      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Neue Person hinzufügen</label>
-      <div style="display:flex;gap:8px;">
-        <input id="newUserName" type="text" placeholder="Name eingeben..."
-          style="flex:1;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;font-size:14px;outline:none;font-family:var(--font);">
-        <button onclick="addNewUser()" style="background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer;">+</button>
-      </div>
-    </div>
-    <div class="modal-actions" style="margin-top:1.25rem;">
-      <button class="btn-sm" onclick="closeUserSwitcher()">Schliessen</button>
     </div>
   </div>
 </div>
@@ -3027,22 +3038,20 @@ function openMailModal(idx) {
 }
 
 
-// ─── NUTZER-ERKENNUNG PRO GERÄT ────────────────────────────────
-var BD_USERS_KEY = 'bd_known_users';
-var BD_CURRENT_USER_KEY = 'bd_current_user';
+// ─── LOGIN MIT PASSWORT, PRO GERÄT GESPEICHERT ─────────────────
+var BD_AUTH_KEY = 'bd_auth_user';
+var BD_VALID_USERS = ['Marcel','Miriam','Koni'];
+var BD_PASSWORD = 'bdchur1937';
 
-function getKnownUsers(){
-  try { return JSON.parse(localStorage.getItem(BD_USERS_KEY)||'[]'); } catch { return []; }
-}
-function saveKnownUsers(users){
-  try { localStorage.setItem(BD_USERS_KEY, JSON.stringify(users)); } catch {}
-}
 function getCurrentUser(){
-  try { return localStorage.getItem(BD_CURRENT_USER_KEY) || ''; } catch { return ''; }
+  try { return localStorage.getItem(BD_AUTH_KEY) || ''; } catch { return ''; }
 }
 function setCurrentUser(name){
-  try { localStorage.setItem(BD_CURRENT_USER_KEY, name); } catch {}
-  applyCurrentUser();
+  try { localStorage.setItem(BD_AUTH_KEY, name); } catch {}
+}
+function logoutUser(){
+  try { localStorage.removeItem(BD_AUTH_KEY); } catch {}
+  location.reload();
 }
 
 function initials(name){
@@ -3069,60 +3078,54 @@ function applyCurrentUser(){
   if(greetEl) greetEl.textContent = fullGreet;
 }
 
-function openUserSwitcher(){
-  renderUserSwitcherList();
-  document.getElementById('userSwitcherOverlay').style.display = 'flex';
-}
-function closeUserSwitcher(){
-  document.getElementById('userSwitcherOverlay').style.display = 'none';
+function checkAuth(){
+  var name = getCurrentUser();
+  var loginScreen = document.getElementById('loginScreen');
+  if(name && BD_VALID_USERS.indexOf(name)!==-1){
+    loginScreen.style.display = 'none';
+    return true;
+  }
+  loginScreen.style.display = 'flex';
+  return false;
 }
 
-function renderUserSwitcherList(){
-  var el = document.getElementById('userSwitcherList');
-  var users = getKnownUsers();
-  var current = getCurrentUser();
-  if(!users.length){
-    el.innerHTML = '<p style="color:var(--hint);font-size:13px;">Noch keine Personen hinzugefügt.</p>';
+function attemptLogin(){
+  var user = document.getElementById('loginUser').value;
+  var pw = document.getElementById('loginPassword').value;
+  var errorEl = document.getElementById('loginError');
+  if(!user){
+    errorEl.textContent = 'Bitte einen Benutzer auswählen.';
+    errorEl.style.display = 'block';
     return;
   }
-  el.innerHTML = users.map(function(u){
-    var active = u===current;
-    return '<div onclick="selectUser(\''+u.replace(/'/g,"\\'")+'\')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;border:1px solid '+(active?'rgba(96,165,250,.5)':'var(--glass-brd)')+';background:'+(active?'rgba(59,130,246,.15)':'rgba(255,255,255,.03)')+';">'
-      +'<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">'+initials(u)+'</div>'
-      +'<div style="flex:1;font-size:14px;font-weight:600;">'+u+(active?' ✓':'')+'</div>'
-      +'<button onclick="event.stopPropagation();removeUser(\''+u.replace(/'/g,"\\'")+'\')" style="background:none;border:none;color:var(--hint);cursor:pointer;font-size:14px;">✕</button>'
-    +'</div>';
-  }).join('');
+  if(pw !== BD_PASSWORD){
+    errorEl.textContent = 'Falsches Passwort. Bitte erneut versuchen.';
+    errorEl.style.display = 'block';
+    document.getElementById('loginPassword').value = '';
+    return;
+  }
+  errorEl.style.display = 'none';
+  setCurrentUser(user);
+  applyCurrentUser();
+  document.getElementById('loginScreen').style.display = 'none';
+  // Nach erfolgreichem Login: Daten laden
+  loadState();
+  setTimeout(function(){ loadKunden(); initCcMeta(); }, 300);
 }
 
-function selectUser(name){
-  setCurrentUser(name);
-  closeUserSwitcher();
-}
+// Enter-Taste im Passwortfeld löst Login aus
+document.addEventListener('DOMContentLoaded', function(){
+  var pwField = document.getElementById('loginPassword');
+  if(pwField) pwField.addEventListener('keydown', function(e){ if(e.key==='Enter') attemptLogin(); });
+});
 
-function addNewUser(){
-  var input = document.getElementById('newUserName');
-  var name = input.value.trim();
-  if(!name) return;
-  var users = getKnownUsers();
-  if(users.indexOf(name)===-1){ users.push(name); saveKnownUsers(users); }
-  input.value = '';
-  setCurrentUser(name);
-  renderUserSwitcherList();
-}
-
-function removeUser(name){
-  var users = getKnownUsers().filter(function(u){ return u!==name; });
-  saveKnownUsers(users);
-  if(getCurrentUser()===name){ setCurrentUser(''); }
-  renderUserSwitcherList();
-}
 document.getElementById('dateBadge').textContent=new Date().toLocaleDateString('de-CH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 applyCurrentUser();
-if(!getCurrentUser()){ setTimeout(function(){ openUserSwitcher(); }, 600); }
-loadState();
-// Kunden und CashCtrl Meta beim Start laden
-setTimeout(function(){ loadKunden(); initCcMeta(); }, 500);
+var isAuthed = checkAuth();
+if(isAuthed){
+  loadState();
+  setTimeout(function(){ loadKunden(); initCcMeta(); }, 500);
+}
 document.getElementById('modalOverlay').addEventListener('click',function(e){});
 
 // PWA: Service Worker registrieren (ermöglicht "Zum Homescreen hinzufügen")
