@@ -342,7 +342,12 @@ body{
 .datei-meta{font-size:11px;color:var(--hint);}
 .datei-kunde{font-size:11px;color:rgba(96,165,250,.8);margin-top:1px;}
 
-/* KUNDEN */
+/* ROAD TO BREAKEVEN */
+.rtb-card { min-height: 280px; }
+#rtbChart { width: 100%; }
+#rtbLabels { width: 100%; }
+
+
 .kunden-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
 @media(max-width:1100px){.kunden-grid{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:750px){.kunden-grid{grid-template-columns:repeat(2,1fr);}}
@@ -586,7 +591,7 @@ body{
 <!-- DASHBOARD -->
 <section id="page-overview" class="page-section active">
 
-  <!-- AUFGABENÜBERSICHT DONUT (mobile) -->
+  <!-- AUFGABENÜBERSICHT DONUT (mobile only) -->
   <div class="card mobile-only-flex aufgaben-donut-card">
     <div class="card-title">Aufgabenübersicht</div>
     <div class="donut-wrap">
@@ -595,22 +600,54 @@ body{
     </div>
   </div>
 
-  <!-- AUFGABEN (links) + LAGERBESTAND (rechts) -->
+  <!-- ROAD TO BREAKEVEN + AUFGABEN (desktop: nebeneinander; mobile: untereinander) -->
   <div class="two-col">
+    <!-- ROAD TO BREAKEVEN -->
+    <div class="card rtb-card">
+      <div class="card-header">
+        <div class="card-title">📈 Road to Breakeven</div>
+        <button class="card-action" onclick="openRtbModal()">✏ Bearbeiten</button>
+      </div>
+      <div style="font-size:11px;color:var(--hint);margin-bottom:.75rem;text-align:center;" id="rtbSubtitle">Januar – Dezember</div>
+
+      <!-- Balken-Diagramm -->
+      <div id="rtbChart" style="display:flex;align-items:flex-end;gap:4px;height:120px;padding:0 2px;margin-bottom:.5rem;"></div>
+
+      <!-- X-Achse Monatslabels -->
+      <div id="rtbLabels" style="display:flex;gap:4px;padding:0 2px;margin-bottom:.875rem;"></div>
+
+      <!-- Gesamtstand -->
+      <div style="background:rgba(255,255,255,.05);border:1px solid var(--glass-brd);border-radius:12px;padding:.875rem 1rem;text-align:center;">
+        <div style="font-size:11px;color:var(--hint);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Aktueller Stand</div>
+        <div id="rtbTotal" style="font-size:26px;font-weight:800;color:#fff;letter-spacing:-.01em;">CHF 0</div>
+        <div id="rtbChange" style="font-size:12px;margin-top:3px;"></div>
+      </div>
+    </div>
+
+    <!-- AUFGABEN -->
     <div class="card">
       <div class="card-header">
         <div class="card-title">✅ Offene Aufgaben</div>
         <button class="card-action" onclick="showPage('aufgaben')">Alle anzeigen</button>
       </div>
+      <!-- Donut nur Desktop (mobile hat eigene Karte oben) -->
+      <div class="mobile-hide" style="margin-bottom:.75rem;">
+        <div class="donut-wrap" style="justify-content:center;">
+          <svg class="donut-svg" id="aufgabenDonutDesktop" width="110" height="110" viewBox="0 0 140 140"></svg>
+          <div class="donut-legend" id="aufgabenLegendDesktop"></div>
+        </div>
+      </div>
       <div id="homeAufgabenList"></div>
     </div>
-    <div class="card mobile-hide">
-      <div class="card-header">
-        <div class="card-title">📦 Lagerübersicht</div>
-        <button class="card-action" onclick="showPage('lager')">Zum Lager</button>
-      </div>
-      <div id="lagerCircles" class="lager-circles"></div>
+  </div>
+
+  <!-- LAGER (volle Breite auf desktop, versteckt auf mobile) -->
+  <div class="card mobile-hide">
+    <div class="card-header">
+      <div class="card-title">📦 Lagerübersicht</div>
+      <button class="card-action" onclick="showPage('lager')">Zum Lager</button>
     </div>
+    <div id="lagerCircles" class="lager-circles"></div>
   </div>
 
   <div class="two-col">
@@ -1095,7 +1132,11 @@ var state = {
     {id:'m2',name:'Auftragsbestätigung',an:'',betreff:'Auftragsbestätigung – Bärtsch + Dobal',nachricht:'Guten Tag\n\nWir bestätigen Ihren Auftrag und werden uns zeitnah mit Ihnen in Verbindung setzen bezüglich Liefertermin.\n\nFreundliche Grüsse\nBärtsch + Dobal',anhangHinweis:''},
     {id:'m3',name:'Liefertermin ankündigen',an:'',betreff:'Liefertermin Ihre Bestellung – Bärtsch + Dobal',nachricht:'Guten Tag\n\nWir freuen uns, Ihnen mitzuteilen, dass Ihre Bestellung am [DATUM] zwischen [UHRZEIT] Uhr geliefert wird.\n\nBitte stellen Sie sicher, dass jemand vor Ort ist.\n\nFreundliche Grüsse\nBärtsch + Dobal',anhangHinweis:''}
   ],
-  nextId:100
+  nextId:100,
+  rtb: {
+    startwert: 0,
+    monate: [0,0,0,0,0,0,0,0,0,0,0,0]
+  }
 };
 
 // ─── SUPABASE SYNC ─────────────────────────────────────
@@ -2463,10 +2504,6 @@ function renderHomeAufgaben(){
 }
 
 function renderAufgabenDonut(openTasks){
-  var svg = document.getElementById('aufgabenDonut');
-  var legendEl = document.getElementById('aufgabenLegend');
-  if(!svg || !legendEl) return;
-
   var today = new Date(); today.setHours(0,0,0,0);
   var ueberfaellig=0, bald=0, spaeter=0;
   openTasks.forEach(function(t){
@@ -2499,14 +2536,152 @@ function renderAufgabenDonut(openTasks){
     ? seg(ueberfaellig, off1, '#ef4444') + seg(bald, off2, '#f59e0b') + seg(spaeter, off3, '#22c55e')
     : '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="'+sw+'"/>';
 
-  svg.innerHTML = circles
+  var innerSvg = circles
     + '<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" class="donut-center-num">'+total+'</text>'
     + '<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" class="donut-center-label">offene</text>';
 
-  legendEl.innerHTML =
+  var legendHtml =
     '<div class="donut-legend-item"><span class="donut-dot red"></span>'+ueberfaellig+' Überfällig</div>'
     +'<div class="donut-legend-item"><span class="donut-dot amber"></span>'+bald+' Fällig in 2 Tagen</div>'
     +'<div class="donut-legend-item"><span class="donut-dot green"></span>'+spaeter+' Fällig in 3+ Tagen</div>';
+
+  // Mobile donut
+  var svg = document.getElementById('aufgabenDonut');
+  var legendEl = document.getElementById('aufgabenLegend');
+  if(svg) svg.innerHTML = innerSvg;
+  if(legendEl) legendEl.innerHTML = legendHtml;
+
+  // Desktop donut (in Aufgaben-Karte)
+  var svgD = document.getElementById('aufgabenDonutDesktop');
+  var legendD = document.getElementById('aufgabenLegendDesktop');
+  if(svgD) svgD.innerHTML = innerSvg;
+  if(legendD) legendD.innerHTML = legendHtml;
+}
+
+// ─── ROAD TO BREAKEVEN ─────────────────────────────────────────
+var RTB_MONATE = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+function getRtbData(){
+  if(!state.rtb) state.rtb = { startwert: 0, monate: [0,0,0,0,0,0,0,0,0,0,0,0] };
+  if(!state.rtb.monate || state.rtb.monate.length !== 12)
+    state.rtb.monate = [0,0,0,0,0,0,0,0,0,0,0,0];
+  return state.rtb;
+}
+
+function renderRtb(){
+  var rtb = getRtbData();
+  var monate = rtb.monate;
+  var startwert = rtb.startwert || 0;
+  var currentMonth = new Date().getMonth(); // 0-based
+
+  // Kumulierte Werte berechnen
+  var kumuliert = [];
+  var sum = startwert;
+  for(var i=0; i<12; i++){
+    sum += (monate[i]||0);
+    kumuliert.push(sum);
+  }
+
+  // Max-Wert für Skalierung (nur Monatswerte, nicht kumuliert)
+  var maxVal = Math.max.apply(null, monate.map(function(v){ return Math.abs(v||0); }));
+  if(maxVal === 0) maxVal = 1;
+
+  // Balken rendern
+  var chartEl = document.getElementById('rtbChart');
+  var labelsEl = document.getElementById('rtbLabels');
+  if(!chartEl || !labelsEl) return;
+
+  var barsHtml = '';
+  var labelsHtml = '';
+  var barW = 'calc((100% - '+( 11*4)+'px) / 12)';
+
+  for(var i=0; i<12; i++){
+    var val = monate[i] || 0;
+    var pct = Math.round(Math.abs(val) / maxVal * 100);
+    var isNeg = val < 0;
+    var isCurrent = (i === currentMonth);
+    var isPast = (i < currentMonth);
+    var barColor = isNeg
+      ? 'rgba(239,68,68,.75)'
+      : (isCurrent
+        ? '#22c55e'
+        : (isPast ? 'rgba(34,197,94,.55)' : 'rgba(34,197,94,.28)'));
+    var glowColor = isNeg ? 'rgba(239,68,68,.4)' : 'rgba(34,197,94,.4)';
+    var borderColor = isCurrent ? '#22c55e' : 'transparent';
+
+    barsHtml += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">'
+      +'<div title="'+(val>=0?'+':'')+val.toLocaleString('de-CH')+' CHF" style="'
+        +'width:100%;'
+        +'height:'+pct+'%;'
+        +'min-height:'+(val!==0?'4':'0')+'px;'
+        +'background:'+barColor+';'
+        +'border-radius:4px 4px 0 0;'
+        +'box-shadow:'+(isCurrent?'0 0 10px '+glowColor:'none')+';'
+        +'border:1px solid '+borderColor+';'
+        +'transition:height .4s ease;'
+        +'cursor:default;'
+      +'"></div>'
+    +'</div>';
+
+    labelsHtml += '<div style="flex:1;text-align:center;font-size:9px;color:'
+      +(isCurrent?'#fff':'var(--hint)')+';font-weight:'+(isCurrent?'700':'400')+';padding-top:4px;">'
+      +RTB_MONATE[i]+'</div>';
+  }
+
+  chartEl.innerHTML = barsHtml;
+  labelsEl.innerHTML = labelsHtml;
+
+  // Aktueller Stand = Startwert + alle Monate bis und mit aktuellem Monat
+  var standBisJetzt = startwert;
+  for(var i=0; i<=currentMonth; i++) standBisJetzt += (monate[i]||0);
+  var standTotal = startwert;
+  for(var i=0; i<12; i++) standTotal += (monate[i]||0);
+
+  var totalEl = document.getElementById('rtbTotal');
+  var changeEl = document.getElementById('rtbChange');
+  if(totalEl){
+    var col = standBisJetzt >= 0 ? '#22c55e' : '#ef4444';
+    totalEl.style.color = col;
+    totalEl.textContent = 'CHF ' + standBisJetzt.toLocaleString('de-CH');
+  }
+  if(changeEl){
+    var jahresEnd = standTotal;
+    var diff = jahresEnd - standBisJetzt;
+    var diffText = (diff >= 0 ? '+' : '') + diff.toLocaleString('de-CH');
+    changeEl.innerHTML = '<span style="color:var(--hint);font-size:11px;">Jahresende Prognose: </span>'
+      +'<span style="color:'+(jahresEnd>=0?'#22c55e':'#ef4444')+';font-size:12px;font-weight:700;">CHF '
+      +jahresEnd.toLocaleString('de-CH')+'</span>';
+  }
+}
+
+function openRtbModal(){
+  var rtb = getRtbData();
+  document.getElementById('rtbStartwert').value = rtb.startwert || 0;
+  var grid = document.getElementById('rtbMonthInputs');
+  grid.innerHTML = RTB_MONATE.map(function(m, i){
+    return '<div>'
+      +'<label style="display:block;font-size:10px;color:var(--muted);margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;">'+m+'</label>'
+      +'<input type="number" id="rtbM'+i+'" value="'+(rtb.monate[i]||0)+'" placeholder="0"'
+        +' style="width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">'
+      +'</div>';
+  }).join('');
+  document.getElementById('rtbModalOverlay').style.display = 'flex';
+}
+
+function closeRtbModal(){
+  document.getElementById('rtbModalOverlay').style.display = 'none';
+}
+
+function saveRtbModal(){
+  if(!state.rtb) state.rtb = { startwert: 0, monate: [0,0,0,0,0,0,0,0,0,0,0,0] };
+  state.rtb.startwert = parseFloat(document.getElementById('rtbStartwert').value) || 0;
+  state.rtb.monate = RTB_MONATE.map(function(m, i){
+    var el = document.getElementById('rtbM'+i);
+    return el ? (parseFloat(el.value) || 0) : 0;
+  });
+  saveState();
+  closeRtbModal();
+  renderRtb();
 }
 
 function renderHomeAuftraege(){
@@ -2711,6 +2886,7 @@ function renderList(listId,items,type){
 
 function renderAll(){
   renderMetrics();
+  renderRtb();
   renderLagerCircles();renderDashFaellig();renderDashKuerzlich();renderMailVorlagen();renderPDFListe();
   renderStepsList();renderTasksList();
   renderList('auftraegeList',state.auftraege,'auftrag');
@@ -3108,5 +3284,26 @@ if('serviceWorker' in navigator){
 }
 </script>
 
+<!-- ROAD TO BREAKEVEN MODAL -->
+<div class="overlay" id="rtbModalOverlay" style="display:none;">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:520px;max-height:92vh;overflow-y:auto;">
+    <h3>📈 Road to Breakeven bearbeiten</h3>
+    <div style="margin-bottom:1.25rem;">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Startwert (CHF, z.B. -200000)</label>
+      <input id="rtbStartwert" type="number" placeholder="z.B. -200000"
+        style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;font-size:15px;outline:none;box-sizing:border-box;">
+      <div style="font-size:11px;color:var(--hint);margin-top:5px;">Negativer Wert = Startdefizit. Dieser Wert wird zu den Monatswerten addiert.</div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Monatliche Ergebnisse (CHF)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.5rem;" id="rtbMonthInputs"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeRtbModal()">Abbrechen</button>
+      <button class="btn-save" onclick="saveRtbModal()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+</script>
 </body>
 </html>
