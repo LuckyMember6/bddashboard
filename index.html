@@ -6,11 +6,17 @@
 <title>Bärtsch + Dobal</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1B2F6E">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="B+D Dashboard">
+<!-- Desktop PWA -->
+<meta name="application-name" content="B+D Dashboard">
+<meta name="msapplication-TileColor" content="#1B2F6E">
+<meta name="msapplication-TileImage" content="icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.7/signature_pad.umd.min.js"></script>
 <style>
@@ -537,6 +543,12 @@ body{
       <div class="sidebar-user-role">Antippen zum Ändern</div>
     </div>
   </div>
+  <div id="pwaInstallBanner" style="display:none;padding:10px 12px;border-top:1px solid var(--glass-brd);">
+    <button id="pwaInstallBtn" onclick="pwaInstall()"
+      style="width:100%;background:rgba(59,130,246,.18);border:1px solid rgba(96,165,250,.4);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;color:var(--text);cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:8px;justify-content:center;">
+      <span>📲</span><span>Zum Desktop hinzufügen</span>
+    </button>
+  </div>
 </aside>
 
 <div class="app-shell">
@@ -573,29 +585,6 @@ body{
 
 <!-- DASHBOARD -->
 <section id="page-overview" class="page-section active">
-  <div class="metrics mobile-hide" id="metricCards"></div>
-
-  <!-- MOBILE SCHNELLAUSWAHL -->
-  <div class="quick-actions mobile-hide">
-    <button class="quick-action" onclick="showPage('lieferscheine')">
-      <span class="quick-action-icon">🚛</span><span>Lieferscheine</span>
-    </button>
-    <button class="quick-action" onclick="window.location.href='archiv.html'">
-      <span class="quick-action-icon">🗃️</span><span>Archiv</span>
-    </button>
-    <button class="quick-action" onclick="showPage('kunden')">
-      <span class="quick-action-icon">👥</span><span>Kunden</span>
-    </button>
-    <button class="quick-action" onclick="showPage('lager')">
-      <span class="quick-action-icon">📦</span><span>Lagerbestand</span>
-    </button>
-    <button class="quick-action" onclick="showPage('wixshop')">
-      <span class="quick-action-icon">🛍️</span><span>Wix Produkt</span>
-    </button>
-    <button class="quick-action" onclick="showPage('aufgaben')">
-      <span class="quick-action-icon">✅</span><span>Aufgaben</span>
-    </button>
-  </div>
 
   <!-- AUFGABENÜBERSICHT DONUT (mobile) -->
   <div class="card mobile-only-flex aufgaben-donut-card">
@@ -624,35 +613,6 @@ body{
     </div>
   </div>
 
-  <!-- OFFENE AUFTRÄGE (volle Breite) -->
-  <div class="card mobile-hide">
-    <div class="card-header">
-      <div class="card-title">📋 Offene Aufträge</div>
-      <button class="card-action" onclick="showPage('auftraege')">Alle anzeigen</button>
-    </div>
-    <div id="homeAuftraegeList"></div>
-  </div>
-
-  <!-- Kunden-Widget -->
-  <div class="card mobile-hide" style="max-width:100%;">
-    <div class="card-header">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:22px;">👥</span>
-        <div>
-          <div class="card-title" style="margin:0;">Kunden</div>
-          <div style="font-size:12px;color:var(--hint);"><span id="kundenCount">–</span> Einträge</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button onclick="openPersonModal()" title="Neuer Kunde"
-          style="background:linear-gradient(135deg,#3b82f6,#6366f1);border:none;border-radius:10px;color:#fff;width:34px;height:34px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>
-        <button class="card-action" onclick="showPage('kunden')">Alle anzeigen</button>
-      </div>
-    </div>
-    <input id="kundenSearchHome" type="text" placeholder="🔍 Kunden suchen..." onInput="filterKundenHome(this.value)"
-      style="width:100%;padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-size:13px;outline:none;font-family:var(--font);margin-bottom:10px;box-sizing:border-box;">
-    <div id="kundenPreview"></div>
-  </div>
   <div class="two-col">
     <div class="card mobile-hide">
       <div class="card-header"><div class="card-title">Fälligkeiten</div></div>
@@ -2479,11 +2439,7 @@ function renderMetrics(){
     .map(function(o){ return {title:(o.nr||'#'+o.id)+' — '+(o.associateName||''), termin:o.date}; });
   var offSorted=off.slice().sort(function(a,b){ return new Date(b.date||0)-new Date(a.date||0); })
     .map(function(o){ return {title:(o.nr||'#'+o.id)+' — '+(o.associateName||''), termin:o.date}; });
-  document.getElementById('metricCards').innerHTML=
-    metric(auf.length,'Offene Aufträge',aufSorted,'📋','auftraege')
-    +metric(off.length,'Offene Offerten',offSorted,'📄','offerten')
-    +metric(lief.length,'Lieferungen',sortByDate(lief),'🚚','lieferungen')
-    +metric(auf2.length,'Aufgaben',auf2sorted,'✅','aufgaben');
+  // metricCards wurde von der Startseite entfernt – nur noch Aufgaben/Lager rendern
   renderHomeAufgaben();
   renderHomeAuftraege();
 }
@@ -2554,21 +2510,7 @@ function renderAufgabenDonut(openTasks){
 }
 
 function renderHomeAuftraege(){
-  var el=document.getElementById('homeAuftraegeList'); if(!el) return;
-  var list = (ccLists.auftraege||[]).filter(function(o){ return !o.isClosed; });
-  if(!list.length){
-    el.innerHTML='<p style="color:var(--hint);font-size:13px;padding:0.875rem 0;">Keine offenen Aufträge.</p>';
-    return;
-  }
-  el.innerHTML=list.slice(0,5).map(function(o){
-    var total = o.total != null ? 'CHF '+Number(o.total).toLocaleString('de-CH',{minimumFractionDigits:2}) : '';
-    return '<div class="cc-order">'
-      +'<div class="cc-order-body">'
-        +'<div class="cc-order-title">'+(o.nr||'#'+o.id)+' — '+(o.associateName||'–')+'</div>'
-        +'<div class="cc-order-meta">'+(o.date?o.date.substring(0,10)+' · ':'')+(total?total:'')+'</div>'
-      +'</div>'
-    +'</div>';
-  }).join('');
+  // Offene Aufträge Widget wurde von der Startseite entfernt
 }
 function metric(val,label,items,icon,page){
   var list='';
@@ -3118,6 +3060,34 @@ document.addEventListener('DOMContentLoaded', function(){
   var pwField = document.getElementById('loginPassword');
   if(pwField) pwField.addEventListener('keydown', function(e){ if(e.key==='Enter') attemptLogin(); });
 });
+
+// ─── PWA INSTALL (Desktop) ─────────────────────────────────
+var pwaInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  pwaInstallPrompt = e;
+  var banner = document.getElementById('pwaInstallBanner');
+  if (banner) banner.style.display = 'block';
+});
+
+window.addEventListener('appinstalled', function() {
+  var banner = document.getElementById('pwaInstallBanner');
+  if (banner) banner.style.display = 'none';
+  pwaInstallPrompt = null;
+});
+
+function pwaInstall() {
+  if (!pwaInstallPrompt) return;
+  pwaInstallPrompt.prompt();
+  pwaInstallPrompt.userChoice.then(function(result) {
+    if (result.outcome === 'accepted') {
+      var banner = document.getElementById('pwaInstallBanner');
+      if (banner) banner.style.display = 'none';
+    }
+    pwaInstallPrompt = null;
+  });
+}
 
 document.getElementById('dateBadge').textContent=new Date().toLocaleDateString('de-CH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 applyCurrentUser();
