@@ -1338,8 +1338,44 @@ var nextKundenNr = 14420;
 var ccMeta = { kundenCategoryId: null, kundeRoleId: null, lieferantRoleId: null };
 
 function initCcMeta(){
-  // categoryId=1 ist hardcoded in der Edge Function
   ccMeta.kundenCategoryId = 1;
+  // Status für alle Kategorien laden
+  loadCcStatuses(3);  // Aufträge
+  loadCcStatuses(6);  // Lieferscheine
+  loadCcStatuses(4);  // Rechnungen
+  loadCcStatuses(2);  // Offerten
+}
+
+function loadCcStatuses(catId){
+  fetch(CC_FN+'?action=order-statuses&categoryId='+catId)
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(res.data) ccStatuses[catId] = res.data;
+    })
+    .catch(function(){});
+}
+
+// Status by name suchen (case-insensitive, partial match)
+function findStatusId(catId, namePart){
+  var list = ccStatuses[catId] || [];
+  var lq = namePart.toLowerCase();
+  var hit = list.find(function(s){ return s.name.toLowerCase().includes(lq); });
+  return hit ? hit.id : null;
+}
+
+// Status setzen
+function setCcStatus(orderId, statusId, onSuccess){
+  fetch(CC_FN+'?action=order-update-status', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ orderId: orderId, statusId: statusId })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res){
+    if(res.error) console.warn('Status-Fehler:', res.error);
+    else if(onSuccess) onSuccess();
+  })
+  .catch(function(err){ console.warn('Status-Fehler:', err); });
 }
 
 function loadKunden(){
@@ -1561,6 +1597,7 @@ function savePerson(){
 
 // ─── CASHCTRL ORDERS (Offerten / Aufträge / Lieferscheine) ────
 var ccLists = { auftraege: [], offerten: [], lieferscheine: [], rechnungen: [] };
+var ccStatuses = {}; // { 3: [{id, name, isClosed}, ...], 6: [...], ... }
 var currentOrderType = 'offerte';
 var currentOrderCatId = 2;
 var selectedKundeId = null;
@@ -1604,15 +1641,36 @@ function renderCcList(listKey, q){
   }
   if(!list.length){ el.innerHTML='<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Keine Einträge.</p>'; return; }
 
+  // Kategorie-ID für Status-Lookup
+  var catIdMap = { auftraege:3, offerten:2, lieferscheine:6, rechnungen:4 };
+  var catId = catIdMap[listKey] || 3;
+
   el.innerHTML = list.map(function(o){
     var statusCol = o.isClosed ? '#22c55e' : '#3b82f6';
     var total = o.total != null ? 'CHF '+Number(o.total).toLocaleString('de-CH',{minimumFractionDigits:2}) : '';
+
+    // Status-Dropdown für Aufträge (und alle anderen)
+    var statusList = ccStatuses[catId] || [];
+    var statusDropdown = '';
+    if(statusList.length){
+      statusDropdown = '<select onchange="changeCcStatus('+o.id+',this,\''+listKey+'\')" '
+        +'style="background:rgba(255,255,255,.08);border:1px solid var(--glass-brd);border-radius:7px;'
+        +'color:'+statusCol+';font-size:11px;font-weight:700;padding:3px 6px;cursor:pointer;'
+        +'font-family:var(--font);outline:none;max-width:110px;">';
+      statusList.forEach(function(s){
+        statusDropdown += '<option value="'+s.id+'"'+(s.id===o.statusId?' selected':'')+'>'+s.name+'</option>';
+      });
+      statusDropdown += '</select>';
+    } else {
+      statusDropdown = '<span style="color:'+statusCol+';font-size:12px;">'+o.statusName+'</span>';
+    }
+
     var actions = '';
     if(listKey === 'offerten'){
       actions = '<button class="cc-btn" onclick="ccContinueOrder('+o.id+',3)" title="Zu Auftrag">→ Auftrag</button>';
     } else if(listKey === 'auftraege'){
-      actions = '<button class="cc-btn" onclick="window.location.href=\'archiv.html?ccOrderId='+o.id+'&ccName='+encodeURIComponent(o.associateName||'')+'&ccNr='+encodeURIComponent(o.nr||'')+'\'" style="background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.4);">🗃 Archiv</button>'
-               +'<button class="cc-btn" onclick="ccContinueOrder('+o.id+',6)">→ Lieferschein</button>'
+      actions = '<button class="cc-btn" onclick="archivUndOffen('+o.id+',\''+encodeURIComponent(o.associateName||'')+'\',\''+encodeURIComponent(o.nr||'')+'\')" style="background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.4);">🗃 Archiv</button>'
+               +'<button class="cc-btn" onclick="lieferscheinUndErledigt('+o.id+')">→ Lieferschein</button>'
                +'<button class="cc-btn" onclick="ccContinueOrder('+o.id+',4)">→ Rechnung</button>';
     } else if(listKey === 'lieferscheine'){
       actions = '<button class="cc-btn" onclick="downloadCcPdf('+o.id+', this)">📄 PDF</button>'
@@ -1629,12 +1687,76 @@ function renderCcList(listKey, q){
           +(o.date ? o.date.substring(0,10)+' · ' : '')
           +(o.description ? o.description+' · ' : '')
           +(total ? total+' · ' : '')
-          +'<span style="color:'+statusCol+';">'+o.statusName+'</span>'
+          +statusDropdown
         +'</div>'
       +'</div>'
       +'<div class="cc-order-actions">'+actions+'</div>'
     +'</div>';
   }).join('');
+}
+
+// Archiv-Button: Status → Offen, dann weiterleiten
+function archivUndOffen(orderId, ccName, ccNr){
+  var offenId = findStatusId(3, 'offen');
+  if(offenId){
+    setCcStatus(orderId, offenId, function(){
+      window.location.href = 'archiv.html?ccOrderId='+orderId+'&ccName='+ccName+'&ccNr='+ccNr;
+    });
+  } else {
+    // Status nicht gefunden → direkt weiterleiten
+    window.location.href = 'archiv.html?ccOrderId='+orderId+'&ccName='+ccName+'&ccNr='+ccNr;
+  }
+}
+
+// → Lieferschein: erst Lieferschein erstellen, dann Auftrag auf Erledigt setzen
+function lieferscheinUndErledigt(orderId){
+  if(!confirm('Lieferschein aus diesem Auftrag erstellen?')) return;
+  var btns = document.querySelectorAll('#cc-order-'+orderId+' .cc-btn');
+  btns.forEach(function(b){ b.disabled=true; });
+  fetch(CC_FN+'?action=continue', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ orderId: orderId, target: 'lieferschein' })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res){
+    if(res.error){ alert('Fehler: '+JSON.stringify(res.error)); btns.forEach(function(b){ b.disabled=false; }); return; }
+    // Auftrag auf Erledigt setzen
+    var erledigtId = findStatusId(3, 'erledigt');
+    if(erledigtId){
+      setCcStatus(orderId, erledigtId, function(){
+        loadCcOrders('auftraege',3); loadCcOrders('lieferscheine',6);
+      });
+    } else {
+      loadCcOrders('auftraege',3); loadCcOrders('lieferscheine',6);
+    }
+    alert('Lieferschein erfolgreich erstellt!');
+  })
+  .catch(function(err){ alert('Fehler: '+err.message); btns.forEach(function(b){ b.disabled=false; }); });
+}
+
+function changeCcStatus(orderId, selectEl, listKey){
+  var statusId = parseInt(selectEl.value);
+  var prevColor = selectEl.style.color;
+  selectEl.disabled = true;
+  selectEl.style.opacity = '0.5';
+  setCcStatus(orderId, statusId, function(){
+    selectEl.disabled = false;
+    selectEl.style.opacity = '1';
+    // statusId lokal cachen
+    var catIdMap = { auftraege:3, offerten:2, lieferscheine:6, rechnungen:4 };
+    var catId = catIdMap[listKey]||3;
+    var list = ccLists[listKey]||[];
+    var order = list.find(function(o){ return o.id===orderId; });
+    if(order){
+      order.statusId = statusId;
+      var st = (ccStatuses[catId]||[]).find(function(s){ return s.id===statusId; });
+      if(st){
+        order.statusName = st.name;
+        order.isClosed = st.isClosed;
+        selectEl.style.color = st.isClosed ? '#22c55e' : '#3b82f6';
+      }
+    }
+  });
 }
 
 function copyOrderTo(orderId, targetCatId, btn){
