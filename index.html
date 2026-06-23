@@ -30,13 +30,14 @@
   --text:#F5F7FF; --muted:#A9B4D6; --hint:#7886B8;
   --radius:18px; --radius-sm:10px;
   --font:'Segoe UI',-apple-system,'Helvetica Neue',Arial,sans-serif;
-  /* Compatibility aliases for existing JS render functions */
   --border: var(--glass-brd);
   --surface: rgba(255,255,255,.05);
   --ok: #22C55E;
   --danger: #EF4444;
   --warn: #F59E0B;
 }
+
+
 *{box-sizing:border-box;margin:0;padding:0;}
 body{
   font-family:var(--font);color:var(--text);min-height:100vh;
@@ -1610,7 +1611,8 @@ function renderCcList(listKey, q){
     if(listKey === 'offerten'){
       actions = '<button class="cc-btn" onclick="ccContinueOrder('+o.id+',3)" title="Zu Auftrag">→ Auftrag</button>';
     } else if(listKey === 'auftraege'){
-      actions = '<button class="cc-btn" onclick="ccContinueOrder('+o.id+',6)">→ Lieferschein</button>'
+      actions = '<button class="cc-btn" onclick="archiviereCcPdf('+o.id+',\''+( o.associateName||'').replace(/'/g,'')+'\', this)" style="background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.4);">🗃 Archiv</button>'
+               +'<button class="cc-btn" onclick="ccContinueOrder('+o.id+',6)">→ Lieferschein</button>'
                +'<button class="cc-btn" onclick="ccContinueOrder('+o.id+',4)">→ Rechnung</button>';
     } else if(listKey === 'lieferscheine'){
       actions = '<button class="cc-btn" onclick="downloadCcPdf('+o.id+', this)">📄 PDF</button>'
@@ -1690,6 +1692,132 @@ function downloadCcPdf(orderId, btn){
       alert('PDF-Fehler: '+err.message);
       if(btn){ btn.disabled=false; btn.textContent='📄 PDF'; }
     });
+}
+
+// ─── ARCHIVIEREN via Claude Vision ─────────────────────────────
+var SMART_API = 'https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/smart-api';
+var ARCHIV_BUCKET = 'Dashboard BD';
+
+function archiviereCcPdf(orderId, kundenName, btn) {
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Laden…'; }
+
+  // 1. PDF von CashCtrl holen
+  fetch(CC_FN+'?action=order-pdf&id='+orderId)
+    .then(function(r){ return r.blob(); })
+    .then(function(blob){
+      // 2. Als Base64 konvertieren
+      var reader = new FileReader();
+      reader.onloadend = function(){
+        var b64 = reader.result.split(',')[1];
+        // 3. Claude Vision analysieren
+        if(btn) btn.textContent='🧠 Claude…';
+        analysiereUndArchiviere(b64, 'application/pdf', orderId, kundenName, blob, btn);
+      };
+      reader.readAsDataURL(blob);
+    })
+    .catch(function(err){
+      alert('PDF-Fehler: '+err.message);
+      if(btn){ btn.disabled=false; btn.textContent='🗃 Archiv'; }
+    });
+}
+
+function analysiereUndArchiviere(b64, mime, orderId, kundenName, pdfBlob, btn) {
+  var kundenListe = (allKunden||[]).slice(0,80).map(function(k){
+    return k.nr+':'+(k.company||(k.firstName+' '+k.lastName).trim());
+  }).join(', ');
+
+  fetch(SMART_API, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
+    body: JSON.stringify({
+      model:'claude-sonnet-4-6',
+      max_tokens:600,
+      messages:[{
+        role:'user',
+        content:[
+          {type:'image', source:{type:'base64', media_type:mime, data:b64}},
+          {type:'text', text:'Analysiere dieses Dokument für Bärtsch+Dobal AG (Schweizer Büromöbel-Händler).\n\nKundenliste (Nr:Name): '+kundenListe+'\nBekannter Kundenname aus System: "'+kundenName+'"\n\nOrdner-Regeln:\n- Lieferschein → lieferscheine\n- Rechnung AN Kunden → rechnungen-debi\n- Rechnung VON Lieferant → rechnungen-kredi\n- Offerte/Angebot → angebote\n- Auftragsbestätigung an Kunden → auftragsbestaetigung\n- Bestellung an Lieferant → ab-lieferanten\n\nDateiname-Regel: Beginne mit Kundennummer aus der Liste falls erkennbar (z.B. "10437_AB2606151.pdf"). Kein Datum im Namen.\n\nAntworte NUR mit JSON:\n{"ordner":"auftragsbestaetigung|angebote|lieferscheine|rechnungen-debi|rechnungen-kredi|ab-lieferanten","ordner_grund":"kurze Begründung","dateiname":"KUNDENNR_name.pdf","kunde_nr":"Kundennummer oder leer","betrag":0,"referenz":"Dokumentnummer","beschreibung":"kurze Zusammenfassung"}'}
+        ]
+      }]
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res){
+    var text = (res.content||[]).map(function(c){ return c.text||''; }).join('');
+    var data;
+    try{ data = JSON.parse(text.replace(/```json|```/g,'').trim()); }
+    catch(e){ data = null; }
+
+    if(!data){ alert('Claude konnte das Dokument nicht analysieren.'); if(btn){ btn.disabled=false; btn.textContent='🗃 Archiv'; } return; }
+
+    // Kundennummer prefix sicherstellen
+    var dateiname = data.dateiname || ('auftrag-'+orderId+'.pdf');
+    if(data.kunde_nr && !dateiname.startsWith(data.kunde_nr)){
+      dateiname = data.kunde_nr+'_'+dateiname;
+    }
+
+    // Pfad: ordner/jahr/monat/dateiname
+    var heute = new Date();
+    var jahr = String(heute.getFullYear());
+    var monat = String(heute.getMonth()+1).padStart(2,'0');
+    var ordner = data.ordner || 'auftragsbestaetigung';
+    var path = ordner+'/'+jahr+'/'+monat+'/'+dateiname;
+
+    // 4. In Supabase Storage hochladen
+    if(btn) btn.textContent='📤 Upload…';
+    var storageUrl = SUPA_URL+'/storage/v1/object/'+encodeURIComponent(ARCHIV_BUCKET)+'/'+path;
+    fetch(storageUrl, {
+      method:'POST',
+      headers:{
+        'Authorization':'Bearer '+SUPA_KEY,
+        'apikey':SUPA_KEY,
+        'Content-Type':'application/pdf',
+        'x-upsert':'true'
+      },
+      body: pdfBlob
+    })
+    .then(function(r){
+      if(!r.ok) throw new Error('Storage-Fehler '+r.status);
+      // 5. Bestätigung anzeigen
+      var ORDNER_LABELS = {
+        'angebote':'Angebote','auftragsbestaetigung':'Auftragsbestätigung',
+        'lieferscheine':'Lieferscheine','rechnungen-debi':'Rechnungen Debi',
+        'rechnungen-kredi':'Rechnungen Kredi','ab-lieferanten':'AB Lieferanten'
+      };
+      var label = ORDNER_LABELS[ordner]||ordner;
+      if(btn){ btn.disabled=false; btn.textContent='✅ Archiviert'; btn.style.background='rgba(34,197,94,.3)'; }
+      setTimeout(function(){ if(btn){ btn.textContent='🗃 Archiv'; btn.style.background=''; } }, 3000);
+      // Toast-Meldung
+      showArchivToast('✅ «'+dateiname+'» → '+label+' ('+data.beschreibung+')');
+    })
+    .catch(function(err){
+      alert('Upload-Fehler: '+err.message);
+      if(btn){ btn.disabled=false; btn.textContent='🗃 Archiv'; }
+    });
+  })
+  .catch(function(err){
+    alert('Claude-Fehler: '+err.message);
+    if(btn){ btn.disabled=false; btn.textContent='🗃 Archiv'; }
+  });
+}
+
+function showArchivToast(msg){
+  var t = document.getElementById('archivToast');
+  if(!t){
+    t = document.createElement('div');
+    t.id = 'archivToast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);'
+      +'background:rgba(15,25,60,.97);border:1px solid rgba(34,197,94,.4);color:#fff;'
+      +'padding:12px 22px;border-radius:14px;font-size:13px;z-index:9999;'
+      +'box-shadow:0 8px 32px rgba(0,0,0,.4);max-width:90vw;text-align:center;'
+      +'backdrop-filter:blur(12px);transition:opacity .3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  t.style.display = 'block';
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(function(){ t.style.opacity='0'; setTimeout(function(){ t.style.display='none'; },300); }, 5000);
 }
 
 // ─── DATEIEN (Supabase Storage) ────────────────────────────────
