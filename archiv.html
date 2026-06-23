@@ -1588,6 +1588,51 @@ document.getElementById('fMonat').value = String(heute.getMonth()+1).padStart(2,
 loadKunden();
 loadMonatsUebersicht();
 
+// ── AUTOLOAD via URL-Parameter (z.B. von Dashboard ?ccOrderId=123)
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  var orderId = params.get('ccOrderId');
+  if(!orderId) return;
+
+  var ccName = params.get('ccName') || '';
+  var ccNr   = params.get('ccNr')   || '';
+
+  // Upload-Tab öffnen und Hinweis zeigen
+  switchTab('upload');
+  var hinweis = document.createElement('div');
+  hinweis.style.cssText = 'background:rgba(59,130,246,.15);border:1px solid rgba(96,165,250,.4);'
+    +'border-radius:12px;padding:12px 16px;font-size:13px;margin-bottom:1rem;color:var(--text);';
+  hinweis.innerHTML = '⏳ Lade Auftrag <strong>'+(ccNr||orderId)+'</strong>'
+    +(ccName?' – '+ccName:'')+' von CashCtrl…';
+  var dropzone = document.querySelector('.dropzone');
+  if(dropzone) dropzone.parentNode.insertBefore(hinweis, dropzone);
+
+  // PDF von CashCtrl holen
+  fetch(CC_FN+'?action=order-pdf&id='+orderId)
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.blob();
+    })
+    .then(function(blob){
+      // Als File-Objekt behandeln — gleicher Flow wie manueller Upload
+      var dateiname = (ccNr||'Auftrag-'+orderId)+'.pdf';
+      var file = new File([blob], dateiname, {type:'application/pdf'});
+      hinweis.innerHTML = '✅ Auftrag <strong>'+(ccNr||orderId)+'</strong>'
+        +(ccName?' – '+ccName:'')+' geladen — Claude analysiert…';
+      hinweis.style.background = 'rgba(34,197,94,.12)';
+      hinweis.style.borderColor = 'rgba(34,197,94,.35)';
+      // Vorausfüllen mit Kundenname falls vorhanden
+      if(ccName) document.getElementById('fKundeSearch').value = ccName;
+      // Gleicher Analyse-Flow wie bei manuellem Upload
+      analyseFile(file);
+    })
+    .catch(function(err){
+      hinweis.innerHTML = '❌ Fehler beim Laden: '+err.message;
+      hinweis.style.background = 'rgba(239,68,68,.12)';
+      hinweis.style.borderColor = 'rgba(239,68,68,.35)';
+    });
+})();
+
 </script>
 </body>
 </html>
