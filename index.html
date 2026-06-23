@@ -1214,12 +1214,12 @@ function showPage(id){
     if(el.getAttribute('onclick')&&el.getAttribute('onclick').indexOf("'"+id+"'")!==-1)el.classList.add('active');
   });
   renderAll();
-  if(id==='auftraege') loadCcOrders('auftraege', 3);
-  if(id==='overview') { loadCcOrders('auftraege', 3); loadCcOrders('offerten', 2); }
-  if(id==='offerten') loadCcOrders('offerten', 2);
-  if(id==='lieferscheine') { loadCcOrders('lieferscheine', 6); loadSignedDocs(); }
+  if(id==='auftraege') { if(Object.keys(ccStatuses).length) loadCcOrders('auftraege', 3); }
+  if(id==='overview') { if(Object.keys(ccStatuses).length){ loadCcOrders('auftraege', 3); loadCcOrders('offerten', 2); } }
+  if(id==='offerten') { if(Object.keys(ccStatuses).length) loadCcOrders('offerten', 2); }
+  if(id==='lieferscheine') { if(Object.keys(ccStatuses).length) loadCcOrders('lieferscheine', 6); loadSignedDocs(); }
   if(id==='dateien') { selectFolder(currentFolder); }
-  if(id==='rechnungen') loadCcOrders('rechnungen', 4);
+  if(id==='rechnungen') { if(Object.keys(ccStatuses).length) loadCcOrders('rechnungen', 4); }
   if(id==='kunden') loadKunden();
 }
 
@@ -1346,11 +1346,48 @@ function initCcMeta(){
   loadCcStatuses(2);  // Offerten
 }
 
+function initCcMeta(){
+  ccMeta.kundenCategoryId = 1;
+  // Status für alle Kategorien laden — ZUERST, dann Orders
+  var catIds = [3, 2, 6, 4];
+  var loaded = 0;
+  catIds.forEach(function(catId){
+    fetch(CC_FN+'?action=order-statuses&categoryId='+catId)
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res.data) ccStatuses[catId] = res.data;
+        loaded++;
+        // Erst wenn alle Status geladen: Orders holen
+        if(loaded === catIds.length){
+          loadCcOrders('auftraege', 3);
+          loadCcOrders('offerten', 2);
+          loadCcOrders('lieferscheine', 6);
+          loadCcOrders('rechnungen', 4);
+        }
+      })
+      .catch(function(){
+        loaded++;
+        if(loaded === catIds.length){
+          loadCcOrders('auftraege', 3);
+          loadCcOrders('offerten', 2);
+          loadCcOrders('lieferscheine', 6);
+          loadCcOrders('rechnungen', 4);
+        }
+      });
+  });
+}
+
 function loadCcStatuses(catId){
+  // Einzelner Reload (z.B. nach manueller Änderung)
+  var listKeyMap = { 3:'auftraege', 2:'offerten', 6:'lieferscheine', 4:'rechnungen' };
   fetch(CC_FN+'?action=order-statuses&categoryId='+catId)
     .then(function(r){ return r.json(); })
     .then(function(res){
-      if(res.data) ccStatuses[catId] = res.data;
+      if(res.data){
+        ccStatuses[catId] = res.data;
+        var lk = listKeyMap[catId];
+        if(lk && ccLists[lk] && ccLists[lk].length) renderCcList(lk);
+      }
     })
     .catch(function(){});
 }
@@ -1605,6 +1642,7 @@ var orderPositionen = [];
 
 var CC_CAT = { offerte: 2, auftrag: 3, lieferschein: 6, rechnung: 4 };
 var CC_CAT_NAME = { 2: 'Offerte', 3: 'Auftrag', 6: 'Lieferschein', 4: 'Rechnung' };
+var CC_CAT_PLURAL = { 2: 'Offerten', 3: 'Aufträge', 6: 'Lieferscheine', 4: 'Rechnungen' };
 
 function loadCcOrders(listKey, catId){
   var el = document.getElementById(listKey+'List');
@@ -1615,7 +1653,7 @@ function loadCcOrders(listKey, catId){
       if(res.error){ if(el) el.innerHTML='<p style="color:var(--red);font-size:13px;">Fehler: '+JSON.stringify(res.error)+'</p>'; return; }
       ccLists[listKey] = res.data || [];
       var sub = document.getElementById(listKey+'-sub');
-      if(sub) sub.textContent = ccLists[listKey].length + ' ' + CC_CAT_NAME[catId] + (ccLists[listKey].length!==1?'en':'');
+      if(sub) sub.textContent = ccLists[listKey].length + ' ' + (ccLists[listKey].length===1 ? CC_CAT_NAME[catId] : CC_CAT_PLURAL[catId]);
       if(el) renderCcList(listKey);
       // Badge updaten (falls vorhanden)
       var badge = document.getElementById('badge-'+listKey);
