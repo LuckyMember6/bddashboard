@@ -2948,39 +2948,6 @@ function renderDashOffeneLieferscheine(){
     +'</div>';
   }).join('');
 }
-  var items=[];
-  var now=new Date();
-  function addItems(arr,type){
-    arr.filter(function(x){return x.status!=='erledigt'&&x.termin;}).forEach(function(x){
-      items.push({title:x.title||x.label,termin:x.termin,type:type,diff:diffDays(parseDate(x.termin))});
-    });
-  }
-  function addTasks(arr,type){
-    arr.filter(function(x){return !x.done&&x.due;}).forEach(function(x){
-      items.push({title:x.title||x.label,termin:x.due,type:type,diff:diffDays(parseDate(x.due))});
-    });
-  }
-  addItems(state.auftraege,'Auftrag');
-  addItems(state.offerten,'Offerte');
-  addItems(state.lieferungen,'Lieferung');
-  addTasks(state.tasks,'Aufgabe');
-  items.sort(function(a,b){return a.diff-b.diff;});
-  if(!items.length){el.innerHTML='<p style="color:var(--hint);font-size:13px;">Keine Fälligkeiten.</p>';return;}
-  var pages={Auftrag:'auftraege',Offerte:'offerten',Lieferung:'lieferungen',Aufgabe:'overview'};
-  el.innerHTML=items.slice(0,8).map(function(x){
-    var col=x.diff<0?'#EF4444':x.diff<=3?'#F59E0B':'#7886B8';
-    var sub=x.diff<0?'Überfällig ('+Math.abs(x.diff)+'d)':x.diff===0?'Heute':x.diff===1?'Morgen':'In '+x.diff+'d';
-    var pg=pages[x.type]||'auftraege';
-    return '<div class="fael-item" onclick="showPage(\''+pg+'\')">'
-      +'<div class="fael-bar" style="background:'+col+';color:'+col+';"></div>'
-      +'<div class="fael-body">'
-        +'<div class="fael-name">'+x.title+'</div>'
-        +'<div class="fael-sub" style="color:'+col+';">'+x.type+' · '+sub+'</div>'
-      +'</div>'
-      +'<div class="fael-date">'+fmtDate(x.termin)+'</div>'
-      +'</div>';
-  }).join('');
-
 function renderDashSteps(){
   var firstOpen=state.steps.findIndex(function(x){return !x.done;});
   var html='';
