@@ -1339,15 +1339,6 @@ var ccMeta = { kundenCategoryId: null, kundeRoleId: null, lieferantRoleId: null 
 
 function initCcMeta(){
   ccMeta.kundenCategoryId = 1;
-  // Status für alle Kategorien laden
-  loadCcStatuses(3);  // Aufträge
-  loadCcStatuses(6);  // Lieferscheine
-  loadCcStatuses(4);  // Rechnungen
-  loadCcStatuses(2);  // Offerten
-}
-
-function initCcMeta(){
-  ccMeta.kundenCategoryId = 1;
   // Status für alle Kategorien laden — ZUERST, dann Orders
   var catIds = [3, 2, 6, 4];
   var loaded = 0;
