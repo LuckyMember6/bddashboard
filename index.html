@@ -651,13 +651,19 @@ body{
   </div>
 
   <div class="two-col">
-    <div class="card mobile-hide">
-      <div class="card-header"><div class="card-title">Fälligkeiten</div></div>
-      <div id="dashFaellig"></div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📋 Offene Aufträge</div>
+        <button class="card-action" onclick="showPage('auftraege')">Alle anzeigen</button>
+      </div>
+      <div id="dashOffeneAuftraege"></div>
     </div>
     <div class="card">
-      <div class="card-header"><div class="card-title">Kürzlich hinzugefügt</div></div>
-      <div id="dashKuerzlich"></div>
+      <div class="card-header">
+        <div class="card-title">🚛 Offene Lieferscheine</div>
+        <button class="card-action" onclick="showPage('lieferscheine')">Alle anzeigen</button>
+      </div>
+      <div id="dashOffeneLieferscheine"></div>
     </div>
   </div>
 </section>
@@ -1354,6 +1360,7 @@ function initCcMeta(){
           loadCcOrders('offerten', 2);
           loadCcOrders('lieferscheine', 6);
           loadCcOrders('rechnungen', 4);
+          setTimeout(function(){ renderDashOffeneAuftraege(); renderDashOffeneLieferscheine(); }, 1500);
         }
       })
       .catch(function(){
@@ -1363,6 +1370,7 @@ function initCcMeta(){
           loadCcOrders('offerten', 2);
           loadCcOrders('lieferscheine', 6);
           loadCcOrders('rechnungen', 4);
+          setTimeout(function(){ renderDashOffeneAuftraege(); renderDashOffeneLieferscheine(); }, 1500);
         }
       });
   });
@@ -2893,8 +2901,53 @@ function renderLagerCircles() {
   }).join('');
 }
 
-function renderDashFaellig(){
-  var el=document.getElementById('dashFaellig');if(!el)return;
+function renderDashOffeneAuftraege(){
+  var el = document.getElementById('dashOffeneAuftraege'); if(!el) return;
+  var list = (ccLists.auftraege||[]).filter(function(o){
+    var n = (o.statusName||'').toLowerCase();
+    return n.includes('offen') || n.includes('entwurf');
+  });
+  if(!list.length){
+    el.innerHTML='<p style="color:var(--hint);font-size:13px;padding:.5rem 0;">Keine offenen Aufträge.</p>';
+    return;
+  }
+  el.innerHTML = list.slice(0,6).map(function(o){
+    var total = o.total!=null ? 'CHF '+Number(o.total).toLocaleString('de-CH',{minimumFractionDigits:2}) : '';
+    var statusCol = (o.statusName||'').toLowerCase().includes('entwurf') ? 'var(--hint)' : '#3b82f6';
+    return '<div class="cc-order" onclick="showPage(\'auftraege\')" style="cursor:pointer;">'
+      +'<div class="cc-order-body">'
+        +'<div class="cc-order-title">'+(o.nr||'#'+o.id)+' — '+(o.associateName||'–')+'</div>'
+        +'<div class="cc-order-meta">'
+          +(o.date?o.date.substring(0,10)+' · ':'')
+          +(total?total+' · ':'')
+          +'<span style="color:'+statusCol+';">'+o.statusName+'</span>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function renderDashOffeneLieferscheine(){
+  var el = document.getElementById('dashOffeneLieferscheine'); if(!el) return;
+  var list = (ccLists.lieferscheine||[]).filter(function(o){ return !o.isClosed; });
+  if(!list.length){
+    el.innerHTML='<p style="color:var(--hint);font-size:13px;padding:.5rem 0;">Keine offenen Lieferscheine.</p>';
+    return;
+  }
+  el.innerHTML = list.slice(0,6).map(function(o){
+    var total = o.total!=null ? 'CHF '+Number(o.total).toLocaleString('de-CH',{minimumFractionDigits:2}) : '';
+    return '<div class="cc-order" onclick="showPage(\'lieferscheine\')" style="cursor:pointer;">'
+      +'<div class="cc-order-body">'
+        +'<div class="cc-order-title">'+(o.nr||'#'+o.id)+' — '+(o.associateName||'–')+'</div>'
+        +'<div class="cc-order-meta">'
+          +(o.date?o.date.substring(0,10)+' · ':'')
+          +(total?total+' · ':'')
+          +'<span style="color:#3b82f6;">'+o.statusName+'</span>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
   var items=[];
   var now=new Date();
   function addItems(arr,type){
@@ -2927,36 +2980,6 @@ function renderDashFaellig(){
       +'<div class="fael-date">'+fmtDate(x.termin)+'</div>'
       +'</div>';
   }).join('');
-}
-
-function renderDashKuerzlich(){
-  var el=document.getElementById('dashKuerzlich');if(!el)return;
-  var items=[];
-  function addItems(arr,type){
-    arr.forEach(function(x){
-      items.push({title:x.title||x.label,type:type,createdAt:x.createdAt||''});
-    });
-  }
-  addItems(state.auftraege,'Auftrag');
-  addItems(state.offerten,'Offerte');
-  addItems(state.lieferungen,'Lieferung');
-  addItems(state.tasks||[],'Aufgabe');
-  items.sort(function(a,b){
-    if(!a.createdAt&&!b.createdAt)return 0;
-    if(!a.createdAt)return 1;
-    if(!b.createdAt)return -1;
-    return new Date(b.createdAt)-new Date(a.createdAt);
-  });
-  if(!items.length){el.innerHTML='<p style="color:var(--hint);font-size:13px;">Noch nichts erfasst.</p>';return;}
-  el.innerHTML=items.slice(0,6).map(function(x){
-    return '<div class="recent-item">'
-      +'<div style="flex:1;min-width:0;">'
-        +'<div class="recent-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+x.title+'</div>'
-        +'<div class="recent-type">'+x.type+'</div>'
-      +'</div>'
-      +'</div>';
-  }).join('');
-}
 
 function renderDashSteps(){
   var firstOpen=state.steps.findIndex(function(x){return !x.done;});
@@ -3038,7 +3061,7 @@ function renderList(listId,items,type){
 function renderAll(){
   renderMetrics();
   renderRtb();
-  renderLagerCircles();renderDashFaellig();renderDashKuerzlich();renderMailVorlagen();renderPDFListe();
+  renderLagerCircles();renderDashOffeneAuftraege();renderDashOffeneLieferscheine();renderMailVorlagen();renderPDFListe();
   renderStepsList();renderTasksList();
   renderList('auftraegeList',state.auftraege,'auftrag');
   renderList('offertenList',state.offerten,'offerte');
