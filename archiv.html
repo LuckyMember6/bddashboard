@@ -11,6 +11,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -552,6 +553,13 @@ var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 var CC_FN='https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/cashctrl';
 var BUCKET='Dashboard BD';
 var SUPA_ST=SUPA_URL+'/storage/v1';
+// Login-Session (geteilt mit dem Dashboard, gleiche Domain)
+var sbClient = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+var _sbSession = null;
+function currentAccessToken(){
+  return (_sbSession && _sbSession.access_token) ? _sbSession.access_token : SUPA_KEY;
+}
+sbClient.auth.onAuthStateChange(function(_e, session){ _sbSession = session; });
 var totalBytesUsed = 0; // Echte Speichernutzung in Bytes (gesammelt beim Laden)
 
 var allKunden=[];
@@ -559,7 +567,7 @@ var allDateien=[];
 var currentFile=null;
 var currentEditFile=null;
 
-function sh(){ return {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}; }
+function sh(){ return {'Authorization':'Bearer '+currentAccessToken(),'apikey':SUPA_KEY}; }
 function bp(path){ return SUPA_ST+'/object/'+encodeURIComponent(BUCKET)+'/'+path; }
 
 // ── TABS
@@ -575,7 +583,7 @@ function switchTab(t){
 
 // ── KUNDEN
 function loadKunden(callback){
-  fetch(CC_FN+'?action=persons')
+  fetch(CC_FN+'?action=persons',{headers:sh()})
     .then(function(r){ return r.json(); })
     .then(function(res){
       allKunden=(res.data||[]).sort(function(a,b){ return (a.name||'').localeCompare(b.name||'','de'); });
@@ -713,7 +721,7 @@ function claudeAnalyse(base64, mime, fileName){
   var kundenListe = buildKundenListe();
   fetch('https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/smart-api',{
     method:'POST',
-    headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zeHJnZ2luamt6b252eXluZHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMDExMjksImV4cCI6MjA5Njc3NzEyOX0.X-Ftee85CqLG0jvYVaUA1oYPr-v5svmguZuUNJAHnWo'},
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+currentAccessToken()},
     body:JSON.stringify({
       model:'claude-sonnet-4-6',
       max_tokens:800,
@@ -745,7 +753,7 @@ function claudeAnalyseText(fileName){
   var kundenListe = buildKundenListe();
   fetch('https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/smart-api',{
     method:'POST',
-    headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zeHJnZ2luamt6b252eXluZHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMDExMjksImV4cCI6MjA5Njc3NzEyOX0.X-Ftee85CqLG0jvYVaUA1oYPr-v5svmguZuUNJAHnWo'},
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+currentAccessToken()},
     body:JSON.stringify({
       model:'claude-sonnet-4-6',
       max_tokens:400,
@@ -1581,15 +1589,31 @@ function ladeStatistiken(monateData){
   }
 }
 
-// ── INIT ──────────────────────────────────────────────────────
-var heute = new Date();
-document.getElementById('fJahr').value = String(heute.getFullYear());
-document.getElementById('fMonat').value = String(heute.getMonth()+1).padStart(2,'0');
-loadKunden();
-loadMonatsUebersicht();
+// ── INIT (nur nach gültigem Login) ────────────────────────────
+async function archivBoot(){
+  try {
+    var sres = await sbClient.auth.getSession();
+    if(!sres || !sres.data || !sres.data.session){
+      // Nicht eingeloggt → zum Dashboard-Login zurück
+      location.href = 'index.html';
+      return;
+    }
+    _sbSession = sres.data.session;
+  } catch(e){
+    location.href = 'index.html';
+    return;
+  }
+
+  var heute = new Date();
+  document.getElementById('fJahr').value = String(heute.getFullYear());
+  document.getElementById('fMonat').value = String(heute.getMonth()+1).padStart(2,'0');
+  loadKunden();
+  loadMonatsUebersicht();
+  archivAutoload();
+}
 
 // ── AUTOLOAD via URL-Parameter (z.B. von Dashboard ?ccOrderId=123)
-(function(){
+function archivAutoload(){
   var params = new URLSearchParams(window.location.search);
   var orderId = params.get('ccOrderId');
   if(!orderId) return;
@@ -1608,7 +1632,7 @@ loadMonatsUebersicht();
   if(dropzone) dropzone.parentNode.insertBefore(hinweis, dropzone);
 
   // PDF von CashCtrl holen
-  fetch(CC_FN+'?action=order-pdf&id='+orderId)
+  fetch(CC_FN+'?action=order-pdf&id='+orderId,{headers:sh()})
     .then(function(r){
       if(!r.ok) throw new Error('HTTP '+r.status);
       return r.blob();
@@ -1631,7 +1655,10 @@ loadMonatsUebersicht();
       hinweis.style.background = 'rgba(239,68,68,.12)';
       hinweis.style.borderColor = 'rgba(239,68,68,.35)';
     });
-})();
+}
+
+// Start: erst Session prüfen, dann laden
+archivBoot();
 
 </script>
 </body>
