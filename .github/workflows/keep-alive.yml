@@ -1,0 +1,20 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Jeden 2. Tag um 9 Uhr UTC (passe die Zeit an)
+    - cron: '0 9 */2 * *'
+  workflow_dispatch:  # Manuell triggerbar
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Keep-Alive
+        run: |
+          curl -X GET \
+            "https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/keep-alive" \
+            -H "Content-Type: application/json" \
+            -w "\nHTTP Status: %{http_code}\n"
+      - name: Log Status
+        run: echo "✓ Keep-Alive pinged at $(date)"
