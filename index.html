@@ -1378,7 +1378,7 @@ function uploadWixProduct(){
 
   fetch(SUPABASE_WIX+'?action=create-product', {
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+currentAccessToken()},
     body: JSON.stringify(payload)
   })
   .then(function(r){return r.json();})
