@@ -1097,9 +1097,8 @@ body{
     <h3 style="display:flex;align-items:center;gap:8px;">📑 Büma hat offene Bestellungen</h3>
     <p style="font-size:13px;color:var(--muted);margin:6px 0 1rem;">Folgende Kopierpapier-Bestellungen sind noch offen:</p>
     <div id="buemaPopupList"></div>
-    <div class="modal-actions" style="justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <div class="modal-actions" style="justify-content:flex-end;gap:10px;">
       <button class="btn-cancel" onclick="buemaPopupRemindLater()">⏰ Später erinnern</button>
-      <button class="btn-save" onclick="buemaPopupMarkAll()" style="background:linear-gradient(135deg,#16a34a,#15803d);">✓ Alle als erledigt</button>
     </div>
   </div>
 </div>
@@ -1403,23 +1402,42 @@ function buemaPopupMarkOne(id, btnEl){
 // "Später erinnern" – Popup schliessen, kommt beim nächsten Overview-Aufruf wieder
 function buemaPopupRemindLater(){ buemaPopupClose(); }
 
-// "Alle als erledigt" – mit Rückfrage (verhindert versehentliches Massen-Erledigen)
-function buemaPopupMarkAll(){
-  if(!_buemaOpenIds.length){ buemaPopupClose(); return; }
-  if(!confirm('Wirklich ALLE '+_buemaOpenIds.length+' offenen Bestellungen als erledigt markieren?')) return;
-  var ids = _buemaOpenIds.slice();
-  Promise.all(ids.map(function(id){ return setBuemaStatus(id, 'erledigt').catch(function(){ return null; }); }))
-    .then(function(){
-      _buemaOpenIds = [];
-      buemaPopupClose();
-      if(document.getElementById('page-buema').classList.contains('active')) loadBuemaOrders();
-    });
-}
+
 
 function buemaPopupClose(){
   var o = document.getElementById('buemaPopupOverlay');
   if(o) o.style.display = 'none';
 }
+
+// ─── AUTO-REFRESH (10 Minuten Inaktivität) ──────────────────────
+var _lastActivityTime = Date.now();
+var _autoRefreshTimer = null;
+var _autoRefreshInterval = 10 * 60 * 1000; // 10 Minuten in Millisekunden
+
+function resetActivityTimer(){
+  _lastActivityTime = Date.now();
+  if(_autoRefreshTimer) clearTimeout(_autoRefreshTimer);
+  _autoRefreshTimer = setTimeout(function(){
+    var activePage = document.querySelector('.page-section.active');
+    if(activePage){
+      var pageId = activePage.id.replace('page-', '');
+      if(pageId === 'auftraege') loadCcOrders('auftraege', 3);
+      if(pageId === 'offerten') loadCcOrders('offerten', 2);
+      if(pageId === 'lieferscheine') { loadCcOrders('lieferscheine', 6); loadSignedDocs(); }
+      if(pageId === 'rechnungen') loadCcOrders('rechnungen', 4);
+      if(pageId === 'kunden') loadKunden();
+      if(pageId === 'buema') loadBuemaOrders();
+      if(pageId === 'overview') { loadCcOrders('auftraege', 3); loadCcOrders('offerten', 2); checkBuemaOpenOrders(); }
+    }
+  }, _autoRefreshInterval);
+}
+
+// Aktivität auf der Seite tracken
+document.addEventListener('click', resetActivityTimer);
+document.addEventListener('keydown', resetActivityTimer);
+document.addEventListener('mousemove', resetActivityTimer);
+resetActivityTimer(); // Start timer on load
+
 
 // ─── WIX SHOP ──────────────────────────────────────────────
 var SUPABASE_WIX = 'https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/wix';
