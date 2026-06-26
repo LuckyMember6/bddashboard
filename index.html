@@ -19,6 +19,7 @@
 <meta name="msapplication-TileImage" content="icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.7/signature_pad.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --navy:#1B2F6E; --navy2:#0F1F4D; --navy3:#16275C;
@@ -503,17 +504,13 @@ body{
       <div style="font-size:13px;color:var(--muted);margin-top:4px;">Dashboard Login</div>
     </div>
     <div style="background:var(--glass);border:1px solid var(--glass-brd);border-radius:18px;padding:1.75rem;backdrop-filter:blur(14px);">
-      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Benutzer</label>
-      <select id="loginUser" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;font-size:15px;outline:none;font-family:var(--font);margin-bottom:14px;box-sizing:border-box;">
-        <option value="">Bitte wählen...</option>
-        <option value="Marcel">Marcel</option>
-        <option value="Miriam">Miriam</option>
-        <option value="Koni">Koni</option>
-      </select>
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">E-Mail</label>
+      <input id="loginEmail" type="email" placeholder="name@bd-chur.ch" autocomplete="username"
+        style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;font-size:15px;outline:none;font-family:var(--font);margin-bottom:14px;box-sizing:border-box;">
       <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Passwort</label>
       <input id="loginPassword" type="password" placeholder="Passwort eingeben" autocomplete="current-password"
         style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;font-size:15px;outline:none;font-family:var(--font);box-sizing:border-box;">
-      <div id="loginError" style="display:none;color:#fca5a5;font-size:13px;margin-top:10px;text-align:center;">Falsches Passwort. Bitte erneut versuchen.</div>
+      <div id="loginError" style="display:none;color:#fca5a5;font-size:13px;margin-top:10px;text-align:center;">Login fehlgeschlagen. Bitte erneut versuchen.</div>
       <button onclick="attemptLogin()" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font);">
         Anmelden
       </button>
@@ -540,6 +537,7 @@ body{
     <button class="nav-item" onclick="showPage('mails')"><span class="nav-icon">📧</span><span>Mail-Vorlagen</span></button>
     <button class="nav-item" onclick="window.location.href='archiv.html'"><span class="nav-icon">🗃️</span><span>Archiv</span></button>
     <button class="nav-item" onclick="showPage('wixshop')"><span class="nav-icon">🛍️</span><span>Wix Shop</span></button>
+    <button class="nav-item" onclick="showPage('buema')"><span class="nav-icon">📑</span><span>Büma Bestellungen</span></button>
   </nav>
   <div class="sidebar-footer" onclick="if(confirm('Abmelden?')) logoutUser();" id="sidebarFooter">
     <div class="sidebar-avatar" id="sidebarAvatar">?</div>
@@ -572,6 +570,7 @@ body{
   <button class="nav-item" onclick="showPage('mails')"><span class="nav-icon">📧</span><span>Mail-Vorlagen</span></button>
   <button class="nav-item" onclick="window.location.href='archiv.html'"><span class="nav-icon">🗃️</span><span>Archiv</span></button>
   <button class="nav-item" onclick="showPage('wixshop')"><span class="nav-icon">🛍️</span><span>Wix Shop</span></button>
+    <button class="nav-item" onclick="showPage('buema')"><span class="nav-icon">📑</span><span>Büma Bestellungen</span></button>
 </nav>
 
 <main class="main">
@@ -1081,6 +1080,18 @@ body{
   </div>
 </section>
 
+<!-- BÜMA TRADING BESTELLUNGEN -->
+<section id="page-buema" class="page-section">
+  <div class="page-header">
+    <div><div class="page-title">Büma Trading Bestellungen</div><div class="page-sub" id="buema-sub">Kopierpapier-Bestellungen von buema-trading.ch</div></div>
+    <button class="btn-add" onclick="loadBuemaOrders()" style="background:rgba(255,255,255,.08);">↻ Aktualisieren</button>
+  </div>
+  <div class="card">
+    <div id="buemaOrdersList" style="overflow-x:auto;"><div style="padding:2rem;text-align:center;color:var(--muted);">Lade Bestellungen…</div></div>
+  </div>
+</section>
+
+
 
 
 <!-- MODAL -->
@@ -1150,7 +1161,7 @@ var SUPA_URL = 'https://osxrgginjkzonvyyndpi.supabase.co';
 var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zeHJnZ2luamt6b252eXluZHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMDExMjksImV4cCI6MjA5Njc3NzEyOX0.X-Ftee85CqLG0jvYVaUA1oYPr-v5svmguZuUNJAHnWo';
 
 function supaHeaders() {
-  return { 'Content-Type':'application/json', 'apikey': SUPA_KEY, 'Authorization':'Bearer '+SUPA_KEY };
+  return { 'Content-Type':'application/json', 'apikey': SUPA_KEY, 'Authorization':'Bearer '+currentAccessToken() };
 }
 
 function showSyncStatus(msg, color) {
@@ -1227,6 +1238,61 @@ function showPage(id){
   if(id==='dateien') { selectFolder(currentFolder); }
   if(id==='rechnungen') { if(Object.keys(ccStatuses).length) loadCcOrders('rechnungen', 4); }
   if(id==='kunden') loadKunden();
+  if(id==='buema') loadBuemaOrders();
+}
+
+// ─── BÜMA TRADING BESTELLUNGEN ─────────────────────────────
+function escHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function loadBuemaOrders(){
+  var el = document.getElementById('buemaOrdersList');
+  if(!el) return;
+  el.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted);">Lade Bestellungen…</div>';
+  fetch(SUPA_URL + '/rest/v1/buema_bestellungen?select=*&order=created_at.desc', {
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + currentAccessToken() }
+  })
+  .then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+': '+t); });
+    return r.json();
+  })
+  .then(function(rows){
+    var sub = document.getElementById('buema-sub');
+    if(sub) sub.textContent = rows.length + ' Bestellung' + (rows.length===1?'':'en') + ' · buema-trading.ch';
+    if(!rows.length){
+      el.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted);">Noch keine Bestellungen.</div>';
+      return;
+    }
+    var h = '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
+      + '<thead><tr style="text-align:left;color:var(--muted);border-bottom:1px solid var(--border);">'
+      + '<th style="padding:10px 12px;">Nr.</th><th style="padding:10px 12px;">Datum</th>'
+      + '<th style="padding:10px 12px;">Kunde</th><th style="padding:10px 12px;">Menge</th>'
+      + '<th style="padding:10px 12px;">Preis</th><th style="padding:10px 12px;">Kontakt</th>'
+      + '<th style="padding:10px 12px;">Status</th></tr></thead><tbody>';
+    rows.forEach(function(o){
+      var d = o.created_at ? new Date(o.created_at).toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+      var kunde = escHtml(o.firma || '') + (o.name ? '<div style="color:var(--muted);font-size:12px;">'+escHtml(o.name)+'</div>' : '')
+        + (o.ort ? '<div style="color:var(--hint);font-size:12px;">'+escHtml(o.strasse||'')+', '+escHtml(o.ort)+'</div>' : '');
+      var kontakt = (o.telefon ? '<div>'+escHtml(o.telefon)+'</div>' : '') + (o.email ? '<div style="color:var(--muted);font-size:12px;">'+escHtml(o.email)+'</div>' : '');
+      var bemerk = o.bemerkungen ? '<div style="color:var(--hint);font-size:12px;margin-top:4px;">'+escHtml(o.bemerkungen)+'</div>' : '';
+      h += '<tr style="border-bottom:1px solid var(--border);vertical-align:top;">'
+        + '<td style="padding:10px 12px;font-weight:700;">'+escHtml(o.bestellnummer||'')+'</td>'
+        + '<td style="padding:10px 12px;white-space:nowrap;">'+d+'</td>'
+        + '<td style="padding:10px 12px;">'+kunde+'</td>'
+        + '<td style="padding:10px 12px;">'+escHtml(o.menge||'')+bemerk+'</td>'
+        + '<td style="padding:10px 12px;white-space:nowrap;font-weight:600;">'+escHtml(o.preis||'')+'</td>'
+        + '<td style="padding:10px 12px;">'+kontakt+'</td>'
+        + '<td style="padding:10px 12px;"><span style="background:rgba(59,130,246,.15);color:#93c5fd;padding:3px 9px;border-radius:20px;font-size:12px;white-space:nowrap;">'+escHtml(o.status||'neu')+'</span></td>'
+        + '</tr>';
+    });
+    h += '</tbody></table>';
+    el.innerHTML = h;
+  })
+  .catch(function(err){
+    el.innerHTML = '<div style="padding:2rem;text-align:center;color:#fca5a5;">Fehler beim Laden: '+escHtml(err.message)+'</div>';
+  });
 }
 
 // ─── WIX SHOP ──────────────────────────────────────────────
@@ -1337,6 +1403,17 @@ function uploadWixProduct(){
 
 // ─── KUNDEN ────────────────────────────────────────────────
 var CC_FN = 'https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/cashctrl';
+// Alle CashCtrl-Aufrufe laufen hierüber: hängt das Login-Token (JWT) an,
+// damit die Function nach dem Härten nur eingeloggte User durchlässt.
+function ccFetch(url, opts){
+  opts = opts || {};
+  var h = {};
+  if(opts.headers){ for(var k in opts.headers){ h[k] = opts.headers[k]; } }
+  h['Authorization'] = 'Bearer ' + currentAccessToken();
+  h['apikey'] = SUPA_KEY;
+  opts.headers = h;
+  return fetch(url, opts);
+}
 var allKunden = [];
 var currentPersonId = null;
 var isCompanyMode = true;
@@ -1349,7 +1426,7 @@ function initCcMeta(){
   var catIds = [3, 2, 6, 4];
   var loaded = 0;
   catIds.forEach(function(catId){
-    fetch(CC_FN+'?action=order-statuses&categoryId='+catId)
+    ccFetch(CC_FN+'?action=order-statuses&categoryId='+catId)
       .then(function(r){ return r.json(); })
       .then(function(res){
         if(res.data) ccStatuses[catId] = res.data;
@@ -1379,7 +1456,7 @@ function initCcMeta(){
 function loadCcStatuses(catId){
   // Einzelner Reload (z.B. nach manueller Änderung)
   var listKeyMap = { 3:'auftraege', 2:'offerten', 6:'lieferscheine', 4:'rechnungen' };
-  fetch(CC_FN+'?action=order-statuses&categoryId='+catId)
+  ccFetch(CC_FN+'?action=order-statuses&categoryId='+catId)
     .then(function(r){ return r.json(); })
     .then(function(res){
       if(res.data){
@@ -1401,7 +1478,7 @@ function findStatusId(catId, namePart){
 
 // Status setzen
 function setCcStatus(orderId, statusId, onSuccess){
-  fetch(CC_FN+'?action=order-update-status', {
+  ccFetch(CC_FN+'?action=order-update-status', {
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ orderId: orderId, statusId: statusId })
@@ -1417,7 +1494,7 @@ function setCcStatus(orderId, statusId, onSuccess){
 function loadKunden(){
   var el = document.getElementById('kundenList'); if(!el) return;
   el.innerHTML='<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Lade Kunden...</p>';
-  fetch(CC_FN+'?action=persons')
+  ccFetch(CC_FN+'?action=persons')
     .then(function(r){return r.json();})
     .then(function(res){
       if(res.error){el.innerHTML='<p style="color:var(--red);font-size:13px;">Fehler: '+JSON.stringify(res.error)+'</p>';return;}
@@ -1547,7 +1624,7 @@ function openPersonModal(person){
     document.getElementById('pMobile').value = person.mobile||'';
     document.getElementById('pEmail').value = person.email||'';
     // Dann vollständige Daten via API nachladen (contacts sind nur in read.json)
-    fetch(CC_FN+'?action=person-read&id='+person.id)
+    ccFetch(CC_FN+'?action=person-read&id='+person.id)
       .then(function(r){ return r.json(); })
       .then(function(res){
         if(res.error || !res.data) return;
@@ -1606,7 +1683,7 @@ function savePerson(){
   var action = currentPersonId ? 'person-update' : 'person-create';
   if(currentPersonId) payload.id = currentPersonId;
 
-  fetch(CC_FN+'?action='+action, {
+  ccFetch(CC_FN+'?action='+action, {
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify(payload)
@@ -1646,7 +1723,7 @@ var CC_CAT_PLURAL = { 2: 'Offerten', 3: 'Aufträge', 6: 'Lieferscheine', 4: 'Rec
 function loadCcOrders(listKey, catId){
   var el = document.getElementById(listKey+'List');
   if(el) el.innerHTML = '<p style="color:var(--hint);font-size:13px;padding:1rem 0;">Lade...</p>';
-  fetch(CC_FN+'?action=orders&categoryId='+catId)
+  ccFetch(CC_FN+'?action=orders&categoryId='+catId)
     .then(function(r){ return r.json(); })
     .then(function(res){
       if(res.error){ if(el) el.innerHTML='<p style="color:var(--red);font-size:13px;">Fehler: '+JSON.stringify(res.error)+'</p>'; return; }
@@ -1750,7 +1827,7 @@ function lieferscheinUndErledigt(orderId){
   if(!confirm('Lieferschein aus diesem Auftrag erstellen?')) return;
   var btns = document.querySelectorAll('#cc-order-'+orderId+' .cc-btn');
   btns.forEach(function(b){ b.disabled=true; });
-  fetch(CC_FN+'?action=continue', {
+  ccFetch(CC_FN+'?action=continue', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ orderId: orderId, target: 'lieferschein' })
   })
@@ -1800,7 +1877,7 @@ function copyOrderTo(orderId, targetCatId, btn){
   var label = CC_CAT_NAME[targetCatId];
   if(!confirm('Kopie dieser Rechnung als '+label+' erstellen?')) return;
   if(btn) btn.disabled = true;
-  fetch(CC_FN+'?action=order-copy', {
+  ccFetch(CC_FN+'?action=order-copy', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ orderId: orderId, targetCategoryId: targetCatId })
   })
@@ -1820,7 +1897,7 @@ function ccContinueOrder(orderId, targetCatId){
   if(!confirm(label+' aus diesem Dokument erstellen?')) return;
   var btns = document.querySelectorAll('#cc-order-'+orderId+' .cc-btn');
   btns.forEach(function(b){ b.disabled=true; });
-  fetch(CC_FN+'?action=continue', {
+  ccFetch(CC_FN+'?action=continue', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ orderId: orderId, target: targetCatId===6?'lieferschein':targetCatId===4?'rechnung':targetCatId===3?'auftrag':'offerte' })
   })
@@ -1836,7 +1913,7 @@ function ccContinueOrder(orderId, targetCatId){
 function downloadCcPdf(orderId, btn){
   if(btn) btn.disabled = true;
   if(btn) btn.textContent = '⏳ PDF...';
-  fetch(CC_FN+'?action=order-pdf&id='+orderId)
+  ccFetch(CC_FN+'?action=order-pdf&id='+orderId)
     .then(function(r){ return r.blob(); })
     .then(function(blob){
       var url = URL.createObjectURL(blob);
@@ -1869,7 +1946,7 @@ var FOLDER_LABELS = {
 };
 
 function storageHeaders(){
-  return { 'Authorization': 'Bearer '+SUPA_KEY, 'apikey': SUPA_KEY };
+  return { 'Authorization': 'Bearer '+currentAccessToken(), 'apikey': SUPA_KEY };
 }
 
 function selectFolder(folder){
@@ -2133,7 +2210,7 @@ function openSignModal(orderId, associateName){
   var preview = document.getElementById('signPdfPreview');
   preview.innerHTML = '<p style="color:var(--hint);font-size:13px;">⏳ PDF wird geladen...</p>';
 
-  fetch(CC_FN+'?action=order-pdf&id='+orderId)
+  ccFetch(CC_FN+'?action=order-pdf&id='+orderId)
     .then(function(r){ return r.arrayBuffer(); })
     .then(function(buffer){
       currentSignPdfBytes = buffer;
@@ -2350,7 +2427,7 @@ async function attachSignedPdfToCashctrl(){
       b64 += String.fromCharCode.apply(null, pdfArr.subarray(i, i + chunkSize));
     }
     var b64encoded = btoa(b64);
-    var res = await fetch(CC_FN+'?action=attach-pdf', {
+    var res = await ccFetch(CC_FN+'?action=attach-pdf', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
@@ -2395,7 +2472,7 @@ async function sendSignedPdf(){
       b64 += String.fromCharCode.apply(null, pdfArr.subarray(i, i + chunkSize));
     }
     b64 = btoa(b64);
-    var res = await fetch(CC_FN+'?action=send-pdf', {
+    var res = await ccFetch(CC_FN+'?action=send-pdf', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
@@ -2532,7 +2609,7 @@ function saveOrder(){
     items: items
   };
 
-  fetch(CC_FN+'?action=order-create', {
+  ccFetch(CC_FN+'?action=order-create', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify(payload)
   })
@@ -2562,7 +2639,7 @@ function saveOrder(){
 function loadCashctrlOrders(){
   var el = document.getElementById('cashctrlOrdersList'); if(!el) return;
   el.innerHTML = '<p style="color:var(--hint);font-size:13px;">Lade Aufträge...</p>';
-  fetch(CC_FN + '?action=orders')
+  ccFetch(CC_FN + '?action=orders')
     .then(function(r){ return r.json(); })
     .then(function(res){
       if(res.error){ el.innerHTML = '<p style="color:var(--red);font-size:13px;">Fehler: '+JSON.stringify(res.error)+'</p>'; return; }
@@ -2594,7 +2671,7 @@ function cashctrlContinue(orderId, target){
   var buttons = container ? container.querySelectorAll('.cc-btn') : [];
   buttons.forEach(function(b){ b.disabled = true; });
 
-  fetch(CC_FN + '?action=continue', {
+  ccFetch(CC_FN + '?action=continue', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orderId: orderId, target: target })
@@ -3298,20 +3375,36 @@ function openMailModal(idx) {
 
 
 // ─── LOGIN MIT PASSWORT, PRO GERÄT GESPEICHERT ─────────────────
-var BD_AUTH_KEY = 'bd_auth_user';
-var BD_VALID_USERS = ['Marcel','Miriam','Koni'];
-var BD_PASSWORD = 'bdchur1937';
+// ─── ECHTES SUPABASE AUTH ──────────────────────────────
+var sbClient = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+var _sbSession = null;
 
+// Anzeige-Namen aus E-Mail (rein kosmetisch für die Begrüssung)
+var BD_NAME_MAP = {
+  'marcel.tarnutzer@bd-chur.ch': 'Marcel',
+  'tarnutzer@bd-chur.ch': 'Koni'
+};
+function nameFromEmail(email){
+  if(!email) return '';
+  var e = email.toLowerCase();
+  if(BD_NAME_MAP[e]) return BD_NAME_MAP[e];
+  var local = e.split('@')[0].split('.')[0];
+  return local.charAt(0).toUpperCase() + local.slice(1);
+}
+function currentAccessToken(){
+  return (_sbSession && _sbSession.access_token) ? _sbSession.access_token : SUPA_KEY;
+}
 function getCurrentUser(){
-  try { return localStorage.getItem(BD_AUTH_KEY) || ''; } catch { return ''; }
+  return (_sbSession && _sbSession.user) ? nameFromEmail(_sbSession.user.email) : '';
 }
-function setCurrentUser(name){
-  try { localStorage.setItem(BD_AUTH_KEY, name); } catch {}
-}
-function logoutUser(){
-  try { localStorage.removeItem(BD_AUTH_KEY); } catch {}
+async function logoutUser(){
+  try { await sbClient.auth.signOut(); } catch(e) {}
+  _sbSession = null;
   location.reload();
 }
+
+// Session-Änderungen (auto-refresh) im Token spiegeln
+sbClient.auth.onAuthStateChange(function(_event, session){ _sbSession = session; });
 
 function initials(name){
   var parts = name.trim().split(' ').filter(Boolean);
@@ -3337,45 +3430,55 @@ function applyCurrentUser(){
   if(greetEl) greetEl.textContent = fullGreet;
 }
 
-function checkAuth(){
-  var name = getCurrentUser();
-  var loginScreen = document.getElementById('loginScreen');
-  if(name && BD_VALID_USERS.indexOf(name)!==-1){
-    loginScreen.style.display = 'none';
-    return true;
-  }
-  loginScreen.style.display = 'flex';
-  return false;
+function showLogin(){
+  var s = document.getElementById('loginScreen');
+  if(s) s.style.display = 'flex';
+}
+function hideLogin(){
+  var s = document.getElementById('loginScreen');
+  if(s) s.style.display = 'none';
 }
 
-function attemptLogin(){
-  var user = document.getElementById('loginUser').value;
-  var pw = document.getElementById('loginPassword').value;
+// Lädt die App nach erfolgreichem Login / Session-Wiederherstellung
+function bootApp(){
+  applyCurrentUser();
+  hideLogin();
+  loadState();
+  setTimeout(function(){ loadKunden(); initCcMeta(); }, 300);
+}
+
+async function attemptLogin(){
+  var email = (document.getElementById('loginEmail').value || '').trim();
+  var pw = document.getElementById('loginPassword').value || '';
   var errorEl = document.getElementById('loginError');
-  if(!user){
-    errorEl.textContent = 'Bitte einen Benutzer auswählen.';
+  if(!email || !pw){
+    errorEl.textContent = 'Bitte E-Mail und Passwort eingeben.';
     errorEl.style.display = 'block';
-    return;
-  }
-  if(pw !== BD_PASSWORD){
-    errorEl.textContent = 'Falsches Passwort. Bitte erneut versuchen.';
-    errorEl.style.display = 'block';
-    document.getElementById('loginPassword').value = '';
     return;
   }
   errorEl.style.display = 'none';
-  setCurrentUser(user);
-  applyCurrentUser();
-  document.getElementById('loginScreen').style.display = 'none';
-  // Nach erfolgreichem Login: Daten laden
-  loadState();
-  setTimeout(function(){ loadKunden(); initCcMeta(); }, 300);
+  try {
+    var res = await sbClient.auth.signInWithPassword({ email: email, password: pw });
+    if(res.error || !res.data || !res.data.session){
+      errorEl.textContent = 'Login fehlgeschlagen. E-Mail oder Passwort falsch.';
+      errorEl.style.display = 'block';
+      document.getElementById('loginPassword').value = '';
+      return;
+    }
+    _sbSession = res.data.session;
+    bootApp();
+  } catch(e){
+    errorEl.textContent = 'Verbindungsfehler. Bitte erneut versuchen.';
+    errorEl.style.display = 'block';
+  }
 }
 
 // Enter-Taste im Passwortfeld löst Login aus
 document.addEventListener('DOMContentLoaded', function(){
   var pwField = document.getElementById('loginPassword');
   if(pwField) pwField.addEventListener('keydown', function(e){ if(e.key==='Enter') attemptLogin(); });
+  var emField = document.getElementById('loginEmail');
+  if(emField) emField.addEventListener('keydown', function(e){ if(e.key==='Enter') attemptLogin(); });
 });
 
 // ─── PWA INSTALL (Desktop) ─────────────────────────────────
@@ -3407,12 +3510,19 @@ function pwaInstall() {
 }
 
 document.getElementById('dateBadge').textContent=new Date().toLocaleDateString('de-CH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-applyCurrentUser();
-var isAuthed = checkAuth();
-if(isAuthed){
-  loadState();
-  setTimeout(function(){ loadKunden(); initCcMeta(); }, 500);
-}
+(async function(){
+  try {
+    var sres = await sbClient.auth.getSession();
+    if(sres && sres.data && sres.data.session){
+      _sbSession = sres.data.session;
+      bootApp();
+    } else {
+      showLogin();
+    }
+  } catch(e){
+    showLogin();
+  }
+})();
 document.getElementById('modalOverlay').addEventListener('click',function(e){});
 
 // PWA: Service Worker registrieren (ermöglicht "Zum Homescreen hinzufügen")
