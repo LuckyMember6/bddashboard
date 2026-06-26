@@ -1091,6 +1091,19 @@ body{
   </div>
 </section>
 
+<!-- BÜMA OFFENE BESTELLUNGEN POPUP -->
+<div class="overlay" id="buemaPopupOverlay" style="display:none;">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:560px;max-height:88vh;overflow-y:auto;">
+    <h3 style="display:flex;align-items:center;gap:8px;">📑 Büma hat offene Bestellungen</h3>
+    <p style="font-size:13px;color:var(--muted);margin:6px 0 1rem;">Folgende Kopierpapier-Bestellungen sind noch offen:</p>
+    <div id="buemaPopupList"></div>
+    <div class="modal-actions" style="justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <button class="btn-cancel" onclick="buemaPopupRemindLater()">⏰ Später erinnern</button>
+      <button class="btn-save" onclick="buemaPopupMarkAll()" style="background:linear-gradient(135deg,#16a34a,#15803d);">✓ Alle als erledigt</button>
+    </div>
+  </div>
+</div>
+
 
 
 
@@ -1232,7 +1245,7 @@ function showPage(id){
   });
   renderAll();
   if(id==='auftraege') { if(Object.keys(ccStatuses).length) loadCcOrders('auftraege', 3); }
-  if(id==='overview') { if(Object.keys(ccStatuses).length){ loadCcOrders('auftraege', 3); loadCcOrders('offerten', 2); } }
+  if(id==='overview') { if(Object.keys(ccStatuses).length){ loadCcOrders('auftraege', 3); loadCcOrders('offerten', 2); } checkBuemaOpenOrders(); }
   if(id==='offerten') { if(Object.keys(ccStatuses).length) loadCcOrders('offerten', 2); }
   if(id==='lieferscheine') { if(Object.keys(ccStatuses).length) loadCcOrders('lieferscheine', 6); loadSignedDocs(); }
   if(id==='dateien') { selectFolder(currentFolder); }
@@ -1247,6 +1260,41 @@ function escHtml(s){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
   });
 }
+// "offen" = alles ausser 'erledigt'
+function buemaIsOpen(status){ return (status||'neu') !== 'erledigt'; }
+
+function buemaStatusBadge(status){
+  if(buemaIsOpen(status)){
+    return '<span style="background:rgba(245,158,11,.15);color:#fbbf24;padding:3px 9px;border-radius:20px;font-size:12px;white-space:nowrap;">Offen</span>';
+  }
+  return '<span style="background:rgba(34,197,94,.15);color:#4ade80;padding:3px 9px;border-radius:20px;font-size:12px;white-space:nowrap;">Erledigt</span>';
+}
+
+// Status in Supabase setzen (nur eingeloggte User dürfen das per RLS)
+function setBuemaStatus(id, status){
+  return fetch(SUPA_URL + '/rest/v1/buema_bestellungen?id=eq.' + encodeURIComponent(id), {
+    method: 'PATCH',
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + currentAccessToken(),
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify({ status: status })
+  }).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+': '+t); });
+    return true;
+  });
+}
+
+// Toggle-Knopf in der Büma-Liste
+function toggleBuemaStatus(id, currentStatus){
+  var neu = buemaIsOpen(currentStatus) ? 'erledigt' : 'offen';
+  setBuemaStatus(id, neu)
+    .then(function(){ loadBuemaOrders(); })
+    .catch(function(err){ alert('Status konnte nicht geändert werden: '+err.message); });
+}
+
 function loadBuemaOrders(){
   var el = document.getElementById('buemaOrdersList');
   if(!el) return;
@@ -1259,8 +1307,15 @@ function loadBuemaOrders(){
     return r.json();
   })
   .then(function(rows){
+    // Offene zuerst, dann nach Datum
+    rows.sort(function(a,b){
+      var ao = buemaIsOpen(a.status)?0:1, bo = buemaIsOpen(b.status)?0:1;
+      if(ao!==bo) return ao-bo;
+      return (b.created_at||'').localeCompare(a.created_at||'');
+    });
+    var offen = rows.filter(function(o){ return buemaIsOpen(o.status); }).length;
     var sub = document.getElementById('buema-sub');
-    if(sub) sub.textContent = rows.length + ' Bestellung' + (rows.length===1?'':'en') + ' · buema-trading.ch';
+    if(sub) sub.textContent = rows.length + ' Bestellung' + (rows.length===1?'':'en') + ' · ' + offen + ' offen';
     if(!rows.length){
       el.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted);">Noch keine Bestellungen.</div>';
       return;
@@ -1270,13 +1325,17 @@ function loadBuemaOrders(){
       + '<th style="padding:10px 12px;">Nr.</th><th style="padding:10px 12px;">Datum</th>'
       + '<th style="padding:10px 12px;">Kunde</th><th style="padding:10px 12px;">Menge</th>'
       + '<th style="padding:10px 12px;">Preis</th><th style="padding:10px 12px;">Kontakt</th>'
-      + '<th style="padding:10px 12px;">Status</th></tr></thead><tbody>';
+      + '<th style="padding:10px 12px;">Status</th><th style="padding:10px 12px;"></th></tr></thead><tbody>';
     rows.forEach(function(o){
       var d = o.created_at ? new Date(o.created_at).toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
       var kunde = escHtml(o.firma || '') + (o.name ? '<div style="color:var(--muted);font-size:12px;">'+escHtml(o.name)+'</div>' : '')
         + (o.ort ? '<div style="color:var(--hint);font-size:12px;">'+escHtml(o.strasse||'')+', '+escHtml(o.ort)+'</div>' : '');
       var kontakt = (o.telefon ? '<div>'+escHtml(o.telefon)+'</div>' : '') + (o.email ? '<div style="color:var(--muted);font-size:12px;">'+escHtml(o.email)+'</div>' : '');
       var bemerk = o.bemerkungen ? '<div style="color:var(--hint);font-size:12px;margin-top:4px;">'+escHtml(o.bemerkungen)+'</div>' : '';
+      var open = buemaIsOpen(o.status);
+      var btn = open
+        ? '<button onclick="toggleBuemaStatus(\''+o.id+'\',\''+escHtml(o.status||'neu')+'\')" style="background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap;">✓ Erledigt</button>'
+        : '<button onclick="toggleBuemaStatus(\''+o.id+'\',\'erledigt\')" style="background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap;">↺ Offen</button>';
       h += '<tr style="border-bottom:1px solid var(--border);vertical-align:top;">'
         + '<td style="padding:10px 12px;font-weight:700;">'+escHtml(o.bestellnummer||'')+'</td>'
         + '<td style="padding:10px 12px;white-space:nowrap;">'+d+'</td>'
@@ -1284,7 +1343,8 @@ function loadBuemaOrders(){
         + '<td style="padding:10px 12px;">'+escHtml(o.menge||'')+bemerk+'</td>'
         + '<td style="padding:10px 12px;white-space:nowrap;font-weight:600;">'+escHtml(o.preis||'')+'</td>'
         + '<td style="padding:10px 12px;">'+kontakt+'</td>'
-        + '<td style="padding:10px 12px;"><span style="background:rgba(59,130,246,.15);color:#93c5fd;padding:3px 9px;border-radius:20px;font-size:12px;white-space:nowrap;">'+escHtml(o.status||'neu')+'</span></td>'
+        + '<td style="padding:10px 12px;">'+buemaStatusBadge(o.status)+'</td>'
+        + '<td style="padding:10px 12px;">'+btn+'</td>'
         + '</tr>';
     });
     h += '</tbody></table>';
@@ -1293,6 +1353,72 @@ function loadBuemaOrders(){
   .catch(function(err){
     el.innerHTML = '<div style="padding:2rem;text-align:center;color:#fca5a5;">Fehler beim Laden: '+escHtml(err.message)+'</div>';
   });
+}
+
+// ─── BÜMA OFFENE-BESTELLUNGEN POPUP (Startseite) ───────────
+var _buemaOpenIds = [];
+
+function checkBuemaOpenOrders(){
+  fetch(SUPA_URL + '/rest/v1/buema_bestellungen?select=*&status=neq.erledigt&order=created_at.desc', {
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + currentAccessToken() }
+  })
+  .then(function(r){ return r.ok ? r.json() : []; })
+  .then(function(rows){
+    if(!rows || !rows.length) return;  // keine offenen → kein Popup
+    _buemaOpenIds = rows.map(function(o){ return o.id; });
+    var list = document.getElementById('buemaPopupList');
+    var h = '';
+    rows.forEach(function(o){
+      var d = o.created_at ? new Date(o.created_at).toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+      var kunde = escHtml(o.firma || o.name || '–');
+      h += '<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;">'
+        + '<div style="flex:1;min-width:0;">'
+        +   '<div style="font-weight:700;font-size:14px;">Nr. '+escHtml(o.bestellnummer||'')+' · '+kunde+'</div>'
+        +   '<div style="color:var(--muted);font-size:12px;">'+escHtml(o.menge||'')+' · '+escHtml(o.preis||'')+' · '+d+'</div>'
+        + '</div>'
+        + '<button onclick="buemaPopupMarkOne(\''+o.id+'\', this)" style="background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3);border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap;">✓ Erledigt</button>'
+        + '</div>';
+    });
+    list.innerHTML = h;
+    document.getElementById('buemaPopupOverlay').style.display = 'flex';
+  })
+  .catch(function(){ /* still: kein Popup bei Fehler */ });
+}
+
+// Einzelne Bestellung im Popup erledigen
+function buemaPopupMarkOne(id, btnEl){
+  setBuemaStatus(id, 'erledigt')
+    .then(function(){
+      _buemaOpenIds = _buemaOpenIds.filter(function(x){ return x !== id; });
+      // Zeile aus dem Popup entfernen
+      if(btnEl && btnEl.parentNode) btnEl.parentNode.remove();
+      // Büma-Liste aktualisieren falls offen
+      if(document.getElementById('page-buema').classList.contains('active')) loadBuemaOrders();
+      // Keine offenen mehr → Popup schliessen
+      if(_buemaOpenIds.length === 0) buemaPopupClose();
+    })
+    .catch(function(err){ alert('Konnte nicht als erledigt markieren: '+err.message); });
+}
+
+// "Später erinnern" – Popup schliessen, kommt beim nächsten Overview-Aufruf wieder
+function buemaPopupRemindLater(){ buemaPopupClose(); }
+
+// "Alle als erledigt" – mit Rückfrage (verhindert versehentliches Massen-Erledigen)
+function buemaPopupMarkAll(){
+  if(!_buemaOpenIds.length){ buemaPopupClose(); return; }
+  if(!confirm('Wirklich ALLE '+_buemaOpenIds.length+' offenen Bestellungen als erledigt markieren?')) return;
+  var ids = _buemaOpenIds.slice();
+  Promise.all(ids.map(function(id){ return setBuemaStatus(id, 'erledigt').catch(function(){ return null; }); }))
+    .then(function(){
+      _buemaOpenIds = [];
+      buemaPopupClose();
+      if(document.getElementById('page-buema').classList.contains('active')) loadBuemaOrders();
+    });
+}
+
+function buemaPopupClose(){
+  var o = document.getElementById('buemaPopupOverlay');
+  if(o) o.style.display = 'none';
 }
 
 // ─── WIX SHOP ──────────────────────────────────────────────
@@ -3445,6 +3571,7 @@ function bootApp(){
   hideLogin();
   loadState();
   setTimeout(function(){ loadKunden(); initCcMeta(); }, 300);
+  setTimeout(function(){ checkBuemaOpenOrders(); }, 800);
 }
 
 async function attemptLogin(){
