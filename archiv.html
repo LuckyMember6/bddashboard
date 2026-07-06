@@ -674,7 +674,7 @@ function analyseFile(file){
     var reader=new FileReader();
     reader.onload=function(e){
       var base64=e.target.result.split(',')[1];
-      claudeAnalyse(base64, file.type||'image/jpeg', file.name);
+      claudeAnalyse([{data:base64, media_type:file.type||'image/jpeg'}], file.name);
     };
     reader.readAsDataURL(file);
   } else if(ext === 'pdf'){
@@ -686,25 +686,48 @@ function analyseFile(file){
   }
 }
 
+function showAnalyseError(msg){
+  console.error('[Analyse]', msg);
+  document.getElementById('analyseLoading').style.display='none';
+  document.getElementById('analyseResult').style.display='block';
+  var el = document.getElementById('ordnerVorschlag');
+  if(el){ el.innerHTML = '<div style="color:#fca5a5;font-size:12px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.12);padding:6px 8px;border-radius:6px;">\u26a0 '+msg+'</div>'; }
+}
+
+function renderPageToJpeg(page, targetLong){
+  var base = page.getViewport({scale:1});
+  var longEdge = Math.max(base.width, base.height);
+  var scale = targetLong / longEdge;
+  if(scale < 1) scale = 1;   // nie unter Originalaufloesung
+  if(scale > 4) scale = 4;   // Deckel gegen Extrem-PDFs
+  var viewport = page.getViewport({scale:scale});
+  var canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  var ctx = canvas.getContext('2d');
+  return page.render({canvasContext:ctx, viewport:viewport}).promise.then(function(){
+    return canvas.toDataURL('image/jpeg', 0.9);
+  });
+}
+
 function renderPdfToJpeg(pdfUrl, fileName){
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf){
-    return pdf.getPage(1);
-  }).then(function(page){
-    var scale = 1.5;
-    var viewport = page.getViewport({scale: scale});
-    var canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    var ctx = canvas.getContext('2d');
-    return page.render({canvasContext: ctx, viewport: viewport}).promise.then(function(){
-      var jpegDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-      var jpegBase64 = jpegDataUrl.split(',')[1];
-      // Vorschau zeigen
-      document.getElementById('filePreview').innerHTML = '<img src="'+jpegDataUrl+'" class="preview-img">';
-      claudeAnalyse(jpegBase64, 'image/jpeg', fileName);
-    });
-  }).catch(function(){
+    var maxPages = Math.min(pdf.numPages, 2);   // Seite 1 + ggf. 2 (QR/Zahlteil)
+    var tasks = [];
+    for(var i=1;i<=maxPages;i++){
+      tasks.push(pdf.getPage(i).then(function(pg){ return renderPageToJpeg(pg, 1568); }));
+    }
+    return Promise.all(tasks);
+  }).then(function(dataUrls){
+    if(!dataUrls.length) throw new Error('Keine Seite gerendert');
+    document.getElementById('filePreview').innerHTML = '<img src="'+dataUrls[0]+'" class="preview-img">';
+    var images = dataUrls.map(function(u){ return {data:u.split(',')[1], media_type:'image/jpeg'}; });
+    claudeAnalyse(images, fileName);
+  }).catch(function(err){
+    var m = (err && err.message) ? err.message : String(err);
+    console.error('PDF-Render fehlgeschlagen:', err);
+    showAnalyseError('PDF-Render fehlgeschlagen ('+m+'). Fallback: nur Dateiname-Analyse \u2013 bitte Felder manuell pruefen.');
     claudeAnalyseText(fileName);
   });
 }
@@ -717,7 +740,7 @@ function buildKundenListe(){
   }).join(', ');
 }
 
-function claudeAnalyse(base64, mime, fileName){
+function claudeAnalyse(images, fileName){
   var kundenListe = buildKundenListe();
   fetch('https://osxrgginjkzonvyyndpi.supabase.co/functions/v1/smart-api',{
     method:'POST',
@@ -728,15 +751,17 @@ function claudeAnalyse(base64, mime, fileName){
       messages:[{
         role:'user',
         content:[
-          {type:'image',source:{type:'base64',media_type:mime,data:base64}},
-          {type:'text',text:'Analysiere dieses Dokument für Bärtsch+Dobal AG (Schweizer Büromöbel-Händler).\n\nKundenliste (Nr:Name): '+kundenListe+'\n\nOrdner-Regeln:\n- Lieferschein → lieferscheine\n- Rechnung AN Kunden → rechnungen-debi\n- Rechnung VON Lieferant → rechnungen-kredi\n- Offerte/Angebot → angebote\n- Auftragsbestätigung an Kunden → auftragsbestaetigung\n- Bestellung an Lieferant → ab-lieferanten\n\nWährung: Die Währung spielt keine Rolle (CHF, EUR, USD etc.) — das Dokument soll unabhängig von der Währung korrekt klassifiziert und archiviert werden. Betrag bitte als Zahl ohne Währungssymbol angeben.\n\nDateiname-Regel: Beginne mit Kundennummer aus der Liste falls erkennbar (z.B. "10437_Lieferschein-LS2606151.pdf"). Kein Datum im Namen.\n\nAntworte NUR mit JSON:\n{"ordner":"angebote|auftragsbestaetigung|lieferscheine|rechnungen-debi|rechnungen-kredi|ab-lieferanten","ordner_grund":"kurze Begründung","dateiname":"KUNDENNR_name.pdf","kunde_nr":"Kundennummer aus Liste oder leer","kunde_lieferant":"Name falls erkennbar","betrag":0,"referenz":"Dokumentnummer","beschreibung":"kurze Zusammenfassung"}'}
+          ...images.map(function(img){return {type:'image',source:{type:'base64',media_type:img.media_type,data:img.data}};}),
+          {type:'text',text:'Analysiere dieses Dokument für Bärtsch+Dobal AG (Schweizer Büromöbel-Händler; auch Büma Trading GmbH möglich).\n\nKundenliste (Nr:Name): '+kundenListe+'\n\nOrdner-Regeln:\n- Lieferschein → lieferscheine\n- Rechnung AN Kunden → rechnungen-debi\n- Rechnung VON Lieferant → rechnungen-kredi\n- Offerte/Angebot → angebote\n- Auftragsbestätigung an Kunden → auftragsbestaetigung\n- Bestellung an Lieferant → ab-lieferanten\n\nQR-Rechnung / Zahlteil / Einzahlungsschein (VESR/ESR):\n- Der QR-Code bzw. Strichcode ist NUR eine Grafik. Versuche NICHT ihn zu dekodieren. Ignoriere die QR-Grafik.\n- Lies stattdessen die Textfelder des Zahlteils: Konto/Zahlbar an, Zahlbar durch, Referenz, Betrag.\n- Richtung eindeutig aus dem Zahlteil bestimmen:\n  - "Konto / Zahlbar an" = Bärtsch+Dobal (oder Büma Trading) → BD ist Rechnungssteller → rechnungen-debi.\n  - "Zahlbar durch" = Bärtsch+Dobal (oder Büma Trading) → BD zahlt → Lieferantenrechnung → rechnungen-kredi.\n- Falls kein Zahlteil sichtbar: Richtung aus Briefkopf/Empfänger bestimmen (Absender=BD → debi, Empfänger=BD → kredi).\n\nReferenz-Regel:\n- "referenz" = Belegnummer/Rechnungsnummer aus dem Dokumentkopf.\n- NICHT die 27-stellige QR-Referenz bzw. ESR-Referenznummer verwenden. Nur wenn keine Belegnummer existiert, QR-Referenz als Fallback.\n\nBetrag: Gesamtbetrag der Rechnung; Zahlteil-Betrag als Gegenprobe. Währung egal (CHF, EUR, USD etc.), nur Zahl ohne Symbol.\n\nDateiname-Regel: Beginne mit Kundennummer aus der Liste falls erkennbar (z.B. "10437_Lieferschein-LS2606151.pdf"). Bei Lieferantenrechnungen (kredi) meist keine Nummer aus der Liste → dann ohne Prefix. Kein Datum im Namen.\n\nAntworte NUR mit JSON:\n{"ordner":"angebote|auftragsbestaetigung|lieferscheine|rechnungen-debi|rechnungen-kredi|ab-lieferanten","ordner_grund":"kurze Begründung","dateiname":"KUNDENNR_name.pdf","kunde_nr":"Kundennummer aus Liste oder leer","kunde_lieferant":"Name des Kunden bzw. Lieferanten falls erkennbar","betrag":0,"referenz":"Belegnummer (nicht QR-Referenz)","beschreibung":"kurze Zusammenfassung"}'}
         ]
       }]
     })
   })
   .then(function(r){ return r.json(); })
   .then(function(res){
+    if(res && res.error){ showAnalyseError('API-Fehler: '+(res.error.message||JSON.stringify(res.error))); return; }
     var text=(res.content||[]).map(function(c){ return c.text||''; }).join('');
+    if(!text.trim()){ showAnalyseError('Leere Antwort vom Modell (stop_reason: '+((res&&res.stop_reason)||'?')+').'); return; }
     try{
       var data=JSON.parse(text.replace(/```json|```/g,'').trim());
       // Kundennummer direkt aus Claude-Antwort übernehmen
@@ -744,9 +769,9 @@ function claudeAnalyse(base64, mime, fileName){
         data.dateiname = data.kunde_nr+'_'+data.dateiname;
       }
       fillAnalyseForm(data);
-    }catch(e){ showAnalyseResult(); }
+    }catch(e){ showAnalyseError('Antwort war kein gueltiges JSON. Rohtext: '+text.slice(0,180)); }
   })
-  .catch(function(){ showAnalyseResult(); });
+  .catch(function(err){ showAnalyseError('Netzwerk-/Serverfehler: '+((err&&err.message)||err)); });
 }
 
 function claudeAnalyseText(fileName){
@@ -762,13 +787,14 @@ function claudeAnalyseText(fileName){
   })
   .then(function(r){ return r.json(); })
   .then(function(res){
+    if(res && res.error){ showAnalyseError('API-Fehler (Dateiname-Fallback): '+(res.error.message||JSON.stringify(res.error))); return; }
     var text=(res.content||[]).map(function(c){ return c.text||''; }).join('');
     try{
       var data=JSON.parse(text.replace(/```json|```/g,'').trim());
       fillAnalyseForm(data);
     }catch(e){ showAnalyseResult(); }
   })
-  .catch(function(){ showAnalyseResult(); });
+  .catch(function(err){ showAnalyseError('Netzwerk-/Serverfehler (Dateiname-Fallback): '+((err&&err.message)||err)); });
 }
 
 function fillAnalyseForm(data){
@@ -863,7 +889,7 @@ function doUpload(){
   if(!name){ alert('Bitte einen Dateinamen eingeben.'); return; }
 
   // Pfad: ordner/jahr/monat/kundennr_dateiname
-  var fileName = kundeNr ? kundeNr+'_'+name : name;
+  var fileName = (kundeNr && !name.startsWith(kundeNr+'_')) ? kundeNr+'_'+name : name;
   var path = ordner+'/'+jahr+'/'+monat+'/'+fileName;
 
   var statusEl = document.getElementById('uploadActionStatus');
