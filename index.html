@@ -2320,17 +2320,25 @@ var signaturePad = null;
 var currentSignOrderId = null;
 var currentSignPdfBytes = null;
 var currentSignAssociateName = '';
+var currentSignKundeId = null;
+var currentSignKundeEmail = '';
 
 function openSignModal(orderId, associateName){
   currentSignOrderId = orderId;
   currentSignPdfBytes = null;
   currentSignAssociateName = associateName || '';
+  currentSignKundeId = null;
+  currentSignKundeEmail = '';
   document.getElementById('signStatus').style.display = 'none';
   document.getElementById('signEmail').value = '';
 
   // Kunden-Email vorausfüllen falls vorhanden
   var kunde = allKunden.find(function(k){ return k.name === associateName || k.company === associateName; });
-  if(kunde && kunde.email) document.getElementById('signEmail').value = kunde.email;
+  if(kunde){
+    currentSignKundeId = kunde.id;
+    currentSignKundeEmail = kunde.email || '';
+    if(kunde.email) document.getElementById('signEmail').value = kunde.email;
+  }
 
   document.getElementById('signModalOverlay').style.display = 'flex';
 
@@ -2634,6 +2642,23 @@ async function sendSignedPdf(){
     } else {
       status.style.color='var(--green)';
       status.textContent='✅ Signiertes PDF wurde an '+email+' gesendet!';
+      // E-Mail beim Kunden in CashCtrl als Kontakt hinterlegen (falls neu oder geändert)
+      if(currentSignKundeId && email.toLowerCase() !== (currentSignKundeEmail||'').toLowerCase()){
+        try {
+          var pr = await ccFetch(CC_FN+'?action=person-set-email', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ id: currentSignKundeId, email: email })
+          });
+          var pd = await pr.json();
+          if(!pd.error){
+            var k = allKunden.find(function(x){ return x.id === currentSignKundeId; });
+            if(k) k.email = email;
+            currentSignKundeEmail = email;
+            status.textContent += ' E-Mail beim Kunden gespeichert.';
+          }
+        } catch(e){ /* nicht kritisch – Versand war erfolgreich */ }
+      }
     }
   } catch(err){
     status.style.color='var(--red)';
