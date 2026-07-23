@@ -189,6 +189,44 @@ body{
 /* TWO COL */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;}
 
+/* PIPELINE / KPI-STRIP */
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.25rem;}
+.kpi-tile{background:var(--glass);border:1px solid var(--glass-brd);border-radius:14px;padding:12px 14px;cursor:pointer;transition:transform .15s,background .15s;position:relative;}
+.kpi-tile:hover{background:var(--glass-hi);transform:translateY(-2px);}
+.kpi-num{font-size:24px;font-weight:800;letter-spacing:-.01em;color:#fff;}
+.kpi-label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+.kpi-sub{font-size:11px;color:var(--hint);margin-top:2px;min-height:14px;}
+.kpi-icon{font-size:15px;position:absolute;top:10px;right:12px;opacity:.85;}
+.kpi-ready{border-color:rgba(34,197,94,.45);box-shadow:0 0 18px rgba(34,197,94,.12);}
+.kpi-ready .kpi-num{color:#86efac;}
+.kpi-danger{border-color:rgba(239,68,68,.45);box-shadow:0 0 18px rgba(239,68,68,.12);}
+.kpi-danger .kpi-num{color:#fca5a5;}
+@media(max-width:900px){.kpi-strip{grid-template-columns:repeat(2,1fr);}.kpi-strip .kpi-tile:last-child{grid-column:1/-1;}}
+
+/* NAV-BADGE (Rechnungen bereit) */
+.nav-badge{margin-left:6px;background:rgba(34,197,94,.25);border:1px solid rgba(34,197,94,.5);color:#86efac;font-size:10px;font-weight:800;border-radius:999px;padding:1px 7px;display:none;line-height:1.5;}
+.sidebar-nav .nav-badge{margin-left:auto;}
+
+/* ALTERS-BADGES (Überfällig / Nachfassen) */
+.age-badge{font-size:10px;font-weight:800;border-radius:999px;padding:2px 8px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#fca5a5;white-space:nowrap;}
+.age-badge.warn{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.4);color:#fcd34d;}
+.age-badge.ok{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:#86efac;}
+
+/* WORKFLOW-FORTSCHRITT (Signatur-Modal) */
+.wf-steps{display:flex;flex-direction:column;gap:6px;margin:10px 0;}
+.wf-step{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted);padding:7px 10px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid var(--glass-brd);}
+.wf-step.wf-done{color:#86efac;border-color:rgba(34,197,94,.35);}
+.wf-step.wf-active{color:#fff;border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.08);}
+.wf-step.wf-warn{color:#fcd34d;border-color:rgba(245,158,11,.4);}
+.wf-step.wf-fail{color:#fca5a5;border-color:rgba(239,68,68,.45);}
+
+/* AKTIVITÄTEN-FEED */
+.activity-item{display:flex;gap:10px;padding:8px 2px;border-bottom:1px solid var(--glass-brd);align-items:flex-start;}
+.activity-item:last-child{border-bottom:none;}
+.activity-ico{font-size:15px;line-height:1.4;}
+.activity-txt{font-size:13px;flex:1;line-height:1.45;}
+.activity-time{font-size:11px;color:var(--hint);white-space:nowrap;padding-top:2px;}
+
 /* FÄLLIGKEITEN */
 .fael-item{display:flex;align-items:center;gap:12px;padding:10px 4px;border-radius:10px;cursor:pointer;transition:background .15s;}
 .fael-item:hover{background:rgba(255,255,255,.05);}
@@ -529,7 +567,7 @@ body{
     <button class="nav-item" onclick="showPage('auftraege')"><span class="nav-icon">📋</span><span>Aufträge</span></button>
     <button class="nav-item" onclick="showPage('offerten')"><span class="nav-icon">📄</span><span>Offerten</span></button>
     <button class="nav-item" onclick="showPage('lieferscheine')"><span class="nav-icon">🚛</span><span>Lieferscheine</span></button>
-    <button class="nav-item" onclick="showPage('rechnungen')"><span class="nav-icon">🧾</span><span>Rechnungen</span></button>
+    <button class="nav-item" onclick="showPage('rechnungen')"><span class="nav-icon">🧾</span><span>Rechnungen</span><span class="nav-badge nav-badge-ready">0</span></button>
     <button class="nav-item" onclick="showPage('lieferungen')"><span class="nav-icon">🚚</span><span>Lieferungen</span></button>
     <button class="nav-item" onclick="showPage('aufgaben')"><span class="nav-icon">✅</span><span>Aufgaben</span></button>
     <button class="nav-item" onclick="showPage('lager')"><span class="nav-icon">📦</span><span>Lagerbestand</span></button>
@@ -562,7 +600,7 @@ body{
   <button class="nav-item" onclick="showPage('auftraege')"><span class="nav-icon">📋</span><span>Aufträge</span></button>
   <button class="nav-item" onclick="showPage('offerten')"><span class="nav-icon">📄</span><span>Offerten</span></button>
   <button class="nav-item" onclick="showPage('lieferscheine')"><span class="nav-icon">🚛</span><span>Lieferscheine</span></button>
-  <button class="nav-item" onclick="showPage('rechnungen')"><span class="nav-icon">🧾</span><span>Rechnungen</span></button>
+  <button class="nav-item" onclick="showPage('rechnungen')"><span class="nav-icon">🧾</span><span>Rechnungen</span><span class="nav-badge nav-badge-ready">0</span></button>
   <button class="nav-item" onclick="showPage('lieferungen')"><span class="nav-icon">🚚</span><span>Lieferungen</span></button>
   <button class="nav-item" onclick="showPage('aufgaben')"><span class="nav-icon">✅</span><span>Aufgaben</span></button>
   <button class="nav-item" onclick="showPage('lager')"><span class="nav-icon">📦</span><span>Lagerbestand</span></button>
@@ -589,6 +627,9 @@ body{
 
 <!-- DASHBOARD -->
 <section id="page-overview" class="page-section active">
+
+  <!-- PIPELINE / KENNZAHLEN -->
+  <div class="kpi-strip" id="kpiStrip"></div>
 
   <!-- AUFGABENÜBERSICHT DONUT (mobile only) -->
   <div class="card mobile-only-flex aufgaben-donut-card">
@@ -637,6 +678,41 @@ body{
         </div>
       </div>
       <div id="homeAufgabenList"></div>
+    </div>
+  </div>
+
+  <!-- RECHNUNGEN BEREIT + ÜBERFÄLLIGE RECHNUNGEN -->
+  <div class="two-col">
+    <div class="card" id="cardReadyInvoices">
+      <div class="card-header">
+        <div class="card-title">📤 Rechnungen bereit zum Versand</div>
+        <button class="card-action" onclick="showPage('rechnungen')">Alle Rechnungen</button>
+      </div>
+      <div id="dashReadyInvoices"></div>
+    </div>
+    <div class="card" id="cardOverdueInvoices">
+      <div class="card-header">
+        <div class="card-title">⏰ Zahlung ausstehend / überfällig</div>
+        <button class="card-action" onclick="showPage('rechnungen')">Alle anzeigen</button>
+      </div>
+      <div id="dashOverdueInvoices"></div>
+    </div>
+  </div>
+
+  <!-- OFFERTEN NACHFASSEN + LETZTE AKTIVITÄTEN -->
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🔔 Offerten nachfassen</div>
+        <button class="card-action" onclick="showPage('offerten')">Alle Offerten</button>
+      </div>
+      <div id="dashFollowUps"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🕘 Letzte Aktivitäten</div>
+      </div>
+      <div id="dashActivity"></div>
     </div>
   </div>
 
@@ -845,6 +921,21 @@ body{
 
     <div id="signStatus" style="display:none;font-size:13px;margin-bottom:1rem;text-align:center;padding:10px;background:rgba(255,255,255,.05);border-radius:8px;"></div>
 
+    <!-- EXPRESS-WORKFLOW: Signieren → Geliefert → Rechnung -->
+    <div style="border:1px solid rgba(34,197,94,.35);background:rgba(34,197,94,.06);border-radius:12px;padding:12px 14px;margin-bottom:1rem;">
+      <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#86efac;margin-bottom:6px;">⚡ Lieferung abschliessen</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.5;">Speichert das signierte PDF, hängt es in CashCtrl an, setzt den Lieferschein auf <b>Geliefert</b> und erstellt automatisch die <b>Rechnung</b>. Die neue Rechnung erscheint auf der Startseite unter «Rechnungen bereit zum Versand».</p>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);margin-bottom:10px;cursor:pointer;">
+        <input type="checkbox" id="signFlowSendMail" style="width:16px;height:16px;accent-color:#22c55e;">
+        <span>Signierten Lieferschein per E-Mail an Kunde senden</span>
+      </label>
+      <button onclick="finishDeliveryWorkflow()" id="signFlowBtn"
+        style="width:100%;background:linear-gradient(135deg,#22c55e,#15803d);color:#fff;border:none;border-radius:10px;padding:13px 22px;font-size:14px;font-weight:800;cursor:pointer;font-family:var(--font);">
+        ⚡ Abschliessen: Geliefert + Rechnung erstellen
+      </button>
+      <div class="wf-steps" id="signFlowSteps" style="display:none;"></div>
+    </div>
+
     <div class="modal-actions">
       <button class="btn-sm" onclick="closeSignModal()">Schliessen</button>
       <button onclick="downloadSignedPdf()" id="signDownloadBtn"
@@ -858,6 +949,32 @@ body{
       <button onclick="attachSignedPdfToCashctrl()" id="signAttachBtn"
         style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-size:14px;font-weight:700;cursor:pointer;">
         📎 In CashCtrl anhängen
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- RECHNUNG SENDEN MODAL -->
+<div class="overlay" id="invoiceSendOverlay" style="display:none;">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:480px;">
+    <h3 id="invoiceSendTitle">Rechnung senden</h3>
+    <p id="invoiceSendInfo" style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.5;"></p>
+    <div style="margin-bottom:.875rem;">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">E-Mail an</label>
+      <input id="invoiceSendEmail" type="email" placeholder="kunde@beispiel.ch"
+        style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:1rem;">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Betreff</label>
+      <input id="invoiceSendSubject" type="text"
+        style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+    </div>
+    <div id="invoiceSendStatus" style="display:none;font-size:13px;margin-bottom:1rem;text-align:center;padding:10px;background:rgba(255,255,255,.05);border-radius:8px;"></div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeInvoiceSendModal()">Abbrechen</button>
+      <button onclick="sendInvoiceMailNow()" id="invoiceSendBtn"
+        style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-size:14px;font-weight:700;cursor:pointer;">
+        ✉ PDF senden
       </button>
     </div>
   </div>
@@ -1220,6 +1337,39 @@ function loadState() {
   });
 }
 
+// ─── STATE-ERWEITERUNGEN: Rechnungs-Versandliste + Aktivitäten ───
+function ensureStateShape(){
+  if(!state.readyInvoices) state.readyInvoices = []; // { invoiceId, associateName, fromNr, ts }
+  if(!state.activity) state.activity = [];           // { t, icon, text }
+}
+
+var _saveTimer = null;
+function saveStateDebounced(){
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveState, 400);
+}
+
+function logActivity(icon, text){
+  ensureStateShape();
+  state.activity.unshift({ t: Date.now(), icon: icon, text: text });
+  if(state.activity.length > 60) state.activity = state.activity.slice(0, 60);
+  saveStateDebounced();
+  renderActivityFeed();
+}
+
+function fmtRel(ts){
+  var diff = Date.now() - ts;
+  var min = Math.floor(diff/60000);
+  if(min < 1) return 'Jetzt';
+  if(min < 60) return 'vor '+min+' Min';
+  var h = Math.floor(min/60);
+  if(h < 24) return 'vor '+h+' Std';
+  var d = Math.floor(h/24);
+  if(d === 1) return 'Gestern';
+  if(d < 7) return 'vor '+d+' Tagen';
+  return new Date(ts).toLocaleDateString('de-CH',{day:'numeric',month:'short'});
+}
+
 function today(){var d=new Date();d.setHours(0,0,0,0);return d;}
 function parseDate(s){if(!s)return null;var d=new Date(s);d.setHours(0,0,0,0);return isNaN(d)?null:d;}
 function diffDays(d){return Math.round((d-today())/86400000);}
@@ -1244,7 +1394,7 @@ function showPage(id){
   });
   renderAll();
   if(id==='auftraege') { if(Object.keys(ccStatuses).length) loadCcOrders('auftraege', 3); }
-  if(id==='overview') { if(Object.keys(ccStatuses).length){ loadCcOrders('auftraege', 3); loadCcOrders('offerten', 2); } checkBuemaOpenOrders(); }
+  if(id==='overview') { if(Object.keys(ccStatuses).length){ loadCcOrders('auftraege', 3); loadCcOrders('offerten', 2); loadCcOrders('lieferscheine', 6); loadCcOrders('rechnungen', 4); } checkBuemaOpenOrders(); }
   if(id==='offerten') { if(Object.keys(ccStatuses).length) loadCcOrders('offerten', 2); }
   if(id==='lieferscheine') { if(Object.keys(ccStatuses).length) loadCcOrders('lieferscheine', 6); loadSignedDocs(); }
   if(id==='dateien') { selectFolder(currentFolder); }
@@ -1882,6 +2032,7 @@ function loadCcOrders(listKey, catId){
       // Home-Widget & Kennzahlen aktualisieren falls Aufträge/Offerten geladen wurden
       if(listKey==='auftraege') renderHomeAuftraege();
       if(listKey==='auftraege' || listKey==='offerten') renderMetrics();
+      renderDashboardExtras();
     })
     .catch(function(err){ if(el) el.innerHTML='<p style="color:var(--red);font-size:13px;">Fehler: '+err.message+'</p>'; });
 }
@@ -1932,9 +2083,12 @@ function renderCcList(listKey, q){
                +'<button class="cc-btn" onclick="ccContinueOrder('+o.id+',4)">→ Rechnung</button>';
     } else if(listKey === 'lieferscheine'){
       actions = '<button class="cc-btn" onclick="downloadCcPdf('+o.id+', this)">📄 PDF</button>'
-               +'<button class="cc-btn" onclick="openSignModal('+o.id+', \''+o.associateName+'\')" style="background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.4);">✍️ Unterschrift</button>';
+               +'<button class="cc-btn" onclick="openSignModal('+o.id+', \''+encodeURIComponent(o.associateName||'')+'\')" style="background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.4);">✍️ Unterschrift</button>';
     } else if(listKey === 'rechnungen'){
-      actions = '<button class="cc-btn" onclick="downloadCcPdf('+o.id+', this)">📄 PDF</button>'
+      var isReady = (state.readyInvoices||[]).some(function(m){ return m.invoiceId===o.id; });
+      actions = (isReady?'<span class="age-badge ok" style="align-self:center;">📤 Bereit</span>':'')
+               +'<button class="cc-btn" onclick="downloadCcPdf('+o.id+', this)">📄 PDF</button>'
+               +'<button class="cc-btn" onclick="openInvoiceSendModal('+o.id+',\'invoice\')" style="background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.4);">✉ Senden</button>'
                +'<button class="cc-btn" onclick="ccContinueOrder('+o.id+',3)" style="background:rgba(99,102,241,.16);border-color:rgba(139,92,246,.4);">→ Auftrag</button>'
                +'<button class="cc-btn" onclick="ccContinueOrder('+o.id+',2)" style="background:rgba(99,102,241,.16);border-color:rgba(139,92,246,.4);">→ Offerte</button>';
     }
@@ -1987,6 +2141,8 @@ function lieferscheinUndErledigt(orderId){
     } else {
       loadCcOrders('auftraege',3); loadCcOrders('lieferscheine',6);
     }
+    var srcAuf = findOrderAnywhere(orderId);
+    logActivity('🚛','Lieferschein aus Auftrag '+(srcAuf?(srcAuf.nr||'#'+orderId):'#'+orderId)+' ('+(srcAuf&&srcAuf.associateName?srcAuf.associateName:'')+') erstellt');
     alert('Lieferschein erfolgreich erstellt!');
   })
   .catch(function(err){ alert('Fehler: '+err.message); btns.forEach(function(b){ b.disabled=false; }); });
@@ -2012,8 +2168,10 @@ function changeCcStatus(orderId, selectEl, listKey){
         order.statusName = st.name;
         order.isClosed = st.isClosed;
         selectEl.style.color = st.isClosed ? '#22c55e' : '#3b82f6';
+        logActivity('🔄', CC_CAT_NAME[catId]+' '+(order.nr||'#'+orderId)+' ('+(order.associateName||'')+') → '+st.name);
       }
     }
+    renderDashboardExtras();
   });
 }
 
@@ -2048,6 +2206,12 @@ function ccContinueOrder(orderId, targetCatId){
   .then(function(r){ return r.json(); })
   .then(function(res){
     if(res.error){ alert('Fehler: '+JSON.stringify(res.error)); btns.forEach(function(b){ b.disabled=false; }); return; }
+    var src = findOrderAnywhere(orderId);
+    logActivity('📑', label+' aus '+(src?(src.nr||'#'+orderId):'#'+orderId)+' ('+(src&&src.associateName?src.associateName:'')+') erstellt');
+    if(targetCatId===4){
+      var newId = res.data && res.data.id ? res.data.id : (res.insertId || null);
+      addReadyInvoiceMarker(newId, src?src.associateName:'', src?(src.nr||''):'');
+    }
     alert(label+' erfolgreich erstellt!');
     loadCcOrders('auftraege',3); loadCcOrders('offerten',2); loadCcOrders('lieferscheine',6); loadCcOrders('rechnungen',4);
   })
@@ -2320,25 +2484,25 @@ var signaturePad = null;
 var currentSignOrderId = null;
 var currentSignPdfBytes = null;
 var currentSignAssociateName = '';
-var currentSignKundeId = null;
-var currentSignKundeEmail = '';
 
 function openSignModal(orderId, associateName){
   currentSignOrderId = orderId;
   currentSignPdfBytes = null;
-  currentSignAssociateName = associateName || '';
-  currentSignKundeId = null;
-  currentSignKundeEmail = '';
+  try { associateName = decodeURIComponent(associateName || ''); } catch(e){ associateName = associateName || ''; }
+  currentSignAssociateName = associateName;
+  // Express-Workflow-UI zurücksetzen
+  var flowBtn = document.getElementById('signFlowBtn');
+  if(flowBtn){ flowBtn.disabled = false; flowBtn.textContent = '⚡ Abschliessen: Geliefert + Rechnung erstellen'; }
+  var flowSteps = document.getElementById('signFlowSteps');
+  if(flowSteps){ flowSteps.style.display = 'none'; flowSteps.innerHTML = ''; }
   document.getElementById('signStatus').style.display = 'none';
   document.getElementById('signEmail').value = '';
 
   // Kunden-Email vorausfüllen falls vorhanden
   var kunde = allKunden.find(function(k){ return k.name === associateName || k.company === associateName; });
-  if(kunde){
-    currentSignKundeId = kunde.id;
-    currentSignKundeEmail = kunde.email || '';
-    if(kunde.email) document.getElementById('signEmail').value = kunde.email;
-  }
+  if(kunde && kunde.email) document.getElementById('signEmail').value = kunde.email;
+  var flowMail = document.getElementById('signFlowSendMail');
+  if(flowMail) flowMail.checked = !!(kunde && kunde.email);
 
   document.getElementById('signModalOverlay').style.display = 'flex';
 
@@ -2594,7 +2758,7 @@ async function attachSignedPdfToCashctrl(){
       status.textContent='Fehler: '+JSON.stringify(data.error);
     } else {
       status.style.color='var(--green)';
-      status.textContent='✅ Signiertes PDF wurde in CashCtrl angehängt!';
+      status.textContent='✅ Signiertes PDF wurde in CashCtrl angehängt!'; logActivity('📎','Signierter Lieferschein #'+currentSignOrderId+' in CashCtrl angehängt');
     }
   } catch(err){
     status.style.color='var(--red)';
@@ -2641,24 +2805,7 @@ async function sendSignedPdf(){
       status.textContent='Fehler: '+JSON.stringify(data.error);
     } else {
       status.style.color='var(--green)';
-      status.textContent='✅ Signiertes PDF wurde an '+email+' gesendet!';
-      // E-Mail beim Kunden in CashCtrl als Kontakt hinterlegen (falls neu oder geändert)
-      if(currentSignKundeId && email.toLowerCase() !== (currentSignKundeEmail||'').toLowerCase()){
-        try {
-          var pr = await ccFetch(CC_FN+'?action=person-set-email', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ id: currentSignKundeId, email: email })
-          });
-          var pd = await pr.json();
-          if(!pd.error){
-            var k = allKunden.find(function(x){ return x.id === currentSignKundeId; });
-            if(k) k.email = email;
-            currentSignKundeEmail = email;
-            status.textContent += ' E-Mail beim Kunden gespeichert.';
-          }
-        } catch(e){ /* nicht kritisch – Versand war erfolgreich */ }
-      }
+      status.textContent='✅ Signiertes PDF wurde an '+email+' gesendet!'; logActivity('✉️','Signierter Lieferschein #'+currentSignOrderId+' an '+email+' gesendet');
     }
   } catch(err){
     status.style.color='var(--red)';
@@ -2666,6 +2813,512 @@ async function sendSignedPdf(){
   }
   btn.disabled=false;
 }
+// ═══════════════════════════════════════════════════════════════
+// EXPRESS-WORKFLOW: Signiert → Geliefert → Rechnung → Versandliste
+// ═══════════════════════════════════════════════════════════════
+
+function pdfBytesToB64(pdfBytes){
+  var arr = new Uint8Array(pdfBytes);
+  var b64 = '';
+  var chunkSize = 8192;
+  for(var i = 0; i < arr.length; i += chunkSize){
+    b64 += String.fromCharCode.apply(null, arr.subarray(i, i + chunkSize));
+  }
+  return btoa(b64);
+}
+
+// Signiertes PDF still (ohne Modal-UI) in lokale Liste aufnehmen
+function addSignedDocEntry(b64encoded){
+  var docs = getSignedDocs();
+  docs.unshift({
+    id: Date.now(),
+    orderId: currentSignOrderId,
+    kundenName: currentSignAssociateName,
+    date: new Date().toLocaleDateString('de-CH'),
+    fileName: 'lieferschein-signiert-'+currentSignOrderId+'.pdf',
+    data: b64encoded
+  });
+  if(docs.length > 50) docs = docs.slice(0, 50);
+  saveSignedDocs(docs);
+  loadSignedDocs();
+}
+
+function setCcStatusAsync(orderId, statusId){
+  return ccFetch(CC_FN+'?action=order-update-status', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ orderId: orderId, statusId: statusId })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res){ return !res.error; })
+  .catch(function(){ return false; });
+}
+
+// «Geliefert»-Status robust finden (Fallback-Kette bis zum ersten geschlossenen Status)
+function findGeliefertStatusId(){
+  var id = findStatusId(6,'geliefert') || findStatusId(6,'zugestellt') || findStatusId(6,'erledigt') || findStatusId(6,'abgeschlossen');
+  if(id) return id;
+  var closed = (ccStatuses[6]||[]).find(function(s){ return s.isClosed; });
+  return closed ? closed.id : null;
+}
+
+function findOrderAnywhere(orderId){
+  var keys = ['auftraege','offerten','lieferscheine','rechnungen'];
+  for(var i=0;i<keys.length;i++){
+    var hit = (ccLists[keys[i]]||[]).find(function(o){ return o.id===orderId; });
+    if(hit) return hit;
+  }
+  return null;
+}
+
+function addReadyInvoiceMarker(invoiceId, associateName, fromNr){
+  ensureStateShape();
+  // Doppelte Marker vermeiden
+  if(invoiceId && state.readyInvoices.some(function(m){ return m.invoiceId===invoiceId; })) return;
+  state.readyInvoices.unshift({
+    invoiceId: invoiceId || null,
+    associateName: associateName || '',
+    fromNr: fromNr || '',
+    ts: Date.now()
+  });
+  saveStateDebounced();
+  renderDashboardExtras();
+}
+
+// Fortschritts-UI im Signatur-Modal
+function wfRender(steps){
+  var el = document.getElementById('signFlowSteps');
+  if(!el) return;
+  el.style.display = 'flex';
+  var icons = { pending:'○', active:'⏳', done:'✅', warn:'⚠️', fail:'❌' };
+  el.innerHTML = steps.map(function(s){
+    return '<div class="wf-step wf-'+s.state+'"><span>'+(icons[s.state]||'○')+'</span><span>'+escHtml(s.label)+(s.note?' – '+escHtml(s.note):'')+'</span></div>';
+  }).join('');
+}
+
+async function finishDeliveryWorkflow(){
+  if(!currentSignPdfBytes){ alert('PDF wurde noch nicht geladen.'); return; }
+  if(!signaturePad || signaturePad.isEmpty()){ alert('Bitte zuerst unterschreiben.'); return; }
+  var sendMail = document.getElementById('signFlowSendMail').checked;
+  var email = document.getElementById('signEmail').value.trim();
+  if(sendMail && !email){ alert('Bitte E-Mail-Adresse eingeben oder Häkchen entfernen.'); return; }
+
+  var btn = document.getElementById('signFlowBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Workflow läuft...';
+
+  var steps = [
+    { key:'pdf',    label:'Signiertes PDF erstellen', state:'active' },
+    { key:'store',  label:'Im Dashboard & Archiv speichern', state:'pending' },
+    { key:'attach', label:'In CashCtrl anhängen', state:'pending' }
+  ];
+  if(sendMail) steps.push({ key:'mail', label:'Lieferschein an '+email+' senden', state:'pending' });
+  steps.push({ key:'status',  label:'Lieferschein auf «Geliefert» setzen', state:'pending' });
+  steps.push({ key:'invoice', label:'Rechnung erstellen', state:'pending' });
+  wfRender(steps);
+  function setStep(key, st, note){
+    var s = steps.find(function(x){ return x.key===key; });
+    if(s){ s.state = st; if(note) s.note = note; }
+    wfRender(steps);
+  }
+  function activate(key){ setStep(key, 'active'); }
+
+  var lieferschein = findOrderAnywhere(currentSignOrderId);
+  var lsNr = lieferschein ? (lieferschein.nr || '#'+currentSignOrderId) : '#'+currentSignOrderId;
+  var hadWarning = false;
+
+  try {
+    // 1) PDF bauen
+    var pdfBytes = await buildSignedPdf();
+    if(!pdfBytes){ btn.disabled=false; btn.textContent='⚡ Abschliessen: Geliefert + Rechnung erstellen'; return; }
+    var b64 = pdfBytesToB64(pdfBytes);
+    setStep('pdf','done');
+
+    // 2) Speichern (lokal + Supabase Storage)
+    activate('store');
+    try { addSignedDocEntry(b64); } catch(e){}
+    var stored = await saveSignedPdfToStorage(pdfBytes, currentSignOrderId, currentSignAssociateName);
+    setStep('store', stored ? 'done' : 'warn', stored ? '' : 'Archiv nicht erreichbar');
+    if(!stored) hadWarning = true;
+
+    // 3) In CashCtrl anhängen
+    activate('attach');
+    try {
+      var resA = await ccFetch(CC_FN+'?action=attach-pdf', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ orderId: currentSignOrderId, pdfBase64: b64, fileName: 'lieferschein-signiert-'+currentSignOrderId+'.pdf' })
+      });
+      var dataA = await resA.json();
+      if(dataA.error){ setStep('attach','warn','Anhängen fehlgeschlagen'); hadWarning = true; }
+      else setStep('attach','done');
+    } catch(e){ setStep('attach','warn', e.message); hadWarning = true; }
+
+    // 4) Optional: Mail an Kunde
+    if(sendMail){
+      activate('mail');
+      try {
+        var resM = await ccFetch(CC_FN+'?action=send-pdf', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            to: email,
+            subject: 'Lieferschein '+lsNr+' – Bärtsch + Dobal',
+            pdfBase64: b64,
+            fileName: 'lieferschein-'+currentSignOrderId+'.pdf',
+            kundenName: currentSignAssociateName
+          })
+        });
+        var dataM = await resM.json();
+        if(dataM.error){ setStep('mail','warn','Versand fehlgeschlagen'); hadWarning = true; }
+        else setStep('mail','done');
+      } catch(e){ setStep('mail','warn', e.message); hadWarning = true; }
+    }
+
+    // 5) Lieferschein auf Geliefert
+    activate('status');
+    var gelId = findGeliefertStatusId();
+    if(gelId){
+      var ok = await setCcStatusAsync(currentSignOrderId, gelId);
+      setStep('status', ok ? 'done' : 'warn', ok ? '' : 'Status nicht gesetzt');
+      if(!ok) hadWarning = true;
+    } else {
+      setStep('status','warn','Kein «Geliefert»-Status gefunden');
+      hadWarning = true;
+    }
+
+    // 6) Rechnung erstellen
+    activate('invoice');
+    var newInvoiceId = null;
+    try {
+      var resI = await ccFetch(CC_FN+'?action=continue', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ orderId: currentSignOrderId, target: 'rechnung' })
+      });
+      var dataI = await resI.json();
+      if(dataI.error){
+        setStep('invoice','fail', typeof dataI.error==='string'?dataI.error:'Fehler');
+        hadWarning = true;
+      } else {
+        if(dataI.data && dataI.data.id) newInvoiceId = dataI.data.id;
+        else if(dataI.insertId) newInvoiceId = dataI.insertId;
+        setStep('invoice','done');
+        addReadyInvoiceMarker(newInvoiceId, currentSignAssociateName, lsNr);
+      }
+    } catch(e){ setStep('invoice','fail', e.message); hadWarning = true; }
+
+    // Abschluss
+    logActivity('⚡','Lieferschein '+lsNr+' ('+currentSignAssociateName+') signiert & geliefert – Rechnung erstellt');
+    saveState();
+    loadCcOrders('lieferscheine', 6);
+    loadCcOrders('rechnungen', 4);
+
+    var status = document.getElementById('signStatus');
+    status.style.display = 'block';
+    status.style.color = hadWarning ? 'var(--amber)' : 'var(--green)';
+    status.textContent = hadWarning
+      ? '⚠️ Workflow abgeschlossen – einzelne Schritte prüfen (siehe oben).'
+      : '✅ Fertig! Die Rechnung wartet auf der Startseite unter «Bereit zum Versand».';
+    btn.textContent = '✅ Abgeschlossen';
+  } catch(err){
+    alert('Fehler im Workflow: '+err.message);
+    btn.disabled = false;
+    btn.textContent = '⚡ Abschliessen: Geliefert + Rechnung erstellen';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DASHBOARD-WIDGETS: KPI-Pipeline, Versandliste, Überfällig, Nachfassen
+// ═══════════════════════════════════════════════════════════════
+
+var OVERDUE_DAYS = 30;   // Rechnung gilt nach 30 Tagen als überfällig
+var FOLLOWUP_DAYS = 14;  // Offerten nach 14 Tagen nachfassen
+
+function chf0(n){ return 'CHF '+Number(n||0).toLocaleString('de-CH',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+function orderAgeDays(o){
+  if(!o.date) return 0;
+  var d = new Date(o.date.substring(0,10));
+  return Math.floor((Date.now()-d.getTime())/86400000);
+}
+
+// Marker → Rechnung auflösen (ID oder Fallback über Kundenname)
+function resolveReadyInvoices(){
+  ensureStateShape();
+  var invoices = ccLists.rechnungen || [];
+  var out = [];
+  var changed = false;
+  state.readyInvoices.forEach(function(m){
+    var inv = null;
+    if(m.invoiceId) inv = invoices.find(function(o){ return o.id===m.invoiceId; });
+    if(!inv && invoices.length && m.associateName){
+      var cand = invoices.filter(function(o){
+        return !o.isClosed && (o.associateName||'')===m.associateName;
+      }).sort(function(a,b){ return new Date(b.date||0)-new Date(a.date||0); });
+      if(cand.length){ inv = cand[0]; m.invoiceId = inv.id; changed = true; }
+    }
+    if(inv && inv.isClosed){ m._drop = true; changed = true; return; } // anderweitig erledigt → Marker weg
+    out.push({ marker: m, invoice: inv });
+  });
+  if(changed){
+    state.readyInvoices = state.readyInvoices.filter(function(m){ return !m._drop; });
+    saveStateDebounced();
+  }
+  return out;
+}
+
+function getOverdueInvoices(){
+  return (ccLists.rechnungen||[]).filter(function(o){
+    if(o.isClosed) return false;
+    var n = (o.statusName||'').toLowerCase();
+    if(n.includes('entwurf') || n.includes('bezahlt') || n.includes('storn')) return false;
+    if(n.includes('überfällig') || n.includes('ueberfaellig')) return true;
+    return orderAgeDays(o) >= OVERDUE_DAYS;
+  }).sort(function(a,b){ return new Date(a.date||0)-new Date(b.date||0); });
+}
+
+function getFollowUpOffers(){
+  return (ccLists.offerten||[]).filter(function(o){
+    return !o.isClosed && orderAgeDays(o) >= FOLLOWUP_DAYS;
+  }).sort(function(a,b){ return new Date(a.date||0)-new Date(b.date||0); });
+}
+
+function renderKpiStrip(){
+  var el = document.getElementById('kpiStrip'); if(!el) return;
+  var off = (ccLists.offerten||[]).filter(function(o){ return !o.isClosed; });
+  var auf = (ccLists.auftraege||[]).filter(function(o){ return !o.isClosed; });
+  var lief = (ccLists.lieferscheine||[]).filter(function(o){ return !o.isClosed; });
+  var ready = resolveReadyInvoices();
+  var over = getOverdueInvoices();
+  function sum(list){ return list.reduce(function(s,o){ return s+(Number(o.total)||0); },0); }
+  function tile(icon, num, label, sub, page, extraCls){
+    return '<div class="kpi-tile'+(extraCls?' '+extraCls:'')+'" onclick="showPage(\''+page+'\')">'
+      +'<span class="kpi-icon">'+icon+'</span>'
+      +'<div class="kpi-num">'+num+'</div>'
+      +'<div class="kpi-label">'+label+'</div>'
+      +'<div class="kpi-sub">'+sub+'</div></div>';
+  }
+  el.innerHTML =
+     tile('📄', off.length, 'Offerten offen', off.length?chf0(sum(off)):'–', 'offerten')
+    +tile('📋', auf.length, 'Aufträge offen', auf.length?chf0(sum(auf)):'–', 'auftraege')
+    +tile('🚛', lief.length, 'Lieferungen offen', lief.length?'unterwegs / geplant':'–', 'lieferscheine')
+    +tile('📤', ready.length, 'Rechnungen bereit', ready.length?'zum Versand':'–', 'rechnungen', ready.length?'kpi-ready':'')
+    +tile('⏰', over.length, 'Zahlung überfällig', over.length?chf0(sum(over)):'–', 'rechnungen', over.length?'kpi-danger':'');
+}
+
+function renderDashReadyInvoices(){
+  var el = document.getElementById('dashReadyInvoices'); if(!el) return;
+  var list = resolveReadyInvoices();
+  updateNavBadges(list.length);
+  if(!list.length){
+    el.innerHTML = '<p style="color:var(--hint);font-size:13px;padding:.5rem 0;">Keine Rechnungen in der Warteschlange. Schliesse eine Lieferung ab (✍️ → ⚡), dann erscheint die Rechnung hier.</p>';
+    return;
+  }
+  el.innerHTML = list.slice(0,6).map(function(r){
+    var inv = r.invoice, m = r.marker;
+    var title = inv ? (inv.nr||'#'+inv.id)+' — '+(inv.associateName||'–') : '⏳ '+(m.associateName||'Rechnung')+' (wird geladen...)';
+    var total = inv && inv.total!=null ? 'CHF '+Number(inv.total).toLocaleString('de-CH',{minimumFractionDigits:2}) : '';
+    var meta = [inv&&inv.date?inv.date.substring(0,10):'', total, m.fromNr?'aus '+escHtml(m.fromNr):''].filter(Boolean).join(' · ');
+    var actions = inv
+      ? '<button class="cc-btn" onclick="downloadCcPdf('+inv.id+', this)">📄 PDF</button>'
+        +'<button class="cc-btn" onclick="openInvoiceSendModal('+inv.id+',\'invoice\')" style="background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.4);">✉ Senden</button>'
+        +'<button class="cc-btn" onclick="markInvoiceSent('+inv.id+')" title="Aus Liste entfernen und als versendet markieren">✓ Versendet</button>'
+      : '<button class="cc-btn" onclick="loadCcOrders(\'rechnungen\',4)">↻</button>';
+    return '<div class="cc-order">'
+      +'<div class="cc-order-body">'
+        +'<div class="cc-order-title">'+escHtml(title)+'</div>'
+        +'<div class="cc-order-meta">'+meta+'</div>'
+      +'</div>'
+      +'<div class="cc-order-actions">'+actions+'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function renderDashOverdueInvoices(){
+  var el = document.getElementById('dashOverdueInvoices'); if(!el) return;
+  var list = getOverdueInvoices();
+  if(!list.length){
+    el.innerHTML = '<p style="color:var(--hint);font-size:13px;padding:.5rem 0;">Keine überfälligen Rechnungen 🎉</p>';
+    return;
+  }
+  el.innerHTML = list.slice(0,6).map(function(o){
+    var total = o.total!=null ? 'CHF '+Number(o.total).toLocaleString('de-CH',{minimumFractionDigits:2}) : '';
+    var age = orderAgeDays(o);
+    return '<div class="cc-order">'
+      +'<div class="cc-order-body">'
+        +'<div class="cc-order-title">'+escHtml((o.nr||'#'+o.id)+' — '+(o.associateName||'–'))+'</div>'
+        +'<div class="cc-order-meta">'
+          +(o.date?o.date.substring(0,10)+' · ':'')+(total?total+' · ':'')
+          +'<span class="age-badge">seit '+age+' Tagen</span>'
+        +'</div>'
+      +'</div>'
+      +'<div class="cc-order-actions">'
+        +'<button class="cc-btn" onclick="openInvoiceSendModal('+o.id+',\'reminder\')" style="background:rgba(245,158,11,.16);border-color:rgba(245,158,11,.4);">✉ Erinnerung</button>'
+        +'<button class="cc-btn" onclick="downloadCcPdf('+o.id+', this)">📄 PDF</button>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function renderDashFollowUps(){
+  var el = document.getElementById('dashFollowUps'); if(!el) return;
+  var list = getFollowUpOffers();
+  if(!list.length){
+    el.innerHTML = '<p style="color:var(--hint);font-size:13px;padding:.5rem 0;">Alle Offerten sind aktuell – nichts nachzufassen 👍</p>';
+    return;
+  }
+  el.innerHTML = list.slice(0,6).map(function(o){
+    var total = o.total!=null ? 'CHF '+Number(o.total).toLocaleString('de-CH',{minimumFractionDigits:2}) : '';
+    var age = orderAgeDays(o);
+    return '<div class="cc-order">'
+      +'<div class="cc-order-body">'
+        +'<div class="cc-order-title">'+escHtml((o.nr||'#'+o.id)+' — '+(o.associateName||'–'))+'</div>'
+        +'<div class="cc-order-meta">'
+          +(o.date?o.date.substring(0,10)+' · ':'')+(total?total+' · ':'')
+          +'<span class="age-badge warn">'+age+' Tage alt</span>'
+        +'</div>'
+      +'</div>'
+      +'<div class="cc-order-actions">'
+        +'<button class="cc-btn" onclick="addFollowUpTask('+o.id+')">+ Aufgabe</button>'
+        +'<button class="cc-btn" onclick="ccContinueOrder('+o.id+',3)">→ Auftrag</button>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function addFollowUpTask(offerId){
+  var o = (ccLists.offerten||[]).find(function(x){ return x.id===offerId; });
+  if(!o) return;
+  var label = 'Offerte '+(o.nr||'#'+o.id)+' – '+(o.associateName||'')+' nachfassen';
+  var exists = state.tasks.some(function(t){ return !t.done && t.label===label; });
+  if(exists){ alert('Aufgabe existiert bereits.'); return; }
+  state.tasks.push({ id: Date.now(), label: label, prio:'gelb', done:false, due: new Date().toISOString().split('T')[0], person:0 });
+  logActivity('🔔','Nachfass-Aufgabe erstellt: '+(o.nr||'#'+o.id)+' ('+(o.associateName||'')+')');
+  saveState();
+  renderAll();
+}
+
+function renderActivityFeed(){
+  var el = document.getElementById('dashActivity'); if(!el) return;
+  ensureStateShape();
+  if(!state.activity.length){
+    el.innerHTML = '<p style="color:var(--hint);font-size:13px;padding:.5rem 0;">Noch keine Aktivitäten. Alles, was du hier im Dashboard machst, erscheint automatisch in diesem Verlauf.</p>';
+    return;
+  }
+  el.innerHTML = state.activity.slice(0,8).map(function(a){
+    return '<div class="activity-item">'
+      +'<span class="activity-ico">'+a.icon+'</span>'
+      +'<span class="activity-txt">'+escHtml(a.text)+'</span>'
+      +'<span class="activity-time">'+fmtRel(a.t)+'</span>'
+    +'</div>';
+  }).join('');
+}
+
+function updateNavBadges(readyCount){
+  document.querySelectorAll('.nav-badge-ready').forEach(function(b){
+    b.textContent = readyCount;
+    b.style.display = readyCount > 0 ? 'inline-block' : 'none';
+  });
+}
+
+function renderDashboardExtras(){
+  renderKpiStrip();
+  renderDashReadyInvoices();
+  renderDashOverdueInvoices();
+  renderDashFollowUps();
+  renderActivityFeed();
+}
+
+// ─── RECHNUNG PER MAIL SENDEN (Rechnung / Zahlungserinnerung) ───
+var currentInvoiceSendId = null;
+var currentInvoiceSendKind = 'invoice';
+
+function openInvoiceSendModal(invoiceId, kind){
+  var inv = (ccLists.rechnungen||[]).find(function(o){ return o.id===invoiceId; });
+  currentInvoiceSendId = invoiceId;
+  currentInvoiceSendKind = kind || 'invoice';
+  var nr = inv ? (inv.nr||'#'+inv.id) : '#'+invoiceId;
+  var name = inv ? (inv.associateName||'') : '';
+  var isReminder = currentInvoiceSendKind === 'reminder';
+  document.getElementById('invoiceSendTitle').textContent = isReminder ? 'Zahlungserinnerung senden' : 'Rechnung senden';
+  document.getElementById('invoiceSendInfo').textContent = (isReminder
+    ? 'Sendet die Rechnung '+nr+' mit dem Betreff «Zahlungserinnerung» erneut als PDF an den Kunden.'
+    : 'Sendet die Rechnung '+nr+' als PDF direkt an den Kunden.') + (name ? ' Kunde: '+name : '');
+  document.getElementById('invoiceSendSubject').value = (isReminder ? 'Zahlungserinnerung: Rechnung ' : 'Rechnung ')+nr+' – Bärtsch + Dobal';
+  // Kunden-Mail vorausfüllen
+  var email = '';
+  var kunde = allKunden.find(function(k){ return k.name===name || k.company===name; });
+  if(kunde && kunde.email) email = kunde.email;
+  document.getElementById('invoiceSendEmail').value = email;
+  document.getElementById('invoiceSendStatus').style.display = 'none';
+  var btn = document.getElementById('invoiceSendBtn');
+  btn.disabled = false; btn.textContent = '✉ PDF senden';
+  document.getElementById('invoiceSendOverlay').style.display = 'flex';
+}
+
+function closeInvoiceSendModal(){
+  document.getElementById('invoiceSendOverlay').style.display = 'none';
+}
+
+async function sendInvoiceMailNow(){
+  var email = document.getElementById('invoiceSendEmail').value.trim();
+  var subject = document.getElementById('invoiceSendSubject').value.trim();
+  if(!email){ alert('Bitte E-Mail-Adresse eingeben.'); return; }
+  var btn = document.getElementById('invoiceSendBtn');
+  var status = document.getElementById('invoiceSendStatus');
+  btn.disabled = true; btn.textContent = '⏳ Sende...';
+  status.style.display = 'block'; status.style.color = 'var(--muted)';
+  status.textContent = '⏳ Rechnungs-PDF wird geladen und gesendet...';
+  var inv = (ccLists.rechnungen||[]).find(function(o){ return o.id===currentInvoiceSendId; });
+  var nr = inv ? (inv.nr||'#'+inv.id) : '#'+currentInvoiceSendId;
+  try {
+    var r = await ccFetch(CC_FN+'?action=order-pdf&id='+currentInvoiceSendId);
+    var buffer = await r.arrayBuffer();
+    var b64 = pdfBytesToB64(buffer);
+    var res = await ccFetch(CC_FN+'?action=send-pdf', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        to: email, subject: subject, pdfBase64: b64,
+        fileName: 'rechnung-'+(inv?String(inv.nr||inv.id).replace(/[^A-Za-z0-9_-]/g,'-'):currentInvoiceSendId)+'.pdf',
+        kundenName: inv ? (inv.associateName||'') : ''
+      })
+    });
+    var data = await res.json();
+    if(data.error){
+      status.style.color = 'var(--red)';
+      status.textContent = 'Fehler: '+JSON.stringify(data.error);
+      btn.disabled = false; btn.textContent = '✉ PDF senden';
+      return;
+    }
+    status.style.color = 'var(--green)';
+    status.textContent = '✅ Gesendet an '+email+'!';
+    btn.textContent = '✅ Gesendet';
+    if(currentInvoiceSendKind === 'reminder'){
+      logActivity('⏰','Zahlungserinnerung für '+nr+' an '+email+' gesendet');
+    } else {
+      logActivity('✉️','Rechnung '+nr+' an '+email+' gesendet');
+      markInvoiceSent(currentInvoiceSendId, true);
+    }
+    setTimeout(closeInvoiceSendModal, 1400);
+  } catch(err){
+    status.style.color = 'var(--red)';
+    status.textContent = 'Fehler: '+err.message;
+    btn.disabled = false; btn.textContent = '✉ PDF senden';
+  }
+}
+
+// Rechnung als versendet markieren: Marker entfernen + Status in CashCtrl nachziehen
+function markInvoiceSent(invoiceId, silent){
+  ensureStateShape();
+  var had = state.readyInvoices.some(function(m){ return m.invoiceId===invoiceId; });
+  state.readyInvoices = state.readyInvoices.filter(function(m){ return m.invoiceId!==invoiceId; });
+  var statusId = findStatusId(4,'versend') || findStatusId(4,'offen');
+  if(statusId) setCcStatus(invoiceId, statusId, function(){ loadCcOrders('rechnungen',4); });
+  if(had && !silent){
+    var inv = (ccLists.rechnungen||[]).find(function(o){ return o.id===invoiceId; });
+    logActivity('📤','Rechnung '+(inv?(inv.nr||'#'+invoiceId):'#'+invoiceId)+' als versendet markiert');
+  }
+  saveState();
+  renderDashboardExtras();
+  if(ccLists.rechnungen && ccLists.rechnungen.length) renderCcList('rechnungen');
+}
+
 function openOrderModal(type){
   currentOrderType = type;
   currentOrderCatId = CC_CAT[type];
@@ -3272,8 +3925,10 @@ function renderList(listId,items,type){
 }
 
 function renderAll(){
+  ensureStateShape();
   renderMetrics();
   renderRtb();
+  renderDashboardExtras();
   renderLagerCircles();renderDashOffeneAuftraege();renderDashOffeneLieferscheine();renderMailVorlagen();renderPDFListe();
   renderStepsList();renderTasksList();
   renderList('auftraegeList',state.auftraege,'auftrag');
